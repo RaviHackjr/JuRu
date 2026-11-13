@@ -1,0 +1,23 @@
+# mini game — boss battle (while + break, game feel)
+hp = 100
+boss = 100
+wave = 1
+
+while hp > 0 and boss > 0 {
+    damage = wave * 10
+    boss = boss - damage
+    say("Round " + wave + ": Boss HP -> " + boss)
+
+    if boss <= 0 {
+        say("BOSS DOWN! You win!")
+        break
+    }
+
+    hp = hp - 25
+    say("Boss dealt 25! HP -> " + hp)
+    wave = wave + 1
+}
+
+if hp <= 0 {
+    say("Game over...")
+}

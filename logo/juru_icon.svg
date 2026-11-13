@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="JuRu logo">
+  <!-- JuRu: a ruby cut from Jupyter orange + Ruby red. Easy on the eyes, hard as a gem. -->
+  <defs>
+    <linearGradient id="jrTable" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFB25C"/>
+      <stop offset="1" stop-color="#F3801F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- crown (top half) -->
+  <polygon points="186,78 326,78 306,190 206,190" fill="url(#jrTable)"/>
+  <polygon points="106,190 186,78 206,190" fill="#F3801F"/>
+  <polygon points="326,78 406,190 306,190" fill="#E4572E"/>
+
+  <!-- pavilion (bottom point) -->
+  <polygon points="106,190 206,190 256,452" fill="#C22047"/>
+  <polygon points="206,190 306,190 256,452" fill="#B31226"/>
+  <polygon points="306,190 406,190 256,452" fill="#9C0F2E"/>
+
+  <!-- code carved into the gem: { } -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M228 224 C204 224 196 234 196 252 L196 274 C196 292 188 296 176 298 C188 300 196 304 196 322 L196 344 C196 362 204 372 228 372"/>
+    <path d="M284 224 C308 224 316 234 316 252 L316 274 C316 292 324 296 336 298 C324 300 316 304 316 322 L316 344 C316 362 308 372 284 372"/>
+  </g>
+</svg>

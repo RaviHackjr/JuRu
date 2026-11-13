@@ -1,0 +1,22 @@
+# stdlib demo — the Step 5 toolbox: text, lists, numbers
+
+say(upper("juru"))        # JURU
+say(lower("HELLO"))       # hello
+say(str(42) + "!")        # 42!
+say(str(2.5))             # 2.5
+say(str(1 < 2))           # true
+
+nums = [1, 2]
+say(nums)                 # [1, 2]
+
+data = [3]
+push(data, 1)
+push(data, 4)
+push(data, 5)
+say(data)                 # [3, 1, 4, 5]
+say(sum(data))            # 13
+
+say(min(3, 9))            # 3
+say(max(3, 9))            # 9
+say(max(4.0, 4))          # 4.0
+say(min(-2, 7))           # -2

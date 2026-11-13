@@ -1,0 +1,90 @@
+# game lab — tic-tac-toe with a real winner check + the arena
+
+func empty_board() {
+    return [["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]]
+}
+
+func render(b) {
+    for r from 0 to 2 {
+        row = ""
+        for c from 0 to 2 {
+            row = row + b[r][c]
+            if c < 2 {
+                row = row + " | "
+            }
+        }
+        say(row)
+        if r < 2 {
+            say("---+---+---")
+        }
+    }
+}
+
+func winner(b, mark) {
+    for r from 0 to 2 {
+        if b[r][0] == mark and b[r][1] == mark and b[r][2] == mark {
+            return true
+        }
+    }
+    for c from 0 to 2 {
+        if b[0][c] == mark and b[1][c] == mark and b[2][c] == mark {
+            return true
+        }
+    }
+    if b[0][0] == mark and b[1][1] == mark and b[2][2] == mark {
+        return true
+    }
+    if b[0][2] == mark and b[1][1] == mark and b[2][0] == mark {
+        return true
+    }
+    return false
+}
+
+board = empty_board()
+moves = [[0, 0], [0, 1], [1, 1], [0, 2], [2, 2]]
+turn = "X"
+for m from 0 to len(moves) - 1 {
+    r = moves[m][0]
+    c = moves[m][1]
+    board[r][c] = turn
+    render(board)
+    say("--- move " + (m + 1) + ": " + turn + " -> row " + r + ", col " + c)
+    if winner(board, turn) {
+        say(turn + " WINS!")
+        break
+    }
+    if turn == "X" {
+        turn = "O"
+    } else {
+        turn = "X"
+    }
+}
+
+say("")
+
+# the arena — a while loop with three conditions and a turn toggle
+fighter_a = 50
+fighter_b = 50
+rounds = [12, 15, 9, 20, 7, 11, 30, 8]
+a_turn = true
+i = 0
+while i < len(rounds) and fighter_a > 0 and fighter_b > 0 {
+    hit = rounds[i]
+    if a_turn {
+        fighter_b = fighter_b - hit
+        say("A hits B for " + hit + " -> B: " + fighter_b)
+        a_turn = false
+    } else {
+        fighter_a = fighter_a - hit
+        say("B hits A for " + hit + " -> A: " + fighter_a)
+        a_turn = true
+    }
+    i = i + 1
+}
+if fighter_b <= 0 {
+    say("A WINS THE ARENA!")
+} else if fighter_a <= 0 {
+    say("B WINS THE ARENA!")
+} else {
+    say("draw...")
+}

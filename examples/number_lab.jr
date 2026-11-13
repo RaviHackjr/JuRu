@@ -1,0 +1,71 @@
+# number lab — primes, perfect numbers, digit tricks, gcd/lcm
+
+func is_prime(n) {
+    if n < 2 {
+        return false
+    }
+    d = 2
+    while d * d <= n {
+        if n % d == 0 {
+            return false
+        }
+        d = d + 1
+    }
+    return true
+}
+
+line = ""
+for n from 2 to 30 {
+    if is_prime(n) {
+        line = line + n + " "
+    }
+}
+say("primes: " + line)
+
+func perfect(n) {
+    if n < 2 {
+        return false
+    }
+    total = 0
+    for d from 1 to n - 1 {
+        if n % d == 0 {
+            total = total + d
+        }
+    }
+    return total == n
+}
+
+line = ""
+for n from 1 to 100 {
+    if perfect(n) {
+        line = line + n + " "
+    }
+}
+say("perfect: " + line)
+
+func reverse_num(n) {
+    out = 0
+    while n > 0 {
+        out = out * 10 + n % 10
+        n = int(n / 10)
+    }
+    return out
+}
+
+say("reverse 1234 -> " + reverse_num(1234))
+say("reverse 7050 -> " + reverse_num(7050))
+if reverse_num(1221) == 1221 {
+    say("1221 is a number palindrome!")
+}
+
+func gcd(a, b) {
+    while b != 0 {
+        temp = a % b
+        a = b
+        b = temp
+    }
+    return a
+}
+
+say("gcd(462, 1071) = " + gcd(462, 1071))
+say("lcm(4, 6) = " + int(4 * 6 / gcd(4, 6)))

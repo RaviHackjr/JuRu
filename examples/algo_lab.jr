@@ -1,0 +1,82 @@
+# algo lab — sorting, binary search, dedupe, run-length encoding
+
+# 1) selection sort (ascending) with swaps
+nums = [64, 25, 12, 22, 11]
+total_seen = len(nums)
+for i from 0 to total_seen - 2 {
+    small = i
+    for j from i + 1 to total_seen - 1 {
+        if nums[j] < nums[small] {
+            small = j
+        }
+    }
+    temp = nums[i]
+    nums[i] = nums[small]
+    nums[small] = temp
+}
+say("sorted:", nums)
+
+# 2) binary search on the sorted list
+func binary_search(list, target) {
+    lo = 0
+    hi = len(list) - 1
+    while lo <= hi {
+        mid = int((lo + hi) / 2)
+        if list[mid] == target {
+            return mid
+        }
+        if list[mid] < target {
+            lo = mid + 1
+        } else {
+            hi = mid - 1
+        }
+    }
+    return -1
+}
+
+say("find 22 -> index " + binary_search(nums, 22))
+say("find 99 -> index " + binary_search(nums, 99))
+
+# 3) dedupe (keep the first copy of each value)
+raw = [1, 2, 2, 3, 1, 4, 4, 4, 5]
+clean = []
+for i from 0 to len(raw) - 1 {
+    value = raw[i]
+    seen = false
+    if len(clean) > 0 {
+        for j from 0 to len(clean) - 1 {
+            if clean[j] == value {
+                seen = true
+            }
+        }
+    }
+    if seen == false {
+        clean = clean + [value]
+    }
+}
+say("dedupe:", clean)
+
+# 4) run-length encode a text
+text = "aaabbc"
+encoded = ""
+i = 0
+while i < len(text) {
+    ch = text[i]
+    run = 1
+    while i + run < len(text) and text[i + run] == ch {
+        run = run + 1
+    }
+    encoded = encoded + ch + run
+    i = i + run
+}
+say("rle: " + encoded)
+
+# 5) longest word
+words = ["code", "algorithm", "byte", "interpreter"]
+longest = ""
+for i from 0 to len(words) - 1 {
+    if len(words[i]) > len(longest) {
+        longest = words[i]
+    }
+}
+say("longest: " + longest)

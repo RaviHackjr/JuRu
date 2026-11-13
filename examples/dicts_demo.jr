@@ -1,0 +1,18 @@
+# dicts demo — count the words of a sentence (a real little program)
+
+counts = {}
+words = split("the cat saw the dog and the dog saw the cat", " ")
+
+for w in words {
+    if w in counts {
+        counts[w] = counts[w] + 1
+    } else {
+        counts[w] = 1
+    }
+}
+
+for word in counts {
+    say(word + " -> " + counts[word])
+}
+
+say("different words: " + len(counts))

@@ -1,0 +1,25 @@
+# funcs + recursion
+
+func factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+func fibo(n) {
+    if n <= 1 {
+        return n
+    }
+    return fibo(n - 1) + fibo(n - 2)
+}
+
+say("factorial:")
+for i from 1 to 7 {
+    say(i + "! = " + factorial(i))
+}
+
+say("fibonacci:")
+for i from 1 to 10 {
+    say(fibo(i))
+}

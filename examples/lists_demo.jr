@@ -1,0 +1,13 @@
+# lists
+fruits = ["apple", "mango", "grape"]
+say(len(fruits))
+say(fruits[1])
+fruits[2] = "apple"
+say(fruits)
+
+marks = [90, 85, 70]
+total = 0
+for i from 0 to len(marks) - 1 {
+    total = total + marks[i]
+}
+say("total: " + total)

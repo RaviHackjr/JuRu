@@ -1,0 +1,12 @@
+# JuRu demo — the first program (.jr = JuRu file)
+name = "JuRu"
+level = 3
+say("hello " + name + "!")
+say("Level " + level)
+
+# math — int, float, everything automatic
+say(5 + 3)
+say(10 / 4)
+say(7 % 3)
+say(2.5 * 2)
+say(1 + 2 * 3 - 4 / 2)

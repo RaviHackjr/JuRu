@@ -1,0 +1,11 @@
+# import demo — code from another file, namespaced and safe
+
+import "helpers.jr"          # the module 'helpers' (runs once)
+
+say(helpers.greet("JuRu"))
+say(helpers.double(21))
+say("magic number: " + helpers.magic)
+
+# importing again is free — the module does not run twice
+import "helpers.jr"
+say(helpers.double(50))

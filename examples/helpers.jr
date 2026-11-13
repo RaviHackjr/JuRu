@@ -1,0 +1,17 @@
+# helpers.jr — a tiny module (Step 7)
+#
+# Import it from another file:
+#     import "helpers.jr"
+#     say(helpers.double(21))
+#
+# The module name comes from the file name — helpers.jr → helpers.
+
+func double(n) {
+    return n * 2
+}
+
+func greet(name) {
+    return "hello " + name + "!"
+}
+
+magic = 42

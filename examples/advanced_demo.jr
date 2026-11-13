@@ -1,0 +1,79 @@
+# advanced demo — next level patterns
+
+# 1) FizzBuzz from 1 to 15
+for i from 1 to 15 {
+    if i % 15 == 0 {
+        say("FizzBuzz")
+    } else if i % 3 == 0 {
+        say("Fizz")
+    } else if i % 5 == 0 {
+        say("Buzz")
+    } else {
+        say(i)
+    }
+}
+
+# 2) prime numbers from 2 to 20 (trial division + break)
+for n from 2 to 20 {
+    is_prime = true
+    d = 2
+    while d * d <= n {
+        if n % d == 0 {
+            is_prime = false
+            break
+        }
+        d = d + 1
+    }
+    if is_prime {
+        say(n)
+    }
+}
+
+# 3) bubble sort (nested loops + item assignment)
+nums = [64, 25, 12, 22, 11]
+total_seen = len(nums)
+for i from 0 to total_seen - 2 {
+    for j from 0 to total_seen - 2 - i {
+        if nums[j] > nums[j + 1] {
+            temp = nums[j]
+            nums[j] = nums[j + 1]
+            nums[j + 1] = temp
+        }
+    }
+}
+say(nums)
+
+# 4) 2D grid (matrix) + nested item assignment
+grid = [[1, 2], [3, 4]]
+grid[0][1] = 9
+total = 0
+for r from 0 to 1 {
+    for c from 0 to 1 {
+        total = total + grid[r][c]
+    }
+}
+say(grid)
+say("grid total: " + total)
+
+# 5) palindrome check (text indexing)
+word = "level"
+flipped = ""
+i = len(word) - 1
+while i >= 0 {
+    flipped = flipped + word[i]
+    i = i - 1
+}
+if word == flipped {
+    say(word + " is a palindrome!")
+} else {
+    say(word + " is not a palindrome")
+}
+
+# 6) countdown with continue
+for round from 5 to 1 {
+    if round == 2 {
+        continue
+    }
+    say("T-minus " + round)
+}
+say("LIFTOFF!")

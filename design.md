@@ -1,0 +1,393 @@
+# JuRu — Design Document
+
+> **JuRu** = easy (easier than Python) + secure (safe like Rust).
+> **File extension: `.jr`** — runner: `python3 juru.py program.jr`
+
+## Goal
+
+1. **Easy** — few keywords, human error messages, runs with zero setup.
+2. **Conversation feel** — plain English keywords; reading code feels like
+   talking: `say(...)`, `if ... else`, `for i from 1 to 10`, `for x in items`.
+3. **Secure by design** — no pointers, no null-bug class, no eval, garbage
+   collected, everything checked.
+
+## The icon
+
+`logo/juru_icon.svg` — a faceted ruby: the crown glows **Jupyter orange**
+(`#F3801F`), the pavilion sinks into **Ruby red** (`#B31226`), and a pair of
+white `{ }` braces is carved into the gem. JuRu = **Ju**pyter + **Ru**by — the
+icon tells the whole story. Pure SVG, so it scales to any size.
+
+## Status: fully working language (end to end)
+
+The pipeline, all connected (nothing skipped, nothing breaks):
+
+```
+.jr file → lexer.py → parser.py → checker.py → interpreter.py → output
+              tokens      AST         semantic         runs your code
+                                        ok?
+
+REPL mode: python3 repl.py  (same pipeline, one line at a time,
+                             one shared environment)
+```
+`juru.py` wires them together in one command: `python3 juru.py program.jr`
+
+| Piece | What it does | Tests |
+|-------|--------------|-------|
+| `lexer.py` | source text → tokens | **55 pass** |
+| `parser.py` | tokens → AST + parse-time safety checks | **111 pass** |
+| `checker.py` | semantic checks before running (Steps 3 + 5) | **47 pass** |
+| `interpreter.py` | runs the AST + the stdlib + modules (Steps 4–7) | **93 pass** |
+| `juru.py` | `.jr` runner (`python3 juru.py file.jr`) | tested via checker suite |
+| `repl.py` | interactive REPL (Steps 5+8) | **10 pass** |
+| `test_programs.py` | 3 heavy programs: primes/gcd, algorithms, game | **13 pass** |
+| `test_stdlib.py` | the Step 5 builtins, both layers, mirror rule | **25 pass** |
+| `test_repl.py` | REPL behaviour, end to end via subprocess | **10 pass** |
+| `test_mega.py` | the combined torture test of steps 1–5 | **14 pass** |
+| `test_step6.py` | dicts, for-in, in/not-in, slices, strings, math | **46 pass** |
+| `test_step7.py` | modules: import, run-once, loops, isolation | **17 pass** |
+| `test_step8.py` | did-you-mean + the multi-line REPL | **19 pass** |
+| `test_step9.py` | sorted/reverse/find/keys/values/count | **23 pass** |
+| `test_ultimate.py` | steps 1–9 combined, no mercy | **29 pass** |
+| `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
+| **Total** | | **502 tests green** |
+
+Run everything yourself:
+```
+python3 test_lexer.py
+python3 test_parser.py
+python3 test_checker.py
+python3 test_interpreter.py
+python3 test_programs.py
+python3 test_stdlib.py
+python3 test_repl.py
+python3 test_mega.py
+python3 test_step6.py
+python3 test_step7.py
+python3 test_step8.py
+python3 test_step9.py
+python3 test_ultimate.py
+```
+
+## Keywords (19 — plain English)
+
+| JuRu | Python | JuRu | Python |
+|------|--------|------|--------|
+| `say` | print | `break` | break |
+| `if` | if | `continue` | continue |
+| `else` | else | `func` | def |
+| `while` | while | `return` | return |
+| `for` | for | `true` | True |
+| `from` | (range start) | `false` | False |
+| `to` | (range end) | `null` | None |
+| `in` | in / `x in d` keys | | | 
+| | | `and` | and |
+| | | `or` | or |
+| | | `not` | not |
+| `import` | import | | |
+
+`else if` is written as two words — no separate `elif` keyword needed.
+Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
+`lower(x)`, `str(x)`, `push(list, item)`, `sum(list)`, `min(a, b)`, `max(a, b)`,
+`split(text, sep)`, `join(list, sep)`, `trim(text)`, `replace(text, old, new)`,
+`abs(x)`, `round(x)`, `random(low, high)`, `sqrt(x)`,
+`sorted(list)`, `reverse(list)`, `find(list, item)`, `keys(dict)`,
+`values(dict)`, `count(list, item)`.
+
+## Operators
+
+- Math: `+ - * / %` (int/float promote automatically, `/` always true division)
+- Assign/compare: `= == != < <= > >=`
+- Membership: `in`, `not in` (two words, one operator — compare level)
+- Slice: `[a:b]`, `[a:]`, `[:b]` (lists and text; clamps, never crashes)
+- Structure: `( ) { } [ ] , : .`
+- Bonus: `"text" + anything` → text, `"ab" * 3` → repeat, `[1] + [2]` → join lists
+
+## Rules (syntax)
+
+1. File extension = `.jr`; a statement ends with a new line (no semicolons).
+2. Blocks = `{ }` — **no indentation headaches**.
+3. Comment = `#` to the end of the line.
+4. Text = only double quotes `"..."`, escapes: `\n \t \" \\`.
+5. Numbers = int (`10`) and float (`3.14`) — they promote automatically.
+6. Names = letters + digits + `_` (unicode letters work, Devanagari included).
+7. Error messages = human language, with line/col.
+8. `for i from 1 to 5` — the `to` value is **included**; start > end counts down.
+9. `for x in items` — lists walk items, text walks characters, dicts walk keys.
+10. `break`/`continue` only in loops; `return` only in funcs — caught at parse time.
+11. One statement per line; a line may continue after an operator.
+12. `import "file.jr"` — the module name is the file's stem; access via `module.name`.
+
+## Language semantics (all test-verified)
+
+- **Division**: `10 / 4` → `2.5` (always true division, float result).
+- **Auto-promote**: int ⊕ float → float; no silent truncation traps.
+- **Text joins anything**: `"Level " + 3` → `"Level 3"`; lists/funcs refuse.
+- **Text repeat**: `"ab" * 3` → `"ababab"` (whole int ≥ 0 only; the result can
+  never pass 10,000,000 characters — a friendly error instead of a freeze).
+- **Equality categories**: `true != 1` (bool vs number = different worlds),
+  but `1 == 1.0` (same number family). Same rules drive `in`, list equality
+  and dict equality (deep compare).
+- **Truthiness**: `null`, `0`, `""`, `[]`, `{}` are false; everything else true.
+- **Short-circuit**: `and`/`or` never evaluate the right side unnecessarily.
+- **Scoping**: assignment inside a func is local; reads walk the parent chain
+  (recursion works through the global env). `import` inside a func is a local
+  binding.
+- **Indexing**: always bounds-checked, no negative indexes, int only.
+- **Dicts**: keys are text or whole ints (bool/float/null/list rejected with a
+  human message); missing keys are friendly errors that list the keys that DO
+  exist (≤ 6 shown, otherwise the count; empty → `this dict is empty`);
+  display without quotes: `{name: Aman, age: 20}`; insertion order kept;
+  dicts are references — `same = d` aliases one dict; assignment needs
+  `d["key"] = value` (`d.key = value` is refused with the fix in the message).
+- **for x in ...**: walks a **copy** of the list (pushing during the loop is
+  safe), one char at a time for text, keys for dicts; wrong types rejected:
+  `'for x in ...' needs a list, text, or dict — got: 5`.
+- **Slices**: `[a:b]` on lists/text; open ends default to 0 and len; every
+  bound **clamps** (never crashes); negative bounds and non-int bounds are
+  friendly errors; `say([1:2])` parses as the dict `{1: 2}` (and then fails
+  the dict-key check — consistent with the grammar).
+- **in / not in**: lists (deep equality), text (substring, text-on-left only),
+  dicts (keys); chains (`a in b in c`) are refused at parse time.
+- **round**: half away from zero — `2.5` → `3`, `-2.5` → `-3` (no banker's
+  rounding surprises).
+- **random(low, high)**: whole ints, both ends included, `low > high` refused.
+- **sqrt(x)**: `x ** 0.5`; negatives refused: a negative number has no square root.
+- **Runaway protection**: any loop over 10,000,000 steps stops itself.
+- **Recursion limit**: `RecursionError` becomes a friendly JuRu error.
+
+## The stdlib (Steps 5+6+9 — 24 reserved builtins)
+
+| Builtin | Does | Guard |
+|---------|------|-------|
+| `ask(prompt)` | read a line from the user | at most 1 argument |
+| `len(x)` | length of text, a list, or a dict | exactly 1 arg; text/list/dict only |
+| `int(x)` | text or float → whole number | exactly 1 arg; rejects bool/null/list/dict/func |
+| `upper(x)` | text → CAPITALS | exactly 1 arg; text only |
+| `lower(x)` | text → lowercase | exactly 1 arg; text only |
+| `str(x)` | anything → its text form | exactly 1 arg |
+| `push(list, item)` | appends **in place**, returns the list | exactly 2 args; list first |
+| `sum(list)` | adds the numbers (empty list → `0`) | exactly 1 arg; list of numbers only |
+| `min(a, b)` | the smaller number | exactly 2 args; numbers only |
+| `max(a, b)` | the bigger number | exactly 2 args; numbers only |
+| `split(text, sep)` | text → list | exactly 2 args; text both; empty sep refused |
+| `join(list, sep)` | list → text (readable display per item) | exactly 2 args; list + text |
+| `trim(text)` | spaces/tabs/newlines off both ends | exactly 1 arg; text only |
+| `replace(text, old, new)` | every `old` → `new` | exactly 3 args; text; empty `old` refused |
+| `abs(x)` | distance from zero | exactly 1 arg; numbers only |
+| `round(x)` | nearest int, half away from zero | exactly 1 arg; numbers only |
+| `random(low, high)` | one whole int, both ends included | exactly 2 args; ints; low ≤ high |
+| `sqrt(x)` | the square root (float) | exactly 1 arg; numbers; x ≥ 0 |
+| `sorted(list)` | a NEW sorted list | exactly 1 arg; a list of only numbers or only text |
+| `reverse(list)` | a NEW reversed list | exactly 1 arg; a list |
+| `find(list, item)` | first index, or `-1` when missing | exactly 2 args; list first |
+| `keys(dict)` | the keys as a list (insertion order) | exactly 1 arg; a dict |
+| `values(dict)` | the values as a list (insertion order) | exactly 1 arg; a dict |
+| `count(list, item)` | how many times the item appears | exactly 2 args; list first |
+
+Step 9's six tools add **zero keywords**. Purity rule: only `push` mutates —
+`sorted` and `reverse` return fresh lists and leave the original untouched
+(test-enforced). `find` misses with `-1` (never a crash), and `count` counts
+with the same equality rules as `==`: `1` finds `1.0`, `true` matches nothing
+numeric.
+
+Two layers guard every builtin and both print the **exact same message**
+(mirror rule, test-enforced for all 24): the checker rejects a wrong arity
+before a single line runs; the interpreter rejects wrong value types while
+running.
+
+## Modules (Step 7 — `import "file.jr"`)
+
+- the module name = the file stem: `helpers.jr` → `helpers`,
+  `lib/tools.jr` → `tools`; invalid stems (`my-utils.jr`) and keyword stems
+  are refused at parse time
+- **namespaced access** — everything the module defines lives behind the name:
+  `helpers.double(21)`, `helpers.magic`; bare `double` does not leak in
+- **runs exactly once** — a cache keyed by the normalized absolute path
+- **checked before it runs** — the checker walks the module source first;
+  errors surface as `in 'helpers.jr': <the message>` and no module code ever
+  runs unchecked
+- **isolated** — a module's env has no parent: it cannot see the importer's
+  variables (or vice versa beyond the namespace)
+- **loops detected** — a loading stack turns `a.jr → b.jr → a.jr` into
+  `import loop: a.jr -> b.jr -> a.jr — a file cannot import itself, even
+  through other files`
+- **file-not-found is a runtime error** (the checker stays conservative and
+  does not touch the filesystem): `cannot import 'x.jr' — file not found
+  (looked at: <path>)`
+- imports resolve next to the **running file** (`juru.py` passes its dir down)
+
+## The REPL (Steps 5+8 — `python3 repl.py`)
+
+```
+$ python3 repl.py
+JuRu 1.2 REPL — full English, easy like Python, secure like Rust.
+type 'exit' or press Ctrl-D to leave
+type 'cancel' or press Ctrl-C to drop an open block
+jruru> 1 + 2
+=> 3
+jruru> d = {"name": "Aman", "age": 20}
+jruru> d["age"] + 2
+=> 22
+jruru> for x in [10, 20] {
+......>     say(x)
+......> }
+10
+20
+jruru> name = "JuRu"
+jruru> naame
+JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
+jruru> exit
+```
+
+- one shared environment — names, lists, dicts and funcs survive line to line
+- a lone expression echoes `=> value`; `say(...)` prints directly, no echo
+- **multi-line blocks** — a line that ends with an open brace/paren/bracket or
+  a trailing operator/keyword continues on the `......> ` prompt until the
+  block closes; completion is decided by the **real lexer**, so braces inside
+  text (`say("}")`) can never fool it
+- an unclosed block at EOF (Ctrl-D) is a friendly error:
+  `the block is not closed — '}' is missing`
+- **escape hatch** — a bare `cancel` line (or Ctrl-C) drops the open block and
+  starts fresh; vital when input is piped and Ctrl-C is absent
+- the checker runs on every entry against the live environment (typos,
+  reserved names, arity — caught before the line runs)
+- dicts, `for x in`, `in`, slices, modules and all 24 builtins work in the REPL
+- a mistake prints the friendly error and the session **continues**
+- leave with `exit`, `quit`, or Ctrl-D
+
+## Static semantic checks (Step 3 — the checker)
+
+The checker runs AFTER parsing and BEFORE running. It catches:
+
+1. **Typos statically** — reading a name that is never assigned anywhere gets
+   the closest real name back (Step 8):
+   `'naame' was not found — did you mean 'name'? (nothing with this name is
+   ever assigned)` — the same suggestion drives the runtime name lookup,
+   missing dict keys (`key 'naame' was not found — did you mean 'name'? …`)
+   and missing module members; a hopeless typo stays plain (no wrong guess),
+   and the old-Hinglish hint always wins: `'bolo' was not found (the old
+   'bolo' is now 'say')`.
+2. **Reserved names** — assigning to / defining any of the 24 builtins.
+3. **Duplicate parameters** — `func f(a, a)` is rejected.
+4. **Wrong argument counts** — for builtins always; for user funcs whenever
+   the definition is unambiguous (exactly one `func` with that name).
+5. **Unknown call targets** — calling a name that is never defined anywhere.
+6. **Import bookkeeping** — an `import` makes its module name a known name,
+   so later `module.member(...)` calls pass the conservative check.
+
+**Conservative policy:** the checker never flags a program that could run.
+If a name is assigned somewhere in the program (even inside an `if` block,
+even later in the file, even as a func-local), the checker stays silent and
+the interpreter guards the real run order at runtime. Zero false positives.
+Member calls (`utils.f(...)`) are only checked on their **base name** — the
+checker cannot see inside a module without running it, and it never runs code.
+
+Standalone use: `python3 checker.py file.jr` → `OK — no semantic errors ✅`
+
+## Security principles
+
+- **No eval** — code is never built from strings.
+- **null exists, the bug class doesn't** — `null == null` is safe, indexing
+  through it errors cleanly.
+- **Bounds checking by default** — out-of-range index = friendly error, no crash.
+- **Dict keys guarded** — text/int only; missing keys error with the real key list.
+- **Runaway loop protection** — 10M+ iterations stops the loop.
+- **Short-circuit logic** — `false and 1/0` never divides.
+- **Reserved builtins** — the 24 builtins (`ask` … `count`) cannot be shadowed,
+  not even as a module name (`import "len.jr"` is refused).
+- **Modules are sandboxed** — isolated env, checked source, loop detection,
+  one run per file, no leaking names.
+- **Friendly runtime type checks** — wrong operations error with line/col.
+- **GC** — the interpreter runtime's garbage collector does the work.
+
+## Error style (example)
+
+```
+JuRu Error (line 3, col 10): missing closing " — text must be on one line
+```
+
+Old Hinglish names (`bolo`, `agar`, ...) are ordinary names now — they parse
+and run; calling the old `bolo(...)` even gets a hint:
+`'bolo' was not found (the old 'bolo' is now 'say')`.
+
+## Grammar (implemented + test-verified)
+
+```
+program   → statement* EOF
+statement → if | while | for | func | return | say | import | break | continue
+          | assign | setindex | expression
+assign    → NAME '=' expr
+setindex  → postfix '[' expr ']' '=' expr            # a[0] = 5, d["k"] = 1
+if        → 'if' expr block ('else' (if | block))?   # else if chains
+while     → 'while' expr block
+for       → 'for' NAME 'from' expr 'to' expr block   # for i from 1 to 10
+          | 'for' NAME 'in' expr block               # for x in items
+func      → 'func' NAME '(' NAME (',' NAME)* ')' block
+import    → 'import' TEXT                            # "utils.jr" — parsed, module = stem
+return    → 'return' expr?          (only inside func)
+break     → (only inside loop)       continue → (only inside loop)
+say       → 'say' '(' args ')'
+block     → '{' statement* '}'
+expr      → or → and → compare → add → mul → unary → postfix → atom
+or        → and ('or' and)*
+and       → compare ('and' compare)*
+compare   → add (('==' | '!=' | '<' | '<=' | '>' | '>=') add
+               | 'in' add | 'not' 'in' add)?         # no chains — one compare per line
+add       → mul (('+' | '-') mul)*                   # newline after operator = continuation
+mul       → unary (('*' | '/' | '%') unary)*
+unary     → ('-' | '+' | 'not') unary | postfix
+postfix   → atom ('(' args ')' | '[' slice-or-index ']' | '.' NAME)*
+slice     → ':' expr | expr ':' expr?                # [1:3], [2:], [:7], [:]
+atom      → NUMBER | TEXT | true | false | null | NAME | '(' expr ')'
+          | list | dict
+list      → '[' (expr (',' expr)*)? ']'
+dict      → '{' (expr ':' expr (',' expr ':' expr)*)? '}'   # keys: text or int
+```
+
+Notes:
+- New lines are allowed inside `( )` and `[ ]`.
+- `not` binds tighter than `and`/`or`, looser than postfix
+  (`not x == y` parses as `not (x == y)`). Prefer `x not in y`.
+- `{` at expression position is a dict literal (so `for i from 1 to { }`
+  parses `{}` as an empty dict — the checker then refuses the value); at
+  statement position it gets the friendly hint: *a dict needs a home:
+  write 'data = { ... }'*.
+- `a.b(...)` is a member **call**: parsed as `Call(name=b, callee=Member(a, b))`.
+- `d.name` (member read) is sugar for `d["name"]`.
+
+## Demo files (every output exactly verified by tests)
+
+| File | Shows |
+|------|-------|
+| `examples/demo.jr` | hello, text+number join, int/float math |
+| `examples/patterns.jr` | square, triangle, pyramid star patterns |
+| `examples/table.jr` | the 7 times table |
+| `examples/funcs_demo.jr` | factorial 1–7, fibonacci 1–10 (recursion) |
+| `examples/lists_demo.jr` | lists, item assignment, sum |
+| `examples/game_demo.jr` | boss battle game (while + break) |
+| `examples/advanced_demo.jr` | FizzBuzz, primes, bubble sort, 2D grid, palindrome, countdown |
+| `examples/number_lab.jr` | primes, perfect numbers, digit reversal, gcd/lcm |
+| `examples/algo_lab.jr` | selection sort, binary search, dedupe, RLE, longest word |
+| `examples/game_lab.jr` | tic-tac-toe with winner check + the arena fight |
+| `examples/stdlib_demo.jr` | the builtin toolbox in action |
+| `examples/mega_demo.jr` | school report: grades, bubble sort, topper, histogram |
+| `examples/dicts_demo.jr` | word counting with dicts + `for x in` |
+| `examples/helpers.jr` | a tiny module (import me from another file) |
+| `examples/import_demo.jr` | modules: namespace, run-once caching |
+
+## Roadmap
+
+| Step | What | Status |
+|------|------|--------|
+| 1 | Design + Lexer (text → tokens) | ✅ DONE — 55 tests |
+| 2 | Parser (tokens → AST) + parse-time checks | ✅ DONE — 111 tests |
+| 3 | Semantic checker (catches mistakes before running) | ✅ DONE — 47 tests |
+| 4 | Interpreter (run the code) | ✅ DONE — 93 tests + demos verified |
+| 5 | Stdlib (builtins) + REPL + more examples | ✅ DONE — stdlib 25, REPL 10, programs 13, mega 14 |
+| 6 | Dicts, `for x in`, `in`/`not in`, slices, string + math stdlib | ✅ DONE — 46 tests |
+| 7 | Modules: `import`, namespaces, run-once, isolation, loop detection | ✅ DONE — 17 tests |
+| 8 | Did-you-mean + the multi-line REPL (`......> `, cancel) | ✅ DONE — 19 tests |
+| 9 | Stdlib wave 2: sorted, reverse, find, keys, values, count | ✅ DONE — 23 tests |
+| — | Ultimate torture: steps 1–9 combined | ✅ DONE — 29 tests |
+| — | **Total: 502 tests green** | |

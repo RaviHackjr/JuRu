@@ -1,0 +1,23 @@
+# --- Python runtime junk ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- virtual environments / caches ---
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- editor / OS junk ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# --- scratch / temp ---
+*.log
+*.tmp

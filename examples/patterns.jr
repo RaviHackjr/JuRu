@@ -1,0 +1,33 @@
+# star patterns — loops at play
+
+# square
+for i from 1 to 5 {
+    row = ""
+    for j from 1 to 5 {
+        row = row + "* "
+    }
+    say(row)
+}
+
+say("")
+
+# triangle
+for i from 1 to 5 {
+    row = ""
+    for j from 1 to i {
+        row = row + "* "
+    }
+    say(row)
+}
+
+say("")
+
+# pyramid
+for i from 1 to 5 {
+    gap = " " * (5 - i)
+    stars = ""
+    for j from 1 to 2 * i - 1 {
+        stars = stars + "*"
+    }
+    say(gap + stars)
+}

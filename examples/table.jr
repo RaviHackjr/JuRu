@@ -1,0 +1,5 @@
+# the 7 times table — for loop + text-number mix
+times = 7
+for i from 1 to 10 {
+    say(times + " x " + i + " = " + times * i)
+}
