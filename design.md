@@ -48,9 +48,11 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_step7.py` | modules: import, run-once, loops, isolation | **17 pass** |
 | `test_step8.py` | did-you-mean + the multi-line REPL | **19 pass** |
 | `test_step9.py` | sorted/reverse/find/keys/values/count | **23 pass** |
-| `test_ultimate.py` | steps 1–9 combined, no mercy | **29 pass** |
+| `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
+| `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
+| `test_ultimate.py` | steps 1–11 combined, no mercy | **34 pass** |
 | `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **502 tests green** |
+| **Total** | | **542 tests green** |
 
 Run everything yourself:
 ```
@@ -66,6 +68,8 @@ python3 test_step6.py
 python3 test_step7.py
 python3 test_step8.py
 python3 test_step9.py
+python3 test_templates.py
+python3 test_tutorial.py
 python3 test_ultimate.py
 ```
 
@@ -160,7 +164,7 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 
 | Builtin | Does | Guard |
 |---------|------|-------|
-| `ask(prompt)` | read a line from the user | at most 1 argument |
+| `ask(prompt)` | read a line from the user | at most 1 argument; end-of-input is a friendly error |
 | `len(x)` | length of text, a list, or a dict | exactly 1 arg; text/list/dict only |
 | `int(x)` | text or float → whole number | exactly 1 arg; rejects bool/null/list/dict/func |
 | `upper(x)` | text → CAPITALS | exactly 1 arg; text only |
@@ -217,11 +221,56 @@ running.
   (looked at: <path>)`
 - imports resolve next to the **running file** (`juru.py` passes its dir down)
 
+## Templates (Step 10 — `python3 juru.py --new`)
+
+Five small, complete starter programs live in `templates/`. The CLI copies
+one into a fresh `.jr` file in the caller's directory:
+
+| Template | Teaches |
+|----------|---------|
+| `starter` | variables, loops, lists — no input, deterministic output |
+| `calculator` | `while` + `split` + `int` — guarded against bad math and bad input |
+| `quiz` | lists + `ask` + scoring — deterministic questions |
+| `guessing_game` | `random` + hints — always ends within 7 guesses |
+| `word_stats` | `split` + `count` + `sorted` — no input, deterministic output |
+
+Rules of the command:
+
+- `--new NAME` copies the `starter` template; `--new NAME TPL` picks one
+- the file is written to the **caller's working directory**, never the project
+- **never overwrites** — an existing `NAME.jr` (file *or* directory) is refused
+- the name must be letters, digits and `_` starting with a letter (this is a
+  file-name rule only; JuRu itself still accepts unicode names)
+- an unknown template gets `did you mean` treatment plus the full list
+- `--templates` lists every template with its description; `--version` and
+  `--help` round out the CLI
+
+The manifest in `juru.py` and the files in `templates/` must stay in sync —
+a test enforces it. Every template is checker-approved and its behaviour
+(exact outputs, guarded interactive sessions, guaranteed termination) is
+verified end to end through the real CLI.
+
+## The tutorial (Step 11 — `docs/tutorial.md`)
+
+*Learn JuRu in one sitting* — seventeen chapters plus a graduation project,
+from `say("hello")` to dicts, funcs, modules and the REPL. It is executable
+documentation: the test suite parses every ` ```jr ` block and enforces that
+
+- each block is semantically valid (the checker approves it — the only
+  exceptions are the deliberate error demos, whose exact `JuRu Error`
+  message, line and column must match what the tutorial shows)
+- a block followed by a plain block prints **exactly** that output
+- a block with no output block prints **nothing** (undocumented output
+  would be a lie)
+- `ask()` blocks are checker-only (interactive) and never claim output
+- the tutorial mentions all 19 keywords, all 24 builtins, every example
+  file and every template — docs cannot silently drift from the language
+
 ## The REPL (Steps 5+8 — `python3 repl.py`)
 
 ```
 $ python3 repl.py
-JuRu 1.2 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.3 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
 jruru> 1 + 2
@@ -389,5 +438,7 @@ Notes:
 | 7 | Modules: `import`, namespaces, run-once, isolation, loop detection | ✅ DONE — 17 tests |
 | 8 | Did-you-mean + the multi-line REPL (`......> `, cancel) | ✅ DONE — 19 tests |
 | 9 | Stdlib wave 2: sorted, reverse, find, keys, values, count | ✅ DONE — 23 tests |
-| — | Ultimate torture: steps 1–9 combined | ✅ DONE — 29 tests |
-| — | **Total: 502 tests green** | |
+| 10 | Templates: 5 starter programs + `--new`/`--templates` CLI | ✅ DONE — 24 tests |
+| 11 | The tutorial: docs/tutorial.md, executable and test-enforced | ✅ DONE — 11 tests |
+| — | Ultimate torture: steps 1–11 combined | ✅ DONE — 34 tests |
+| — | **Total: 542 tests green** | |

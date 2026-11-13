@@ -1,0 +1,19 @@
+# word_stats.jr — read a sentence like a tiny search engine
+# run it:  python3 juru.py word_stats.jr
+
+text = "the cat saw the dog and the cat ran"
+words = split(text, " ")
+
+say("total words: " + len(words))
+
+counts = {}
+for w in words {
+    counts[w] = count(words, w)     # count() — how often does w appear?
+}
+
+for w in sorted(keys(counts)) {     # sorted() gives a NEW list
+    say(w + " appears " + counts[w] + " time(s)")
+}
+
+say("'the' first sits at index " + find(words, "the"))
+say("no 'zebra' in there: " + str(find(words, "zebra") == -1))

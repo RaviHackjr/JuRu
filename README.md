@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 24 builtins · 15 examples · 502 tests green · version 1.2 (see version.py) · MIT`
+`19 keywords · 24 builtins · 5 templates · 15 examples · 542 tests green · version 1.3 (see version.py) · MIT`
 
 ---
 
@@ -39,12 +39,16 @@ python3 juru.py hello.jr
 
 # 3) try the live REPL
 python3 repl.py
+
+# 4) or start from a ready-made template
+python3 juru.py --new mygame guessing_game
+python3 juru.py mygame.jr
 ```
 
 REPL session:
 
 ```
-JuRu 1.2 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.3 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
 jruru> 1 + 2
@@ -168,6 +172,28 @@ Only `push` changes a list in place — `sorted` and `reverse` hand you a fresh
 list and leave the original alone. No new keywords were added for these six:
 the language stays 19 keywords big.
 
+## Templates — start in one command
+
+Five small, complete programs, ready to copy and make yours:
+
+```bash
+python3 juru.py --new hello                # starter template (the default)
+python3 juru.py --new calc calculator      # pick a template by name
+python3 juru.py --templates                # list them all
+```
+
+| Template | Start it with | What it teaches |
+|----------|---------------|-----------------|
+| `starter` | `--new hello` | variables, loops, lists |
+| `calculator` | `--new calc calculator` | `while` + `split` + input |
+| `quiz` | `--new myquiz quiz` | lists + `ask` + scoring |
+| `guessing_game` | `--new game guessing_game` | `random` + hints |
+| `word_stats` | `--new stats word_stats` | `split` + `count` + `sorted` |
+
+`--new` never overwrites an existing file and refuses nuisance names —
+every refusal is a friendly, one-line explanation. The new tutorial
+([docs/tutorial.md](docs/tutorial.md)) walks you from zero to this table.
+
 ## Examples (every output exactly verified by tests)
 
 | File | Shows |
@@ -206,7 +232,7 @@ repl.py      same pipeline, one line at a time, one shared environment
 - **interpreter** — runs the AST with guards: bounds checks, runaway-loop
   protection, short-circuit logic, friendly recursion limits
 
-## Tests — 502, all green
+## Tests — 542, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -221,7 +247,9 @@ python3 test_step6.py         # 46   (dicts, for-in, in/not-in, slices, strings,
 python3 test_step7.py         # 17   (modules: import, run-once, loops, isolation)
 python3 test_step8.py         # 19   (did-you-mean + the multi-line REPL)
 python3 test_step9.py         # 23   (sorted/reverse/find/keys/values/count)
-python3 test_ultimate.py      # 29   (steps 1–9 combined, no mercy)
+python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
+python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
+python3 test_ultimate.py      # 34   (steps 1–11 combined, no mercy)
 ```
 
 ## Project structure
@@ -235,16 +263,19 @@ JuRu/
 ├── juru.py             # the CLI runner (wires the whole pipeline)
 ├── repl.py             # the interactive REPL
 ├── version.py          # the single place the version lives
+├── templates/          # 5 ready-made starter programs (--new copies them)
 ├── design.md           # the full design document
+├── docs/tutorial.md    # learn JuRu in one sitting (test-verified)
 ├── docs/syntax.md      # the A to Z cheat sheet
 ├── logo/juru_icon.svg  # the language icon (orange → red ruby + braces)
 ├── examples/           # 15 verified demo programs
-├── test_*.py           # 13 test suites, 502 tests
+├── test_*.py           # 15 test suites, 542 tests
 └── LICENSE             # MIT
 ```
 
 ## Docs
 
+- `docs/tutorial.md` — learn JuRu in one sitting (every block test-verified)
 - `design.md` — the full design: semantics, grammar, security principles
 - `docs/syntax.md` — the A to Z language cheat sheet
 

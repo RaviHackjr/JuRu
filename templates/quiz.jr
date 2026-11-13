@@ -1,0 +1,26 @@
+# quiz.jr — three questions, one score
+# run it:  python3 juru.py quiz.jr
+
+questions = ["What is 2 + 2?", "Capital of France?", "JuRu files end with...?"]
+answers = ["4", "paris", ".jr"]
+score = 0
+i = 0
+
+while i < len(questions) {
+    say(questions[i])
+    reply = lower(trim(ask("your answer: ")))
+    if reply == answers[i] {
+        score = score + 1
+        say("correct!")
+    } else {
+        say("nope — it was " + answers[i])
+    }
+    i = i + 1
+}
+
+say("score: " + score + "/3")
+if score == 3 {
+    say("perfect!")
+} else {
+    say("try again for a perfect run")
+}

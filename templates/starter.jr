@@ -1,0 +1,23 @@
+# starter.jr — the smallest useful JuRu program
+# run it:  python3 juru.py starter.jr
+
+name = "friend"                     # a variable holds a value
+say("hello, " + name + "!")         # say prints one line
+
+level = 3                           # whole numbers...
+progress = 7.5                      # ...and decimals
+
+if level > 2 {
+    say("level " + level + ", progress " + progress)
+} else {
+    say("keep going")
+}
+
+for i from 1 to 3 {                 # `to` is included: 1, 2, 3
+    say("step " + i)
+}
+
+items = ["sword", "shield", "potion"]
+push(items, "map")                  # add to the end, in place
+say("you carry " + str(len(items)) + " items")
+say(items[1:3])                     # slices never crash — they clamp

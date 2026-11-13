@@ -605,7 +605,13 @@ class Interpreter:
             if len(e.args) > 1:
                 raise JuRuGalti(e.line, e.col, "ask(prompt) takes at most 1 argument")
             prompt = display(self.eval(e.args[0], env)) if e.args else ""
-            return builtins.input(prompt)
+            try:
+                return builtins.input(prompt)
+            except EOFError:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "ask() could not read any more input — the program was "
+                    "waiting for an answer and the input ended")
         if name == "len":
             if len(e.args) != 1:
                 raise JuRuGalti(e.line, e.col, "len(x) takes exactly 1 argument")

@@ -1,0 +1,737 @@
+# Learn JuRu in one sitting
+
+> **JuRu** is an easy, secure programming language: plain-English keywords,
+> human error messages, zero setup. This tutorial takes you from zero to
+> writing real programs — every code block below is executed by the test
+> suite, so everything you see actually works.
+
+One sitting, seventeen small chapters, one graduation project. Let's go.
+
+## 1. The idea
+
+Reading JuRu should feel like reading instructions:
+
+```jr
+name = "JuRu"
+say("hello, " + name + "!")
+```
+
+```
+hello, JuRu!
+```
+
+That is a complete program. Blocks live in `{ }`, comments start with `#`,
+one statement per line — and that is most of the syntax you will ever need.
+
+## 2. Start in one command
+
+You never have to start from an empty file. Pick a template:
+
+```bash
+python3 juru.py --templates
+```
+
+Copy one into a fresh `.jr` file and run it:
+
+```bash
+python3 juru.py --new hello
+python3 juru.py hello.jr
+```
+
+```text
+created hello.jr from the 'starter' template
+run it:  python3 juru.py hello.jr
+hello, friend!
+level 3, progress 7.5
+step 1
+step 2
+step 3
+you carry 4 items
+[shield, potion]
+```
+
+The `--new` command never overwrites a file, and refuses names that would
+be a nuisance (spaces, slashes, empty names). Chapter 14 shows every template.
+
+## 3. Values and variables
+
+A variable holds a value. You never declare a type — JuRu figures it out.
+Print them and look:
+
+```jr
+age = 20               # a whole number
+price = 19.99          # a decimal
+name = "Aman"          # text, always in double quotes
+happy = true           # true or false
+nothing = null         # "no value yet"
+say(age)
+say(price)
+say(name)
+say(happy)
+say(nothing)
+```
+
+```
+20
+19.99
+Aman
+true
+null
+```
+
+Math works the way you expect — `/` is always real division:
+
+```jr
+say(10 + 4)
+say(10 / 4)
+say(10 % 4)
+say(2 * 3.5)
+```
+
+```
+14
+2.5
+2
+7.0
+```
+
+## 4. Saying things
+
+`say(...)` prints one line. Text joins anything with `+`:
+
+```jr
+say("JuRu means Jupyter + Ruby")
+say("Level " + 3)
+say("score: " + 97.5)
+say(str(2.5) + " as text")
+say("ab" * 3)
+```
+
+```
+JuRu means Jupyter + Ruby
+Level 3
+score: 97.5
+2.5 as text
+ababab
+```
+
+## 5. Decisions
+
+`if` / `else if` / `else` — two words, no `elif` keyword to memorize:
+
+```jr
+marks = 72
+if marks >= 90 {
+    say("grade A")
+} else if marks >= 60 {
+    say("grade B")
+} else {
+    say("work harder")
+}
+```
+
+```
+grade B
+```
+
+Conditions combine with `and`, `or`, `not`:
+
+```jr
+age = 15
+has_pass = true
+if age >= 18 or has_pass {
+    say("come in")
+}
+if not (age >= 18) {
+    say("still young")
+}
+```
+
+```
+come in
+still young
+```
+
+JuRu's truthiness is simple: `null`, `0`, `""`, `[]` and `{}` are false,
+everything else is true:
+
+```jr
+if 0 { say("no") } else { say("0 is false") }
+if "" { say("no") } else { say("empty text is false") }
+if [1] { say("a non-empty list is true") }
+```
+
+```
+0 is false
+empty text is false
+a non-empty list is true
+```
+
+## 6. Loops
+
+`for i from a to b` — the end value is included:
+
+```jr
+for i from 1 to 5 {
+    say(i)
+}
+```
+
+```
+1
+2
+3
+4
+5
+```
+
+Start bigger than the end and it counts down:
+
+```jr
+for i from 3 to 1 {
+    say(i)
+}
+```
+
+```
+3
+2
+1
+```
+
+`while` runs as long as the condition holds:
+
+```jr
+total = 0
+i = 1
+while i <= 10 {
+    total = total + i
+    i = i + 1
+}
+say(total)
+```
+
+```
+55
+```
+
+`break` stops a loop, `continue` skips one round:
+
+```jr
+for i from 1 to 6 {
+    if i == 3 {
+        continue
+    }
+    if i == 6 {
+        break
+    }
+    say(i)
+}
+```
+
+```
+1
+2
+4
+5
+```
+
+`for x in items` walks any list (or text, or dict keys):
+
+```jr
+for fruit in ["mango", "banana", "apple"] {
+    say("I like " + fruit)
+}
+```
+
+```
+I like mango
+I like banana
+I like apple
+```
+
+## 7. Lists
+
+```jr
+nums = [3, 1, 4, 1, 5]
+say(nums)
+say(nums[0])
+say(nums[2])
+say(len(nums))
+```
+
+```
+[3, 1, 4, 1, 5]
+3
+4
+5
+```
+
+Replace one item, or add to the end:
+
+```jr
+nums = [3, 1, 4, 1, 5]
+nums[1] = 99
+say(nums)
+push(nums, 7)
+say(nums)
+```
+
+```
+[3, 99, 4, 1, 5]
+[3, 99, 4, 1, 5, 7]
+```
+
+Slices cut out a piece — the end is not included, and they never crash:
+
+```jr
+letters = ["a", "b", "c", "d", "e"]
+say(letters[1:3])
+say(letters[:2])
+say(letters[3:])
+```
+
+```
+[b, c]
+[a, b]
+[d, e]
+```
+
+The list toolbox:
+
+```jr
+say(sorted([3, 1, 2]))
+say(reverse([1, 2, 3]))
+say(find([5, 7, 9], 9))
+say(count(["x", "y", "x"], "x"))
+say(9 in [5, 7, 9])
+```
+
+```
+[1, 2, 3]
+[3, 2, 1]
+2
+2
+true
+```
+
+Two habits worth copying: only `push` changes a list in place — `sorted`
+and `reverse` hand you a **new** list — and `find` answers `-1` when the
+item is not there (never a crash):
+
+```jr
+nums = [3, 1, 2]
+up = sorted(nums)
+say(nums)
+say(up)
+say(find([5, 7, 9], 99))
+```
+
+```
+[3, 1, 2]
+[1, 2, 3]
+-1
+```
+
+## 8. Dicts
+
+A dict maps keys to values. Keys are text or whole numbers:
+
+```jr
+person = {"name": "Aman", "age": 20}
+say(person)
+say(person["name"])
+say(person.age)
+say(len(person))
+```
+
+```
+{name: Aman, age: 20}
+Aman
+20
+2
+```
+
+Add or change keys with `d["key"] = value`:
+
+```jr
+person = {"name": "Aman", "age": 20}
+person["city"] = "Jaipur"
+person["age"] = 21
+say(person["city"])
+say(person)
+```
+
+```
+Jaipur
+{name: Aman, age: 21, city: Jaipur}
+```
+
+`for key in dict` walks the keys, in insertion order:
+
+```jr
+person = {"name": "Aman", "age": 21, "city": "Jaipur"}
+for key in person {
+    say(key + " = " + str(person[key]))
+}
+```
+
+```
+name = Aman
+age = 21
+city = Jaipur
+```
+
+`keys()` and `values()` turn a dict into lists:
+
+```jr
+person = {"name": "Aman", "age": 21, "city": "Jaipur"}
+say(keys({"a": 1, "b": 2}))
+say(values({"a": 1, "b": 2}))
+say("age" in person)
+```
+
+```
+[a, b]
+[1, 2]
+true
+```
+
+A missing key is a friendly error, not a mystery:
+
+```jr
+person = {"name": "Aman"}
+say(person["nope"])
+```
+
+```
+JuRu Error (line 2, col 12): key 'nope' was not found — this dict has: name
+```
+
+## 9. Text, one character at a time
+
+Text behaves like a list of characters — same indexing, same slices:
+
+```jr
+word = "hello"
+say(word[0])
+say(word[1:4])
+say(len(word))
+for ch in "ab" {
+    say(ch)
+}
+```
+
+```
+h
+ell
+5
+a
+b
+```
+
+## 10. funcs
+
+A func is a reusable piece with a name:
+
+```jr
+func add(a, b) {
+    return a + b
+}
+say(add(2, 3))
+say(add(10, -4))
+```
+
+```
+5
+6
+```
+
+funcs can print instead of return:
+
+```jr
+func greet(name) {
+    say("hello, " + name + "!")
+}
+greet("JuRu")
+greet("world")
+```
+
+```
+hello, JuRu!
+hello, world!
+```
+
+Recursion works — a func may call itself:
+
+```jr
+func factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+say(factorial(5))
+```
+
+```
+120
+```
+
+Scoping has one simple rule: **assignment inside a func is local**, reads
+walk outward:
+
+```jr
+secret = "global"
+func peek() {
+    return secret
+}
+say(peek())
+func hide() {
+    secret = "local"
+    return secret
+}
+say(hide())
+say(secret)
+```
+
+```
+global
+local
+global
+```
+
+## 11. The toolbox
+
+All the tools live in one flat set of 24 builtins. Text tools:
+
+```jr
+say(upper("juru"))
+say(lower("HELLO"))
+say(trim("  hi  "))
+say(replace("aaa", "a", "b"))
+say(split("a,b,c", ","))
+say(join([1, 2], "-"))
+```
+
+```
+JURU
+hello
+hi
+bbb
+[a, b, c]
+1-2
+```
+
+Math tools:
+
+```jr
+say(sum([3, 1, 4]))
+say(abs(-5))
+say(round(2.5))
+say(round(-2.5))
+say(sqrt(9))
+say(int(2.9))
+say(int("42"))
+say(str(2.5))
+say(min(3, 9))
+say(max(3, 9))
+```
+
+```
+8
+5
+3
+-3
+3.0
+2
+42
+2.5
+3
+9
+```
+
+Membership works on text, lists and dicts — and asks about **keys** on dicts:
+
+```jr
+say("ell" in "hello")
+say(7 in [1, 7, 9])
+say("age" in {"age": 20})
+say(5 not in [1, 2, 3])
+```
+
+```
+true
+true
+true
+true
+```
+
+## 12. Modules — code from another file
+
+Put funcs in a `.jr` file, import it, use its names:
+
+```jr
+import "examples/helpers.jr"
+say(helpers.double(21))
+say(helpers.magic)
+```
+
+```
+42
+42
+```
+
+A module runs exactly once, is checked before it runs, and sees nothing
+from the file that imports it.
+
+## 13. When something goes wrong
+
+Mistakes are normal — JuRu answers like a human, with the exact line and
+column, and usually a hint:
+
+```jr
+name = "JuRu"
+say(naame)
+```
+
+```
+JuRu Error (line 2, col 5): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
+```
+
+Out-of-range indexes are caught before they can hurt anything:
+
+```jr
+nums = [1, 2, 3]
+say(nums[7])
+```
+
+```
+JuRu Error (line 2, col 10): index 7 is out of range — this list has 3 items (0 to 2)
+```
+
+Math problems say what went wrong:
+
+```jr
+say(1 / 0)
+```
+
+```
+JuRu Error (line 1, col 7): cannot divide by zero (x / 0)
+```
+
+```jr
+say(sqrt(-1))
+```
+
+```
+JuRu Error (line 1, col 9): sqrt(-1) — a negative number has no square root
+```
+
+And the 24 builtins can never be shadowed by accident:
+
+```jr
+count = 5
+```
+
+```
+JuRu Error (line 1, col 1): 'count' is reserved (builtin) — pick another name
+```
+
+## 14. The templates gallery
+
+Every template is a small, complete program — copy one and make it yours:
+
+| Template | Start it with | What it teaches |
+|----------|---------------|-----------------|
+| `starter` | `python3 juru.py --new hello` | variables, loops, lists |
+| `calculator` | `python3 juru.py --new calc calculator` | `while` + `split` + input |
+| `quiz` | `python3 juru.py --new myquiz quiz` | lists + `ask` + scoring |
+| `guessing_game` | `python3 juru.py --new game guessing_game` | `random` + hints |
+| `word_stats` | `python3 juru.py --new stats word_stats` | `split` + `count` + `sorted` |
+
+## 15. Talking to your program: ask()
+
+`ask(...)` reads one line from the user. It is the only tool that waits:
+
+```jr
+name = ask("your name: ")
+say("nice to meet you, " + name + "!")
+```
+
+This block is interactive, so the test suite does not run it — but the
+`quiz` and `calculator` templates use `ask` end to end, and their full
+sessions are verified.
+
+## 16. The REPL — try ideas instantly
+
+Run `python3 repl.py`. Every entry runs against a shared environment, so
+names survive from line to line. Blocks may span lines — the `......>`
+prompt keeps going until the block closes, and a bare `cancel` line drops
+an open block:
+
+```text
+$ python3 repl.py
+JuRu 1.3 REPL — full English, easy like Python, secure like Rust.
+type 'exit' or press Ctrl-D to leave
+type 'cancel' or press Ctrl-C to drop an open block
+jruru> for x in [10, 20] {
+......>     say(x)
+......> }
+10
+20
+jruru> name = "JuRu"
+jruru> naame
+JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
+jruru> exit
+```
+
+## 17. Where to go next
+
+The `examples/` folder holds fifteen complete programs, every output
+verified by the test suite:
+
+```text
+demo.jr          patterns.jr      table.jr         funcs_demo.jr
+lists_demo.jr    game_demo.jr     advanced_demo.jr number_lab.jr
+algo_lab.jr      game_lab.jr      stdlib_demo.jr   mega_demo.jr
+dicts_demo.jr    helpers.jr       import_demo.jr
+```
+
+Read `docs/syntax.md` when you want the whole language on one page, and
+`design.md` when you want to know **why** it is built this way.
+
+## 18. Graduation project
+
+Everything from this tutorial in one small program — a word ranker:
+
+```jr
+text = "the cat saw the dog and the cat ran"
+words = split(text, " ")
+counts = {}
+for w in words {
+    counts[w] = count(words, w)
+}
+best = ""
+top = 0
+for w in keys(counts) {
+    if counts[w] > top {
+        top = counts[w]
+        best = w
+    }
+}
+say("total words: " + len(words))
+say("unique words: " + len(keys(counts)))
+say("winner: " + best + " (" + top + " times)")
+say(sorted(words))
+```
+
+```
+total words: 9
+unique words: 6
+winner: the (3 times)
+[and, cat, cat, dog, ran, saw, the, the, the]
+```
+
+If you can read that program, you can write JuRu. Welcome aboard —
+now go make something with `python3 juru.py --new myprogram`.

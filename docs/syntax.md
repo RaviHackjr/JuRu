@@ -3,6 +3,7 @@
 > **File extension: `.jr`** (like `.py` for Python, `.c` for C — ours is `.jr`)
 > **How to run:** `python3 juru.py program.jr`
 > **Try it live:** `python3 repl.py`
+> **Start from a template:** `python3 juru.py --new myprogram`
 >
 > The idea behind JuRu: code should feel like a **conversation in plain English**.
 > Only 19 keywords — and they cover everything.

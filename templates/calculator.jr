@@ -1,0 +1,37 @@
+# calculator.jr — a tiny talking calculator
+# run it:  python3 juru.py calculator.jr
+# type lines like  5 + 3  (or the word exit to stop)
+
+say("tiny calculator — type like 5 + 3, or exit")
+
+while true {
+    line = trim(ask("> "))
+    if line == "exit" {
+        break
+    }
+    parts = split(line, " ")
+    if len(parts) != 3 {
+        say("I need three parts, like 5 + 3")
+        continue
+    }
+    a = int(parts[0])
+    b = int(parts[2])
+    op = parts[1]
+    if op == "+" {
+        say("= " + (a + b))
+    } else if op == "-" {
+        say("= " + (a - b))
+    } else if op == "*" {
+        say("= " + (a * b))
+    } else if op == "/" {
+        if b == 0 {
+            say("cannot divide by zero")
+        } else {
+            say("= " + (a / b))
+        }
+    } else {
+        say("I know + - * / only")
+    }
+}
+
+say("bye!")

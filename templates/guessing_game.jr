@@ -1,0 +1,24 @@
+# guessing_game.jr — I pick a number 1..100, you get 7 tries
+# run it:  python3 juru.py guessing_game.jr
+
+secret = random(1, 100)
+tries = 0
+won = false
+
+while tries < 7 {
+    tries = tries + 1
+    guess = int(ask("guess " + tries + ": "))
+    if guess == secret {
+        say("got it in " + tries + " tries!")
+        won = true
+        break
+    } else if guess < secret {
+        say("higher")
+    } else {
+        say("lower")
+    }
+}
+
+if not won {
+    say("out of tries — it was " + secret)
+}

@@ -47,7 +47,7 @@ def lines_after_prompts(out):
 
 def t_banner_and_prompt():
     out = run_repl(["exit"])
-    assert "JuRu 1.2 REPL" in out, out
+    assert "JuRu 1.3 REPL" in out, out
     assert out.count("jruru> ") >= 1, out
 
 

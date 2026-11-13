@@ -25,6 +25,7 @@ from lexer import JuRuGalti, KEYWORDS
 from parser import parse_source
 from checker import check_source, BUILTINS, BUILTIN_ARITY, BUILTIN_HINT
 from interpreter import Interpreter
+from version import VERSION
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []
@@ -691,7 +692,7 @@ def t_repl_dict_import_torture():
         if ln:
             clean.append(ln)
     text = "\n".join(clean)
-    assert clean[0].startswith("JuRu 1.2 REPL"), out
+    assert clean[0].startswith("JuRu 1.3 REPL"), out
     assert "=> {a: 1, b: 2}" in clean, text
     assert "42" in clean, text
     assert "=> true" in clean, text
@@ -929,6 +930,99 @@ def t_repl_new_builtins_live():
     assert "1" in clean, text
 
 
+# ================================================================ batch 2: templates + tutorial
+def t_batch2_version_bump():
+    assert VERSION == "1.3"
+    from lexer import KEYWORDS
+    from checker import BUILTINS
+    assert len(KEYWORDS) == 19          # batch 2 added zero language surface
+    assert len(BUILTINS) == 24
+
+
+def t_templates_end_to_end():
+    """--new a quiz, feed it answers through the real CLI, exact output."""
+    import tempfile
+    d = tempfile.mkdtemp(prefix="juru_ult_")
+    made = subprocess.run(
+        [sys.executable, os.path.join(HERE, "juru.py"), "--new", "ultquiz", "quiz"],
+        capture_output=True, text=True, cwd=d, timeout=60,
+    )
+    assert made.returncode == 0, made.stdout + made.stderr
+    ran = subprocess.run(
+        [sys.executable, os.path.join(HERE, "juru.py"), os.path.join(d, "ultquiz.jr")],
+        input="4\nParis\n.jr\n", capture_output=True, text=True, cwd=d, timeout=60,
+    )
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    assert ran.stdout == (
+        "What is 2 + 2?\n"
+        "your answer: correct!\n"
+        "Capital of France?\n"
+        "your answer: correct!\n"
+        "JuRu files end with...?\n"
+        "your answer: correct!\n"
+        "score: 3/3\n"
+        "perfect!\n"
+    ), ran.stdout
+
+
+def t_new_refusal_gauntlet():
+    """Every wrong --new gets a friendly no, and nothing is created."""
+    import tempfile
+    d = tempfile.mkdtemp(prefix="juru_ult_")
+    cases = [
+        (["--new", "bad name"], "not a usable program name"),
+        (["--new", "1abc"], "not a usable program name"),
+        (["--new", "../escape"], "not a usable program name"),
+        (["--new", "x", "zzzzzz"], "no template 'zzzzzz'"),
+        (["--new", "x", "qiz"], "did you mean 'quiz'?"),
+    ]
+    for args, fragment in cases:
+        proc = subprocess.run(
+            [sys.executable, os.path.join(HERE, "juru.py")] + args,
+            capture_output=True, text=True, cwd=d, timeout=60,
+        )
+        assert proc.returncode == 1, (args, proc.stdout)
+        assert fragment in proc.stdout, (args, proc.stdout)
+    assert os.listdir(d) == [], "refused --new calls must create nothing"
+
+
+def t_templates_listing_complete():
+    proc = subprocess.run(
+        [sys.executable, "juru.py", "--templates"],
+        capture_output=True, text=True, cwd=HERE, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    for name in ("starter", "calculator", "quiz", "guessing_game", "word_stats"):
+        assert name in proc.stdout, name
+
+
+def t_tutorial_graduation_program():
+    """The tutorial's final program, run straight from the markdown."""
+    import re
+    with open(os.path.join(HERE, "docs", "tutorial.md"), encoding="utf-8") as f:
+        text = f.read()
+    blocks = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        if lines[i].strip() == "```jr":
+            body = []
+            i += 1
+            while i < len(lines) and lines[i].strip() != "```":
+                body.append(lines[i])
+                i += 1
+            blocks.append("\n".join(body))
+        i += 1
+    graduation = blocks[-1]
+    assert "counts" in graduation and "winner" in graduation, "graduation block lost"
+    assert run(graduation) == (
+        "total words: 9\n"
+        "unique words: 6\n"
+        "winner: the (3 times)\n"
+        "[and, cat, cat, dog, ran, saw, the, the, the]\n"
+    )
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -960,6 +1054,11 @@ ALL = [
     ("REPL torture: dicts + import + recovery", t_repl_dict_import_torture),
     ("REPL multi-line session (blocks + recovery)", t_repl_multiline_session),
     ("REPL: the 6 new tools live", t_repl_new_builtins_live),
+    ("batch 2: version 1.3, language untouched", t_batch2_version_bump),
+    ("batch 2: --new quiz end-to-end via CLI", t_templates_end_to_end),
+    ("batch 2: --new refusal gauntlet", t_new_refusal_gauntlet),
+    ("batch 2: --templates listing complete", t_templates_listing_complete),
+    ("batch 2: tutorial graduation program", t_tutorial_graduation_program),
 ]
 
 if __name__ == "__main__":
