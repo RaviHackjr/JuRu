@@ -315,9 +315,26 @@ say(9 in [5, 7, 9])
 true
 ```
 
-Two habits worth copying: only `push` changes a list in place — `sorted`
-and `reverse` hand you a **new** list — and `find` answers `-1` when the
-item is not there (never a crash):
+`pop(list)` removes the last item **and** hands it back — the counterpart
+of `push`. Together they make a stack:
+
+```jr
+stack = ["a", "b", "c"]
+say(pop(stack))
+say(stack)
+push(stack, "z")
+say(stack)
+```
+
+```
+c
+[a, b]
+[a, b, z]
+```
+
+Two habits worth copying: only `push` and `pop` change a list in place —
+`sorted` and `reverse` hand you a **new** list — and `find` answers `-1`
+when the item is not there (never a crash):
 
 ```jr
 nums = [3, 1, 2]
@@ -503,7 +520,7 @@ global
 
 ## 11. The toolbox
 
-All the tools live in one flat set of 24 builtins. Text tools:
+All the tools live in one flat set of 28 builtins. Text tools:
 
 ```jr
 say(upper("juru"))
@@ -531,8 +548,11 @@ say(abs(-5))
 say(round(2.5))
 say(round(-2.5))
 say(sqrt(9))
+say(pow(2, 10))
+say(pow(9, 0.5))
 say(int(2.9))
 say(int("42"))
+say(float("3.5"))
 say(str(2.5))
 say(min(3, 9))
 say(max(3, 9))
@@ -544,12 +564,20 @@ say(max(3, 9))
 3
 -3
 3.0
+1024
+3.0
 2
 42
+3.5
 2.5
 3
 9
 ```
+
+`pow(a, b)` raises to a power (no `**` to memorize) and refuses impossible
+math in words — `pow(0, -1)` and `pow(-2, 0.5)` each get a one-line
+explanation, never a crash. `float(x)` is the other half of `int(x)`: it
+turns text (or a whole number) into a decimal.
 
 Membership works on text, lists and dicts — and asks about **keys** on dicts:
 
@@ -628,7 +656,7 @@ say(sqrt(-1))
 JuRu Error (line 1, col 9): sqrt(-1) — a negative number has no square root
 ```
 
-And the 24 builtins can never be shadowed by accident:
+And the 28 builtins can never be shadowed by accident:
 
 ```jr
 count = 5
@@ -663,6 +691,53 @@ This block is interactive, so the test suite does not run it — but the
 `quiz` and `calculator` templates use `ask` end to end, and their full
 sessions are verified.
 
+Whatever the user types arrives as **text**. `ask()` never converts for
+you — you decide, with `int()`, `float()` and a guard first. The pattern
+from the `calculator` template, in three steps:
+
+```jr
+age = ask("your age: ")        # text, even if they typed digits
+if trim(age) == "" {
+    say("please type something")
+} else if type(age) == "text" and "." in age {
+    say(float(age) + 1)        # "3.5" → 4.5
+} else {
+    say(int(age) + 1)          # "3" → 4
+}
+```
+
+The same logic with a preset value, so you can see both branches pass:
+
+```jr
+raw = "3.5"
+if trim(raw) == "" {
+    say("empty")
+} else if "." in raw {
+    say(float(raw) * 2)
+} else {
+    say(int(raw) * 2)
+}
+
+raw = "7"
+if trim(raw) == "" {
+    say("empty")
+} else if "." in raw {
+    say(float(raw) * 2)
+} else {
+    say(int(raw) * 2)
+}
+```
+
+```
+7.0
+14
+```
+
+If the user types something that is not a number, `int()` and `float()`
+say exactly that — `float('abc') — 'abc' is not a number` — with the line
+and column, and the program stops there. That is the honest behaviour:
+never guess, never continue with a wrong value.
+
 ## 16. The REPL — try ideas instantly
 
 Run `python3 repl.py`. Every entry runs against a shared environment, so
@@ -672,7 +747,7 @@ an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.3 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.4 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
 jruru> for x in [10, 20] {

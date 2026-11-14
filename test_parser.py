@@ -2,10 +2,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import Lexer, JuRuGalti, KEYWORDS
-from parser import Parser, Program, dump, parse_source
+from juru.lexer import Lexer, JuRuGalti, KEYWORDS
+from juru.parser import Parser, Program, dump, parse_source
 
 RESULTS = []
 

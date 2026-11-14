@@ -15,12 +15,12 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import JuRuGalti
-from parser import parse_source
-from checker import check_source
-from interpreter import Interpreter
+from juru.lexer import JuRuGalti
+from juru.parser import parse_source
+from juru.checker import check_source
+from juru.interpreter import Interpreter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []

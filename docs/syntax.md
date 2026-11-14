@@ -232,7 +232,7 @@ if "y" in word { say("yes") }
 - membership uses the normal equality rules (`1 in [1.0]` → `true`,
   `true in [1]` → `false`)
 
-## 14. Builtins — the 24-tool toolbox
+## 14. Builtins — the 28-tool toolbox
 
 The classics:
 ```
@@ -258,7 +258,12 @@ max(3, 9)         # 9
 nums = [1, 2]
 push(nums, 3)
 say(nums)         # [1, 2, 3]  ← the list itself changed
+say(pop(nums))    # 3          ← takes the last item OUT (and hands it back)
+say(nums)         # [1, 2]
 ```
+
+`pop()` on an empty list is refused in words:
+`pop() — this list is empty, there is nothing to take`.
 
 The Step 6 string + math tools:
 ```
@@ -273,6 +278,25 @@ random(1, 6)              # a whole number 1..6, both ends included
 sqrt(9)                   # 3.0
 ```
 
+The Step 12 input + math wave (zero new keywords):
+```
+float("3.5")    # 3.5        ← text → decimal (the other half of int())
+float(5)        # 5.0        ← whole → decimal
+pow(2, 10)      # 1024       ← exponents, no ** to memorize
+pow(2, -2)      # 0.25
+pow(9, 0.5)     # 3.0
+type(5)         # int        ← one word: int, float, text, bool, null,
+type("hi")      # text         list, dict, func, module
+```
+
+Guards that talk like a human (pow refuses impossible math BEFORE doing it):
+- `float("abc")` → `float('abc') — 'abc' is not a number`
+- `pow("2", 3)` → `pow() needs numbers — got: text and int`
+- `pow(0, -1)` → `in pow(a, b), 0 cannot be raised to a negative power`
+- `pow(-2, 0.5)` → `in pow(a, b), a negative base needs a whole-number exponent (got: 0.5)`
+- `pow(2, 99999)` → `pow(2, 99999) — the result is too big to show`
+- `pop(5)` → `pop() needs a list — got: 5`
+
 The Step 9 list + dict tools (zero new keywords):
 ```
 sorted([3, 1, 2])        # [1, 2, 3]  ← a NEW list; numbers OR text only
@@ -284,8 +308,8 @@ values({"a": 1, "b": 2}) # [1, 2]     ← the values, in insertion order
 count(["x", "y", "x"], "x")  # 2      ← how many times (same rules as ==)
 ```
 
-Easy to remember: only `push` changes a list in place — `sorted` and
-`reverse` hand you a fresh list and leave your original alone.
+Easy to remember: only `push` and `pop` change a list in place — `sorted`
+and `reverse` hand you a fresh list and leave your original alone.
 
 Guards that talk like a human:
 - `split("a", "")` → `the split separator cannot be empty`
@@ -297,7 +321,7 @@ Guards that talk like a human:
 - `keys([1])` → `keys() needs a dict — got: [1]`
 - `count(5, 1)` → `count() needs a list first — got: 5`
 
-All 24 are **reserved** — no variable or func can take their name, and both
+All 28 are **reserved** — no variable or func can take their name, and both
 the checker and the interpreter print the same argument-count message:
 `push(list, item) takes exactly 2 arguments`.
 
@@ -390,12 +414,12 @@ Tip: `python3 checker.py file.jr` checks a file without running it.
 - Every list index **bounds-checked** (no memory-safe escape hatches)
 - **Runaway protection** — a loop over 10,000,000 steps stops itself
 - Short-circuit logic — wrong order still never crashes
-- Reserved builtins — the 24-tool toolbox can never be overwritten
+- Reserved builtins — the 28-tool toolbox can never be overwritten
 - Dict keys are guarded; missing keys are errors, not `null`
 - Modules are isolated and checked; import loops are detected
 - Friendly type checks at runtime, with line/col on every error
 
-## 20. The 19 keywords + 24 builtins
+## 20. The 19 keywords + 28 builtins
 
 ```
 say  if  else  while  for  from  to  in
@@ -404,9 +428,10 @@ true  false  null  and  or  not
 import
 ```
 ```
-ask( )   len( )    int( )     upper( )   lower( )   str( )
-push( )  sum( )    min( )     max( )
+ask( )   len( )    int( )     float( )   upper( )   lower( )   str( )
+push( )  pop( )    sum( )     min( )     max( )
 split( ) join( )   trim( )    replace( )
 abs( )   round( )  random( )  sqrt( )
 sorted( )  reverse( )  find( )  keys( )  values( )  count( )
+pow( )  type( )
 ```

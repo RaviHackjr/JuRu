@@ -15,7 +15,7 @@ How to run:
     python3 parser.py file.jr   # show the AST tree
 """
 
-from lexer import (
+from .lexer import (
     Lexer, JuRuGalti, KEYWORDS,
     NUMBER, TEXT, NAME, KEYWORD, OPERATOR, NEWLINE, EOF,
 )

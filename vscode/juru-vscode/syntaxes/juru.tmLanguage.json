@@ -1,0 +1,86 @@
+{
+  "name": "JuRu",
+  "scopeName": "source.juru",
+  "comment": "Syntax highlighting for JuRu (.jr) — the easy, secure programming language. https://github.com/RaviHackjr/JuRu",
+  "fileTypes": [
+    "jr"
+  ],
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#number"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#builtin"
+    },
+    {
+      "include": "#constant"
+    },
+    {
+      "include": "#operator"
+    },
+    {
+      "include": "#punctuation"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "comment": "Comments start with # and run to the end of the line.",
+      "match": "#[^\\n]*",
+      "name": "comment.line.number-sign.juru"
+    },
+    "string": {
+      "comment": "Text is always in double quotes.",
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.juru",
+      "patterns": [
+        {
+          "match": "\\\\[\\\\\"nrte]",
+          "name": "constant.character.escape.juru"
+        }
+      ]
+    },
+    "number": {
+      "comment": "Whole numbers and decimals.",
+      "match": "\\b([0-9]+\\.[0-9]+|[0-9]+)\\b",
+      "name": "constant.numeric.juru"
+    },
+    "keywords": {
+      "comment": "The 19 keywords — must match juru.lexer KEYWORDS exactly (a test enforces it).",
+      "match": "\\b(and|break|continue|else|false|for|from|func|if|import|in|not|null|or|return|say|to|true|while)\\b",
+      "name": "keyword.control.juru"
+    },
+    "builtin": {
+      "comment": "The 28 builtins — the flat toolbox.",
+      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type)\\b",
+      "name": "support.function.builtin.juru"
+    },
+    "constant": {
+      "comment": "Module names after import, and user names being defined.",
+      "match": "\\b(func)\\s+([A-Za-z_][A-Za-z0-9_]*)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.juru" },
+        "2": { "name": "entity.name.function.juru" }
+      }
+    },
+    "operator": {
+      "comment": "Arithmetic, comparison, assignment.",
+      "match": "(==|!=|<=|>=|\\+|\\-|\\*|/|%|=|<|>)",
+      "name": "keyword.operator.juru"
+    },
+    "punctuation": {
+      "comment": "Blocks, calls, lists, dicts, slices.",
+      "match": "[{}()\\[\\],:.]",
+      "name": "punctuation.juru"
+    }
+  }
+}

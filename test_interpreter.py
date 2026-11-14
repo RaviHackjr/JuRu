@@ -7,10 +7,10 @@ import os
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import JuRuGalti
-from interpreter import run_source
+from juru.lexer import JuRuGalti
+from juru.interpreter import run_source
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []

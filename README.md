@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 24 builtins · 5 templates · 15 examples · 542 tests green · version 1.3 (see version.py) · MIT`
+`19 keywords · 28 builtins · 5 templates · 15 examples · 577 tests green · version 1.4 (see version.py) · MIT`
 
 ---
 
@@ -48,7 +48,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.3 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.4 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
 jruru> 1 + 2
@@ -140,17 +140,19 @@ and   or    not     import
 `else if` is two words. Blocks are `{ }` — no indentation headaches.
 One statement per line; comments start with `#`.
 
-## Builtins (24 — all reserved names)
+## Builtins (28 — all reserved names)
 
 | Builtin | Does |
 |---------|------|
 | `ask(prompt)` | read a line from the user |
 | `len(x)` | length of text, a list, or a dict |
 | `int(x)` | text/float → whole number (`int("42")` → `42`, `int(2.9)` → `2`) |
+| `float(x)` | text/int → decimal (`float("3.5")` → `3.5`, `float(5)` → `5.0`) |
 | `upper(x)` | text → CAPITALS |
 | `lower(x)` | text → lowercase |
 | `str(x)` | anything → text (`str(2.5)` → `"2.5"`) |
 | `push(list, item)` | append in place, returns the list |
+| `pop(list)` | remove and return the last item, in place (empty → friendly error) |
 | `sum(list)` | add the numbers (empty list → `0`) |
 | `min(a, b)` / `max(a, b)` | the smaller / bigger number |
 | `split(text, sep)` | text → list (`split("a,b", ",")` → `[a, b]`) |
@@ -167,10 +169,13 @@ One statement per line; comments start with `#`.
 | `keys(dict)` | the dict's keys as a list, in insertion order |
 | `values(dict)` | the dict's values as a list, in insertion order |
 | `count(list, item)` | how many times the item appears (deep equality) |
+| `pow(a, b)` | exponents without `**` (`pow(2, 10)` → `1024`); impossible math is refused in words |
+| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `func`, `module` |
 
-Only `push` changes a list in place — `sorted` and `reverse` hand you a fresh
-list and leave the original alone. No new keywords were added for these six:
-the language stays 19 keywords big.
+Only `push` and `pop` change a list in place — `sorted` and `reverse` hand
+you a fresh list and leave the original alone. Wave 3 (`float`, `pow`,
+`pop`, `type`) added **zero** new keywords: the language stays 19 keywords
+big.
 
 ## Templates — start in one command
 
@@ -185,7 +190,7 @@ python3 juru.py --templates                # list them all
 | Template | Start it with | What it teaches |
 |----------|---------------|-----------------|
 | `starter` | `--new hello` | variables, loops, lists |
-| `calculator` | `--new calc calculator` | `while` + `split` + input |
+| `calculator` | `--new calc calculator` | `while` + `split` + `int`/`float` + input |
 | `quiz` | `--new myquiz quiz` | lists + `ask` + scoring |
 | `guessing_game` | `--new game guessing_game` | `random` + hints |
 | `word_stats` | `--new stats word_stats` | `split` + `count` + `sorted` |
@@ -217,12 +222,14 @@ every refusal is a friendly, one-line explanation. The new tutorial
 ## How it works (the pipeline, all connected)
 
 ```
-.jr file → lexer.py → parser.py → checker.py → interpreter.py → output
-              tokens      AST         semantic         runs your code
-                                        ok?
+.jr file → lexer → parser → checker → interpreter → output
+            tokens    AST      semantic    runs your code
+                               ok?
 
-repl.py      same pipeline, one line at a time, one shared environment
+repl        same pipeline, one line at a time, one shared environment
 ```
+
+(all in the `src/juru/` package; the root launchers wire it up)
 
 - **lexer** — text → tokens (unicode names welcome, Devanagari included)
 - **parser** — tokens → AST + parse-time safety (`break` outside a loop dies here)
@@ -232,7 +239,38 @@ repl.py      same pipeline, one line at a time, one shared environment
 - **interpreter** — runs the AST with guards: bounds checks, runaway-loop
   protection, short-circuit logic, friendly recursion limits
 
-## Tests — 542, all green
+## Install it (pip)
+
+The whole language is a pip package — `src/juru/`, one flat namespace:
+
+```bash
+pip install juru            # from a release
+juru --version              # JuRu 1.4
+juru --new hello            # starter template
+juru hello.jr               # run it
+juru repl                   # try ideas live
+```
+
+From a clone, nothing changes: `python3 juru.py program.jr`,
+`python3 repl.py` and `python3 checker.py file.jr` all still work — they
+are thin launchers into the same package.
+
+## VS Code (official, ready to load)
+
+Syntax highlighting (all 19 keywords + 28 builtins), snippets, brackets and
+folding — the extension lives at `vscode/juru-vscode/` and its keyword list
+is test-enforced against the language. Load it in two minutes:
+
+```bash
+cd vscode/juru-vscode
+npx --yes @vscode/vsce package --no-dependencies
+code --install-extension juru-vscode-1.4.0.vsix
+```
+
+Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
+Marketplace upload is a later, separate step.)
+
+## Tests — 577, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -247,29 +285,31 @@ python3 test_step6.py         # 46   (dicts, for-in, in/not-in, slices, strings,
 python3 test_step7.py         # 17   (modules: import, run-once, loops, isolation)
 python3 test_step8.py         # 19   (did-you-mean + the multi-line REPL)
 python3 test_step9.py         # 23   (sorted/reverse/find/keys/values/count)
+python3 test_step12.py        # 22   (float/pow/pop/type + all their guards)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
-python3 test_ultimate.py      # 34   (steps 1–11 combined, no mercy)
+python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
+python3 test_ultimate.py      # 38   (steps 1–14 combined, no mercy)
 ```
 
 ## Project structure
 
 ```
 JuRu/
-├── lexer.py            # source → tokens
-├── parser.py           # tokens → AST (+ dump() for the S-expression view)
-├── checker.py          # semantic checks (runs before anything executes)
-├── interpreter.py      # the runner + the stdlib + modules
-├── juru.py             # the CLI runner (wires the whole pipeline)
-├── repl.py             # the interactive REPL
-├── version.py          # the single place the version lives
-├── templates/          # 5 ready-made starter programs (--new copies them)
+├── juru.py             # thin launcher → src/juru/cli.py (run/--new/repl)
+├── repl.py             # thin launcher → src/juru/repl.py
+├── checker.py          # thin launcher → src/juru/checker.py (check a file)
+├── pyproject.toml      # pip packaging (pip install juru)
+├── src/juru/           # the package: lexer, parser, checker, interpreter,
+│                       #   cli, repl, version + templates/ (5 starters)
+├── vscode/juru-vscode/  # the official VS Code extension (prepare-only)
 ├── design.md           # the full design document
 ├── docs/tutorial.md    # learn JuRu in one sitting (test-verified)
 ├── docs/syntax.md      # the A to Z cheat sheet
+├── docs/vscode.md      # load the extension in 2 minutes
 ├── logo/juru_icon.svg  # the language icon (orange → red ruby + braces)
 ├── examples/           # 15 verified demo programs
-├── test_*.py           # 15 test suites, 542 tests
+├── test_*.py           # 17 test suites, 577 tests
 └── LICENSE             # MIT
 ```
 

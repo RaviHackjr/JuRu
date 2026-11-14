@@ -1,8 +1,8 @@
 # calculator.jr — a tiny talking calculator
 # run it:  python3 juru.py calculator.jr
-# type lines like  5 + 3  (or the word exit to stop)
+# type lines like  5 + 3  or  2.5 * 2  (or the word exit to stop)
 
-say("tiny calculator — type like 5 + 3, or exit")
+say("tiny calculator — type like 5 + 3 or 2.5 * 2, or exit")
 
 while true {
     line = trim(ask("> "))
@@ -14,8 +14,16 @@ while true {
         say("I need three parts, like 5 + 3")
         continue
     }
-    a = int(parts[0])
-    b = int(parts[2])
+    if "." in parts[0] {
+        a = float(parts[0])
+    } else {
+        a = int(parts[0])
+    }
+    if "." in parts[2] {
+        b = float(parts[2])
+    } else {
+        b = int(parts[2])
+    }
     op = parts[1]
     if op == "+" {
         say("= " + (a + b))

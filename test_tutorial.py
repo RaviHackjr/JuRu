@@ -8,7 +8,7 @@ docs/tutorial.md is executable documentation. Rules enforced here:
   - a ```jr block with NO output block must print NOTHING
   - a ```jr block containing ask() is interactive: checker-only, and it
     must NOT be paired with an output block
-  - the tutorial must mention all 19 keywords, all 24 builtins and every
+  - the tutorial must mention all 19 keywords, all 28 builtins and every
     example file (docs stay in sync with the language)
 """
 import os
@@ -17,12 +17,12 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import JuRuGalti, KEYWORDS
-from checker import check_source, BUILTINS
-from interpreter import Interpreter
-from version import VERSION
+from juru.lexer import JuRuGalti, KEYWORDS
+from juru.checker import check_source, BUILTINS
+from juru.interpreter import Interpreter
+from juru.version import VERSION
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TUTORIAL = os.path.join(HERE, "docs", "tutorial.md")
@@ -210,7 +210,7 @@ def t_all_examples_mentioned():
 def t_all_templates_mentioned():
     text = tutorial_text()
     names = sorted(name[:-3] for name in
-                   os.listdir(os.path.join(HERE, "templates"))
+                   os.listdir(os.path.join(HERE, "src", "juru", "templates"))
                    if name.endswith(".jr"))
     for name in names:
         assert name in text, "template missing from the tutorial: " + name
@@ -250,7 +250,7 @@ ALL = [
     ("ask() blocks are checker-only", t_ask_blocks_are_checker_only),
     ("every ```jr block falls in a verified bucket", t_no_stray_jr_blocks_unverified),
     ("all 19 keywords mentioned", t_all_keywords_mentioned),
-    ("all 24 builtins mentioned", t_all_builtins_mentioned),
+    ("all 28 builtins mentioned", t_all_builtins_mentioned),
     ("all 15 examples mentioned", t_all_examples_mentioned),
     ("all 5 templates mentioned", t_all_templates_mentioned),
     ("version banner current", t_version_mentioned),

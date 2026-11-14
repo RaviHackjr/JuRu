@@ -2,9 +2,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import (
+from juru.lexer import (
     Lexer, JuRuGalti,
     NUMBER, TEXT, NAME, KEYWORD, OPERATOR, NEWLINE, EOF, KEYWORDS,
 )

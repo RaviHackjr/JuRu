@@ -15,10 +15,10 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from checker import check_source
-from version import VERSION
+from juru.checker import check_source
+from juru.version import VERSION
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JURU = os.path.join(HERE, "juru.py")
@@ -52,7 +52,7 @@ def in_sandbox():
 
 def template_names():
     return sorted(
-        name[:-3] for name in os.listdir(os.path.join(HERE, "templates"))
+        name[:-3] for name in os.listdir(os.path.join(HERE, "src", "juru", "templates"))
         if name.endswith(".jr")
     )
 
@@ -77,8 +77,9 @@ the appears 3 time(s)
 no 'zebra' in there: true
 """
 
-EXPECTED_CALCULATOR = """tiny calculator — type like 5 + 3, or exit
+EXPECTED_CALCULATOR = """tiny calculator — type like 5 + 3 or 2.5 * 2, or exit
 > = 8
+> = 5.0
 > = 2.5
 > = 81
 > cannot divide by zero
@@ -107,7 +108,7 @@ def t_five_templates_exist():
 
 def t_every_template_is_valid():
     for name in template_names():
-        path = os.path.join(HERE, "templates", name + ".jr")
+        path = os.path.join(HERE, "src", "juru", "templates", name + ".jr")
         with open(path, encoding="utf-8") as f:
             src = f.read()
         check_source(src)           # raises on any semantic mistake
@@ -123,42 +124,42 @@ def t_templates_listing():
 
 # ------------------------------------------------------------------ deterministic templates
 def t_starter_exact():
-    proc = cli([os.path.join("templates", "starter.jr")])
+    proc = cli([os.path.join("src", "juru", "templates", "starter.jr")])
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout == EXPECTED_STARTER, proc.stdout
 
 
 def t_word_stats_exact():
-    proc = cli([os.path.join("templates", "word_stats.jr")])
+    proc = cli([os.path.join("src", "juru", "templates", "word_stats.jr")])
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout == EXPECTED_WORD_STATS, proc.stdout
 
 
 # ------------------------------------------------------------------ interactive templates
 def t_calculator_session():
-    proc = cli([os.path.join("templates", "calculator.jr")],
-               input_text="5 + 3\n10 / 4\n9 * 9\n7 / 0\n5 x 2\nabc\nexit\n")
+    proc = cli([os.path.join("src", "juru", "templates", "calculator.jr")],
+               input_text="5 + 3\n2.5 * 2\n10 / 4\n9 * 9\n7 / 0\n5 x 2\nabc\nexit\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout == EXPECTED_CALCULATOR, proc.stdout
 
 
 def t_calculator_eof_is_friendly():
     """Input ends mid-session — never 'a bug, not your fault'."""
-    proc = cli([os.path.join("templates", "calculator.jr")], input_text="5 + 3\n")
+    proc = cli([os.path.join("src", "juru", "templates", "calculator.jr")], input_text="5 + 3\n")
     assert proc.returncode == 1
     assert "ask() could not read any more input" in proc.stdout, proc.stdout
     assert "not your fault" not in proc.stdout, proc.stdout
 
 
 def t_quiz_session():
-    proc = cli([os.path.join("templates", "quiz.jr")],
+    proc = cli([os.path.join("src", "juru", "templates", "quiz.jr")],
                input_text="4\nParis\n.jr\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout == EXPECTED_QUIZ, proc.stdout
 
 
 def t_quiz_wrong_answers():
-    proc = cli([os.path.join("templates", "quiz.jr")],
+    proc = cli([os.path.join("src", "juru", "templates", "quiz.jr")],
                input_text="5\nBerlin\npy\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "nope — it was 4" in proc.stdout
@@ -168,7 +169,7 @@ def t_quiz_wrong_answers():
 
 def t_guessing_game_always_ends():
     """Seven honest guesses of 50: the game must end either way."""
-    proc = cli([os.path.join("templates", "guessing_game.jr")],
+    proc = cli([os.path.join("src", "juru", "templates", "guessing_game.jr")],
                input_text="50\n" * 7)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "guess 7: " in proc.stdout, proc.stdout
@@ -180,7 +181,7 @@ def t_guessing_game_shape_is_sound():
     """Whatever the secret: rounds are prompts with a hint riding along
     ('guess 3: lower'), and the game ends with exactly ONE win/reveal line
     whose round number matches the rounds actually played."""
-    proc = cli([os.path.join("templates", "guessing_game.jr")],
+    proc = cli([os.path.join("src", "juru", "templates", "guessing_game.jr")],
                input_text="50\n25\n75\n12\n88\n6\n94\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     lines = [ln for ln in proc.stdout.splitlines() if ln]
@@ -204,7 +205,7 @@ def t_new_default_is_starter():
     assert proc.returncode == 0, proc.stdout + proc.stderr
     with open(os.path.join(d, "hello.jr"), encoding="utf-8") as f:
         made = f.read()
-    with open(os.path.join(HERE, "templates", "starter.jr"), encoding="utf-8") as f:
+    with open(os.path.join(HERE, "src", "juru", "templates", "starter.jr"), encoding="utf-8") as f:
         original = f.read()
     assert made == original, "the copy must be exact"
     assert "created hello.jr from the 'starter' template" in proc.stdout
@@ -295,16 +296,19 @@ def t_no_args_shows_usage():
 
 def t_templates_manifest_in_sync():
     """The manifest in juru.py and the files in templates/ must agree."""
-    import juru as cli_module
+    from juru import cli as cli_module
     assert sorted(cli_module.TEMPLATES) == template_names(), cli_module.TEMPLATES
 
 
 def t_language_untouched_by_batch2():
-    """Templates add zero language surface: 19 keywords, 24 builtins."""
-    from lexer import KEYWORDS
-    from checker import BUILTINS
+    """Templates added zero language surface; batch 3 added exactly 4 builtins
+    (float, pow, pop, type) and zero keywords: 19 keywords, 28 builtins."""
+    from juru.lexer import KEYWORDS
+    from juru.checker import BUILTINS
     assert len(KEYWORDS) == 19
-    assert len(BUILTINS) == 24
+    assert len(BUILTINS) == 28
+    for name in ("float", "pow", "pop", "type"):
+        assert name in BUILTINS
 
 
 ALL = [

@@ -10,12 +10,12 @@ changes a list in place. find misses with -1, never a crash.
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import JuRuGalti, KEYWORDS
-from parser import parse_source
-from checker import check_source
-from interpreter import Interpreter
+from juru.lexer import JuRuGalti, KEYWORDS
+from juru.parser import parse_source
+from juru.checker import check_source
+from juru.interpreter import Interpreter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []
@@ -81,7 +81,7 @@ def t_sorted_text():
 
 
 def t_sorted_is_pure():
-    """The original list stays untouched — only push changes a list."""
+    """The original list stays untouched — only push and pop change a list."""
     assert run(
         "nums = [3, 1, 2]\n"
         "up = sorted(nums)\n"

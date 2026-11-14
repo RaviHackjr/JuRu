@@ -21,18 +21,20 @@ import builtins
 import os
 import random as _random
 
-from lexer import JuRuGalti
-from parser import (
+from .lexer import JuRuGalti
+from .parser import (
     Program, Num, Text, Bool, Null, Name, ListLit, DictLit, BinOp, UnaryOp,
     Call, Index, Member, Assign, SetIndex, ExprSt, Say, If, While, For,
     FuncDef, Return, Import, Break, Continue,
     parse_source,
 )
-from checker import check_source, did_you_mean
+from .checker import check_source, did_you_mean
 
-BUILTINS = ("ask", "len", "int", "upper", "lower", "str", "push", "sum", "min", "max",
+BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop",
+            "sum", "min", "max",
             "split", "join", "trim", "replace", "abs", "round", "random", "sqrt",
-            "sorted", "reverse", "find", "keys", "values", "count")
+            "sorted", "reverse", "find", "keys", "values", "count",
+            "pow", "type")
 MAX_LOOP_STEPS = 10_000_000        # runaway loop protection
 
 
@@ -834,11 +836,71 @@ class Interpreter:
                 raise JuRuGalti(e.line, e.col,
                                 "count() needs a list first — got: {}".format(display(lst)))
             return sum(1 for x in lst if self._equals(x, target))
+        # float(x)
+        if name == "float":
+            if len(e.args) != 1:
+                raise JuRuGalti(e.line, e.col, "float(x) takes exactly 1 argument")
+            v = self.eval(e.args[0], env)
+            if isinstance(v, bool) or v is None or isinstance(
+                    v, (list, dict, FuncValue, ModuleValue)):
+                raise JuRuGalti(e.line, e.col,
+                                "float({}) — this cannot be converted to float".format(display(v)))
+            if isinstance(v, (int, float)):
+                return float(v)
+            try:
+                return float(v.strip())
+            except ValueError:
+                raise JuRuGalti(e.line, e.col,
+                                "float('{}') — '{}' is not a number".format(v, v))
+        # pow(a, b)
+        if name == "pow":
+            if len(e.args) != 2:
+                raise JuRuGalti(e.line, e.col, "pow(a, b) takes exactly 2 arguments")
+            a = self.eval(e.args[0], env)
+            b = self.eval(e.args[1], env)
+            if not _is_num(a) or not _is_num(b):
+                raise JuRuGalti(e.line, e.col,
+                                "pow() needs numbers — got: {} and {}".format(
+                                    _typename(a), _typename(b)))
+            if a == 0 and b < 0:
+                raise JuRuGalti(e.line, e.col,
+                                "in pow(a, b), 0 cannot be raised to a negative power")
+            if a < 0 and b != int(b):
+                raise JuRuGalti(e.line, e.col,
+                                "in pow(a, b), a negative base needs a whole-number "
+                                "exponent (got: {})".format(display(b)))
+            if isinstance(a, int) and isinstance(b, int) \
+                    and abs(b) > 10000 and abs(a) > 1:
+                raise JuRuGalti(e.line, e.col,
+                                "pow({}, {}) — the result is too big to show".format(
+                                    display(a), display(b)))
+            try:
+                return a ** b
+            except OverflowError:
+                raise JuRuGalti(e.line, e.col, "pow(...) — the result is too big to show")
+        # pop(list) — remove and return the last item, in place
+        if name == "pop":
+            if len(e.args) != 1:
+                raise JuRuGalti(e.line, e.col, "pop(list) takes exactly 1 argument")
+            lst = self.eval(e.args[0], env)
+            if not isinstance(lst, list):
+                raise JuRuGalti(e.line, e.col,
+                                "pop() needs a list — got: {}".format(display(lst)))
+            if not lst:
+                raise JuRuGalti(e.line, e.col,
+                                "pop() — this list is empty, there is nothing to take")
+            return lst.pop()
+        # type(x)
+        if name == "type":
+            if len(e.args) != 1:
+                raise JuRuGalti(e.line, e.col, "type(x) takes exactly 1 argument")
+            return _typename(self.eval(e.args[0], env))
         # int(x)
         if len(e.args) != 1:
             raise JuRuGalti(e.line, e.col, "int(x) takes exactly 1 argument")
         v = self.eval(e.args[0], env)
-        if isinstance(v, bool) or v is None or isinstance(v, (list, dict, FuncValue)):
+        if isinstance(v, bool) or v is None or isinstance(
+                v, (list, dict, FuncValue, ModuleValue)):
             raise JuRuGalti(e.line, e.col,
                             "int({}) — this cannot be converted to int".format(display(v)))
         if isinstance(v, int):

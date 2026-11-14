@@ -1,0 +1,72 @@
+{
+  "if block": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition} {",
+      "\t$2",
+      "} else {",
+      "\t$3",
+      "}"
+    ],
+    "description": "an if / else block"
+  },
+  "else if chain": {
+    "prefix": "elseif",
+    "body": [
+      "} else if ${1:condition} {",
+      "\t$2"
+    ],
+    "description": "another branch of an if block"
+  },
+  "for i from to": {
+    "prefix": "for",
+    "body": [
+      "for ${1:i} from ${2:1} to ${3:10} {",
+      "\t$4",
+      "}"
+    ],
+    "description": "count from a to b — the end value is included"
+  },
+  "for x in list": {
+    "prefix": "forin",
+    "body": [
+      "for ${1:x} in ${2:items} {",
+      "\t$3",
+      "}"
+    ],
+    "description": "walk a list, text or dict"
+  },
+  "while loop": {
+    "prefix": "while",
+    "body": [
+      "while ${1:condition} {",
+      "\t$2",
+      "}"
+    ],
+    "description": "repeat while the condition holds"
+  },
+  "func": {
+    "prefix": "func",
+    "body": [
+      "func ${1:name}(${2:params}) {",
+      "\t${3:return $0}",
+      "}"
+    ],
+    "description": "a reusable func with a name"
+  },
+  "say": {
+    "prefix": "say",
+    "body": "say(${1:value})",
+    "description": "print one line"
+  },
+  "ask": {
+    "prefix": "ask",
+    "body": "${1:name} = ask(\"${2:your name: }\")",
+    "description": "read one line from the user"
+  },
+  "import module": {
+    "prefix": "import",
+    "body": "import \"${1:helpers}.jr\"",
+    "description": "code from another file"
+  }
+}

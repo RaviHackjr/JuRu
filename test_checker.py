@@ -3,11 +3,11 @@ import os
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import JuRuGalti
-from parser import Program
-from checker import check_source
+from juru.lexer import JuRuGalti
+from juru.parser import Program
+from juru.checker import check_source
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []

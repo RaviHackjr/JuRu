@@ -18,10 +18,10 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(HERE, "src"))
 
-from lexer import JuRuGalti
-from checker import check_source
+from juru.lexer import JuRuGalti
+from juru.checker import check_source
 from test_repl import run_repl, lines_after_prompts
 
 RESULTS = []
@@ -43,7 +43,7 @@ def check(name, fn):
 def run_capture(src):
     """Run source text through checker + interpreter, return stdout."""
     import contextlib, io
-    from interpreter import Interpreter
+    from juru.interpreter import Interpreter
     tree = check_source(src)
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -248,7 +248,7 @@ def t_all_examples_cli():
 
 
 def t_checker_on_all_examples():
-    from checker import check_file
+    from juru.checker import check_file
     for name in example_files():
         check_file(os.path.join(HERE, "examples", name))  # must not raise
 

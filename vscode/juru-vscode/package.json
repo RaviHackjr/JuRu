@@ -1,0 +1,53 @@
+{
+  "name": "juru-vscode",
+  "displayName": "JuRu Language (official)",
+  "description": "Syntax highlighting, snippets and friendly editing for JuRu (.jr) — the easy, secure programming language.",
+  "version": "1.4.0",
+  "publisher": "juru-lang",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "juru",
+    "beginner",
+    "education",
+    "jr"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RaviHackjr/JuRu"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "juru",
+        "aliases": [
+          "JuRu",
+          "juru"
+        ],
+        "extensions": [
+          ".jr"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "juru",
+        "scopeName": "source.juru",
+        "path": "./syntaxes/juru.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "juru",
+        "path": "./snippets/juru.json"
+      }
+    ]
+  }
+}

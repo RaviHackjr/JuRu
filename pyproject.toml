@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "juru"
+description = "JuRu — the easy, secure programming language: .jr files, plain-English keywords, human error messages."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Ravi Gurjar" }]
+requires-python = ">=3.8"
+keywords = ["juru", "programming-language", "beginner", "education", "interpreter"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Education",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+]
+dynamic = ["version"]
+
+[project.scripts]
+juru = "juru.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/RaviHackjr/JuRu"
+Repository = "https://github.com/RaviHackjr/JuRu"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["juru"]
+
+[tool.setuptools.package-data]
+juru = ["templates/*.jr"]
+
+[tool.setuptools.dynamic]
+version = { attr = "juru.version.VERSION" }

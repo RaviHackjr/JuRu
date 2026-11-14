@@ -19,13 +19,13 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-from lexer import JuRuGalti, KEYWORDS
-from parser import parse_source
-from checker import check_source, BUILTINS, BUILTIN_ARITY, BUILTIN_HINT
-from interpreter import Interpreter
-from version import VERSION
+from juru.lexer import JuRuGalti, KEYWORDS
+from juru.parser import parse_source
+from juru.checker import check_source, BUILTINS, BUILTIN_ARITY, BUILTIN_HINT
+from juru.interpreter import Interpreter
+from juru.version import VERSION
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []
@@ -617,12 +617,14 @@ def t_checker_before_runtime():
 
 
 # ================================================================ security audit
-def t_reserved_audit_24():
-    assert len(BUILTINS) == 24
+def t_reserved_audit_28():
+    assert len(BUILTINS) == 28
     wave1 = {"split", "join", "trim", "replace", "abs", "round", "random", "sqrt"}
     wave2 = {"sorted", "reverse", "find", "keys", "values", "count"}
+    wave3 = {"float", "pow", "pop", "type"}
     assert wave1 <= set(BUILTINS)
     assert wave2 <= set(BUILTINS)
+    assert wave3 <= set(BUILTINS)
     for name in BUILTINS:
         expect_check_galti("{} = 1".format(name),
                            "'{}' is reserved (builtin) — pick another name".format(name))
@@ -634,7 +636,7 @@ def t_reserved_audit_24():
 
 
 def t_mirror_rule_full_24():
-    """Wrong arity: checker message == runtime message == hint, for all 24."""
+    """Wrong arity: checker message == runtime message == hint, for all 28."""
     for name, (lo, hi) in BUILTIN_ARITY.items():
         hint = BUILTIN_HINT[name]
         calls = []
@@ -692,7 +694,7 @@ def t_repl_dict_import_torture():
         if ln:
             clean.append(ln)
     text = "\n".join(clean)
-    assert clean[0].startswith("JuRu 1.3 REPL"), out
+    assert clean[0].startswith("JuRu 1.4 REPL"), out
     assert "=> {a: 1, b: 2}" in clean, text
     assert "42" in clean, text
     assert "=> true" in clean, text
@@ -930,13 +932,13 @@ def t_repl_new_builtins_live():
     assert "1" in clean, text
 
 
-# ================================================================ batch 2: templates + tutorial
-def t_batch2_version_bump():
-    assert VERSION == "1.3"
-    from lexer import KEYWORDS
-    from checker import BUILTINS
-    assert len(KEYWORDS) == 19          # batch 2 added zero language surface
-    assert len(BUILTINS) == 24
+# ================================================================ batch 2/3: version + language surface
+def t_batch3_version_bump():
+    assert VERSION == "1.4"
+    from juru.lexer import KEYWORDS
+    from juru.checker import BUILTINS
+    assert len(KEYWORDS) == 19          # batch 3 added zero keywords
+    assert len(BUILTINS) == 28          # 24 from steps 1–11 + float/pow/pop/type
 
 
 def t_templates_end_to_end():
@@ -1023,6 +1025,63 @@ def t_tutorial_graduation_program():
     )
 
 
+# ================================================================ batch 3: stdlib wave 3 + packaging + editor
+def t_batch3_wave3_builtins_live():
+    """float/pow/pop/type, live through the real pipeline."""
+    assert run("say(float(\"3.5\") + int(\"1\"))") == "4.5\n"
+    assert run("say(pow(2, 8))") == "256\n"
+    assert run("items = [\"x\", \"y\"]\nsay(pop(items))\nsay(len(items))") == "y\n1\n"
+    assert run("say(type(2.5) == \"float\")") == "true\n"
+    expect_galti("say(pow(0, -2))", "0 cannot be raised to a negative power")
+    expect_galti("say(pop([]))", "this list is empty")
+
+
+def t_batch3_repl_subcommand():
+    """python3 juru.py repl is now an official way in."""
+    proc = subprocess.run(
+        [sys.executable, "juru.py", "repl"],
+        input="say(6 * 7)\nexit\n", capture_output=True, text=True,
+        cwd=HERE, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "JuRu {} REPL".format(VERSION) in proc.stdout
+    assert "jruru> 42" in proc.stdout, proc.stdout
+
+
+def t_batch3_calculator_float_session():
+    """The calculator template now speaks decimals, end to end."""
+    proc = subprocess.run(
+        [sys.executable, "juru.py", "src/juru/templates/calculator.jr"],
+        input="2.5 * 2\n0.1 + 0.2\n1 / 3\nexit\n",
+        capture_output=True, text=True, cwd=HERE, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "> = 5.0" in proc.stdout, proc.stdout
+    assert "> = 0.30000000000000004" in proc.stdout, proc.stdout
+    assert "> = 0.3333333333333333" in proc.stdout, proc.stdout
+
+
+def t_batch3_package_and_editor():
+    """The pyproject is present, the grammar matches, the launcher answers."""
+    import tomllib
+    with open(os.path.join(HERE, "pyproject.toml"), "rb") as f:
+        data = tomllib.load(f)
+    assert data["project"]["name"] == "juru"
+    assert data["project"]["scripts"]["juru"] == "juru.cli:main"
+    proc = subprocess.run(
+        [sys.executable, "juru.py", "--version"],
+        capture_output=True, text=True, cwd=HERE, timeout=60,
+    )
+    assert proc.stdout.strip() == "JuRu " + VERSION, proc.stdout
+    import json
+    with open(os.path.join(HERE, "vscode", "juru-vscode",
+                           "syntaxes", "juru.tmLanguage.json"),
+              encoding="utf-8") as f:
+        grammar = json.load(f)
+    pattern = grammar["repository"]["keywords"]["match"]
+    assert "while" in pattern and "func" in pattern, pattern
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -1042,8 +1101,8 @@ ALL = [
     ("module readonly + member errors", t_module_readonly_and_errors),
     ("error gauntlet (steps 4–7 messages)", t_error_gauntlet),
     ("checker kills before runtime", t_checker_before_runtime),
-    ("reserved audit: all 24 builtins", t_reserved_audit_24),
-    ("mirror rule: all 24 builtins", t_mirror_rule_full_24),
+    ("reserved audit: all 28 builtins", t_reserved_audit_28),
+    ("mirror rule: all 28 builtins", t_mirror_rule_full_24),
     ("did-you-mean gauntlet (every surface)", t_did_you_mean_gauntlet),
     ("typo storm over 40 near-identical funcs", t_typo_top_of_recursion_hell),
     ("step 9 pipeline: top words ranked", t_top_words_pipeline),
@@ -1054,11 +1113,15 @@ ALL = [
     ("REPL torture: dicts + import + recovery", t_repl_dict_import_torture),
     ("REPL multi-line session (blocks + recovery)", t_repl_multiline_session),
     ("REPL: the 6 new tools live", t_repl_new_builtins_live),
-    ("batch 2: version 1.3, language untouched", t_batch2_version_bump),
+    ("batch 3: version 1.4, 28 builtins, 19 keywords", t_batch3_version_bump),
     ("batch 2: --new quiz end-to-end via CLI", t_templates_end_to_end),
     ("batch 2: --new refusal gauntlet", t_new_refusal_gauntlet),
     ("batch 2: --templates listing complete", t_templates_listing_complete),
     ("batch 2: tutorial graduation program", t_tutorial_graduation_program),
+    ("batch 3: wave-3 builtins live", t_batch3_wave3_builtins_live),
+    ("batch 3: repl subcommand", t_batch3_repl_subcommand),
+    ("batch 3: calculator speaks decimals", t_batch3_calculator_float_session),
+    ("batch 3: package + editor sanity", t_batch3_package_and_editor),
 ]
 
 if __name__ == "__main__":
