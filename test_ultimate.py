@@ -11,6 +11,7 @@ through the real checker AND the real CLI AND the real REPL.
 """
 import contextlib
 import io
+import json
 import os
 import random as pyrandom
 import re
@@ -1137,6 +1138,54 @@ def t_batch4_bare_command_is_repl():
     assert "JuRu toolbox — 19 keywords + 30 builtins" in proc.stdout
 
 
+# ================================================================ batch 5: the standalone interpreter + the run button
+def t_batch5_frozen_build_files():
+    """The PyInstaller spec + entry + install note exist and agree."""
+    spec = open(os.path.join(HERE, "juru.spec"), encoding="utf-8").read()
+    assert "juru_entry.py" in spec
+    assert "src/juru/templates" in spec          # templates frozen in
+    assert '"juru"' in spec
+    entry = open(os.path.join(HERE, "juru_entry.py"), encoding="utf-8").read()
+    assert "from juru.cli import main" in entry
+    install = open(os.path.join(HERE, "packaging", "INSTALL.txt"),
+                   encoding="utf-8").read()
+    assert "juru --version" in install and "PATH" in install
+
+
+def t_batch5_release_pipeline():
+    """The release workflow builds 3 interpreters + the extension."""
+    wf = open(os.path.join(HERE, ".github", "workflows", "release.yml"),
+              encoding="utf-8").read()
+    for os_name in ("windows-latest", "ubuntu-latest", "macos-latest"):
+        assert os_name in wf, os_name
+    assert "Smoke-test the interpreter" in wf    # a broken binary fails loudly
+    assert "gh release upload" in wf
+    assert "download-artifact" in wf
+    assert "vsce package" in wf                 # the .vsix is built too
+
+
+def t_batch5_extension_runs_code():
+    """The extension is a real run button, not just colors."""
+    with open(os.path.join(HERE, "vscode", "juru-vscode", "package.json"),
+              encoding="utf-8") as f:
+        pkg = json.load(f)
+    assert pkg["main"] == "./extension.js"
+    commands = [c["command"] for c in pkg["contributes"]["commands"]]
+    assert "juru.runFile" in commands and "juru.openRepl" in commands
+    assert "juru.interpreterPath" in pkg["contributes"]["configuration"]["properties"]
+    menus = pkg["contributes"]["menus"]["editor/title"]
+    assert any(m["command"] == "juru.runFile" and m["when"] == "resourceLangId == juru"
+               for m in menus)
+    js = open(os.path.join(HERE, "vscode", "juru-vscode", "extension.js"),
+              encoding="utf-8").read()
+    assert 'registerCommand("juru.runFile"' in js
+    assert 'registerCommand("juru.openRepl"' in js
+    assert "interpreterAvailable" in js         # friendly missing-interpreter dialog
+    guide = open(os.path.join(HERE, "docs", "vscode.md"), encoding="utf-8").read()
+    assert "JuRu: Run File" in guide            # the docs teach the button
+    assert os.path.exists(os.path.join(HERE, "docs", "install.md"))
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -1181,6 +1230,9 @@ ALL = [
     ("batch 4: help database is truthful", t_batch4_helpdb_is_truthful),
     ("batch 4: caret errors via the CLI", t_batch4_caret_errors_via_cli),
     ("batch 4: bare command opens the REPL", t_batch4_bare_command_is_repl),
+    ("batch 5: frozen build files agree", t_batch5_frozen_build_files),
+    ("batch 5: release pipeline builds 4 downloads", t_batch5_release_pipeline),
+    ("batch 5: the extension runs code", t_batch5_extension_runs_code),
 ]
 
 if __name__ == "__main__":

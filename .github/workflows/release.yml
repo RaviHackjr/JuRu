@@ -1,0 +1,150 @@
+name: release
+
+# Builds the standalone interpreters (Windows / Linux / macOS) and the
+# VS Code extension, then attaches every download to the matching GitHub
+# release. Runs when a v* tag is pushed; `Run workflow` builds without
+# publishing — handy for testing a build change.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  interpreter:
+    name: interpreter on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: JuRu-windows-x64.zip
+          - os: ubuntu-latest
+            asset: JuRu-linux-x64.zip
+          - os: macos-latest
+            asset: JuRu-macos-arm64.zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the interpreter
+        run: |
+          python -m pip install pyinstaller
+          python -m PyInstaller juru.spec
+
+      - name: Smoke-test the interpreter
+        shell: bash
+        run: |
+          set -e
+          cd dist
+          ./juru --version
+          printf 'say("ok " + str(6 * 7))\n' > smoke.jr
+          ./juru smoke.jr | grep -q "ok 42"          # run a program
+          printf 'help\nexit\n' | ./juru repl | grep -q "JuRu toolbox"
+          ./juru --new smokegame starter             # templates are frozen in
+          ./juru smokegame.jr | grep -q "hello, friend"
+
+      - name: Package the download
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+          ASSET: ${{ matrix.asset }}
+        run: |
+          set -e
+          cd dist
+          VERSION="${VERSION#v}"
+          cp ../packaging/INSTALL.txt .
+          python - <<'PY'
+          import os
+          import zipfile
+
+          exe = "juru.exe" if os.name == "nt" else "juru"
+          asset = os.environ["ASSET"].replace("JuRu-", "JuRu-" + os.environ["VERSION"] + "-", 1)
+          with zipfile.ZipFile(asset, "w", zipfile.ZIP_DEFLATED) as z:
+              z.write(exe)
+              z.write("INSTALL.txt")
+          print("wrote", asset)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}*
+          if-no-files-found: error
+
+  extension:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Package the extension
+        working-directory: vscode/juru-vscode
+        run: npx --yes @vscode/vsce package --no-dependencies
+
+      - name: Rename the artifact
+        working-directory: vscode/juru-vscode
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -e
+          VERSION="${VERSION#v}"
+          mv juru-vscode-*.vsix "JuRu-vscode-${VERSION}.vsix"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JuRu-vscode
+          path: vscode/juru-vscode/JuRu-vscode-*.vsix
+          if-no-files-found: error
+
+  release:
+    name: Attach downloads to the release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [interpreter, extension]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -e
+          ls -l assets
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "JuRu ${TAG#v}" --notes-file - <<'NOTES'
+          JuRu — the easy, secure programming language: full English, few
+          keywords, friendly errors, and safety guards built in.
+
+          ## Downloads
+
+          | File | For |
+          |------|-----|
+          | `JuRu-<version>-windows-x64.zip` | Windows 10/11 — unzip, run `juru.exe` |
+          | `JuRu-<version>-linux-x64.zip` | Linux (64-bit) — unzip, run `./juru` |
+          | `JuRu-<version>-macos-arm64.zip` | Apple Silicon Macs — unzip, run `./juru` |
+          | `JuRu-vscode-<version>.vsix` | VS Code extension — `code --install-extension <file>` |
+
+          Each interpreter zip holds one binary and an INSTALL.txt with
+          three-step setup. No Python needed. Full guide:
+          [docs/install.md](https://github.com/RaviHackjr/JuRu/blob/main/docs/install.md)
+
+          Prefer pip? `pip install juru` gives the same interpreter as a
+          package. Source code: the "Source code (zip)" links below.
+          NOTES
+          gh release upload "$TAG" assets/* --clobber
+          gh release edit "$TAG" --draft=false --latest

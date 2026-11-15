@@ -1,0 +1,40 @@
+JuRu — the easy, secure programming language
+=============================================
+
+This zip contains one file: the JuRu interpreter (`juru` on macOS and
+Linux, `juru.exe` on Windows). It needs no Python and no other install —
+download, run, done.
+
+Quick start
+-----------
+  juru --version                 should print the JuRu version
+  juru hello.jr                  run a program (any file ending in .jr)
+  juru                           bare command opens the live REPL
+  juru --new mygame guessing_game
+                                 start from a ready-made template
+
+Try it now (write a file, run it)
+---------------------------------
+  Windows (PowerShell):  Set-Content hello.jr 'say("hello JuRu!")'
+  macOS / Linux:         echo 'say("hello JuRu!")' > hello.jr
+
+  juru hello.jr               →  hello JuRu!
+
+Put it on your PATH (so plain `juru` works anywhere)
+----------------------------------------------------
+Windows:  Move juru.exe to a folder you like (say C:\juru), then add
+          that folder to PATH (Settings → search "environment variables",
+          or in PowerShell: setx PATH "$env:PATH;C:\juru") and open a NEW
+          terminal.
+
+macOS:    sudo mv juru /usr/local/bin/      (then: chmod +x juru if needed)
+Linux:    sudo mv juru /usr/local/bin/      (or ~/.local/bin if it is on PATH)
+
+macOS note: the binary is not code-signed, so the first run may ask for
+permission — right-click juru → Open, or allow it in System Settings →
+Privacy & Security. One-time only.
+
+Learn it
+--------
+  docs/tutorial.md in the repository — the whole language in one sitting.
+  https://github.com/RaviHackjr/JuRu

@@ -57,9 +57,9 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–17 combined, no mercy | **42 pass** |
+| `test_ultimate.py` | steps 1–19 combined, no mercy | **45 pass** |
 | `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **619 tests green** |
+| **Total** | | **622 tests green** |
 
 Run everything yourself:
 ```
@@ -313,6 +313,24 @@ src/juru/
   fresh venv, and the installed command runs a created template program
   and the REPL (`test_packaging.py`; skips honestly if pip is absent)
 
+## The standalone interpreter (Step 18 — one binary, no Python)
+
+`pip` is not everyone's path, so every release also ships one frozen
+executable per system — built with PyInstaller from two small files:
+
+- `juru.spec` — the build recipe: one file, the templates for `--new`
+  frozen in beside the package, console app
+- `juru_entry.py` — the frozen entry point (calls `juru.cli.main`)
+- `packaging/INSTALL.txt` — rides along in every zip: quick start, PATH
+  setup per platform, the macOS Gatekeeper note
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`: interpreters are
+built on Windows, Linux and macOS runners, **smoke-tested as binaries**
+(`--version`, run a program, piped REPL, `--new` + run the template), zipped
+as `JuRu-<version>-<system>.zip`, packaged with the `.vsix`, and attached
+to the GitHub release. A `Run workflow` build without a tag publishes
+nothing — handy for testing a build change.
+
 ## The VS Code extension (Step 14 — prepare-only)
 
 `vscode/juru-vscode/` ships everything an editor needs, ready to package:
@@ -329,6 +347,14 @@ Two guarantees, both test-enforced: the grammar's keyword alternation is
 **exactly** the language's `KEYWORDS` set (highlighting can never drift),
 and every JSON file is valid. Publishing to the Marketplace is a later,
 separate step — `docs/vscode.md` has the two-minute load instructions.
+
+Since Step 19 the extension is a run button, not just colors: the ▶ in
+the editor title bar (and `JuRu: Run File` from the right-click menu or
+command palette) runs the open file in a real terminal, so `ask()` works.
+`JuRu: Open REPL` starts a live session. The interpreter is looked up via
+the `juru.interpreterPath` setting (default `juru` on the PATH), and a
+missing interpreter gets a friendly dialog with a link to the
+interpreter download — never a cryptic shell error.
 
 ## The REPL (Steps 5+8+16 — `python3 repl.py` or bare `juru`)
 
@@ -541,9 +567,12 @@ Notes:
 | 15 | `help()` — the built-in docs: 48 truthful cards, aliases, did-you-mean | ✅ DONE — 15 tests |
 | 16 | `sleep(seconds)` + the bare-`juru` REPL + REPL `help`/`?` | ✅ DONE — 13 tests |
 | 17 | Python-style error display: the line + a caret under the exact column | ✅ DONE — 10 tests |
-| — | Ultimate torture: steps 1–17 combined | ✅ DONE — 42 tests |
-| — | **Total: 619 tests green** | |
+| 18 | Standalone interpreter: PyInstaller spec → release zips, no Python needed | ✅ DONE — release workflow |
+| 19 | VS Code run button + REPL command + `juru.interpreterPath` | ✅ DONE — 3 tests |
+| — | Ultimate torture: steps 1–19 combined | ✅ DONE — 45 tests |
+| — | **Total: 622 tests green** | |
 
-After 17 the core language is complete. Still open, all optional and on
-demand: publishing the extension to the Marketplace, a docs website, and a
-stdlib wave 4 beyond `help`/`sleep` (only when a real use asks for it).
+After 19 the language and its distribution are complete. Still open, all
+optional and on demand: publishing the extension to the Marketplace, a
+docs website, and a stdlib wave 4 beyond `help`/`sleep` (only when a
+real use asks for it).

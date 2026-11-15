@@ -263,22 +263,34 @@ repl        same pipeline, one line at a time, one shared environment
 - **errfmt** — error display: the message line plus the offending source
   line and a caret under the exact column (CLI + REPL)
 
-## Install it (pip)
+## Install it
 
-The whole language is a pip package — `src/juru/`, one flat namespace:
+**Option 1 — download the interpreter (no Python needed).** From the
+[releases page](https://github.com/RaviHackjr/JuRu/releases), grab the
+zip for your system (Windows / Linux / macOS). Inside is one binary and
+an INSTALL.txt — unzip, put it on your PATH, done:
 
 ```bash
-pip install juru            # from a release
 juru --version              # JuRu 1.5
-juru                        # bare command → the REPL (exactly like `python`)
-juru --new hello            # starter template
 juru hello.jr               # run it
+juru                        # bare command → the REPL (exactly like `python`)
+```
+
+**Option 2 — pip (needs Python 3.9+).** The whole language is a pip
+package — `src/juru/`, one flat namespace:
+
+```bash
+pip install juru            # same interpreter, as a package
+juru --new hello            # starter template
 juru repl                   # try ideas live
 ```
 
-From a clone, nothing changes: `python3 juru.py program.jr`,
-`python3 repl.py` and `python3 checker.py file.jr` all still work — they
-are thin launchers into the same package.
+**Option 3 — from a clone.** Nothing changes: `python3 juru.py program.jr`,
+`python3 repl.py` and `python3 checker.py file.jr` all work in place —
+they are thin launchers into the same package.
+
+Full walkthrough with every platform detail:
+[docs/install.md](docs/install.md).
 
 ## VS Code (official, ready to load)
 
@@ -295,7 +307,7 @@ code --install-extension juru-vscode-1.5.0.vsix
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 619, all green
+## Tests — 622, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -317,7 +329,7 @@ python3 test_step17.py        # 10   (line + caret error display)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 42   (steps 1–17 combined, no mercy)
+python3 test_ultimate.py      # 45   (steps 1–19 combined, no mercy)
 ```
 
 ## Project structure
@@ -328,16 +340,21 @@ JuRu/
 ├── repl.py             # thin launcher → src/juru/repl.py
 ├── checker.py          # thin launcher → src/juru/checker.py (check a file)
 ├── pyproject.toml      # pip packaging (pip install juru)
+├── juru.spec           # PyInstaller spec — the standalone interpreter
+├── juru_entry.py       # its entry point (frozen build only)
+├── packaging/          # files that ride along in the interpreter zips
 ├── src/juru/           # the package: lexer, parser, checker, interpreter,
 │                       #   cli, repl, helpdb, errfmt, version + templates/
 ├── vscode/juru-vscode/  # the official VS Code extension (prepare-only)
 ├── design.md           # the full design document
+├── CHANGELOG.md        # what changed in every version
 ├── docs/tutorial.md    # learn JuRu in one sitting (test-verified)
 ├── docs/syntax.md      # the A to Z cheat sheet
+├── docs/install.md     # every way to install, per platform
 ├── docs/vscode.md      # load the extension in 2 minutes
 ├── logo/juru_icon.svg  # the language icon (orange → red ruby + braces)
 ├── examples/           # 15 verified demo programs
-├── test_*.py           # 20 test suites, 619 tests
+├── test_*.py           # 20 test suites, 622 tests
 └── LICENSE             # MIT
 ```
 
