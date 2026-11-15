@@ -22,11 +22,11 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            asset: JuRu-windows-x64.zip
+            system: windows-x64
           - os: ubuntu-latest
-            asset: JuRu-linux-x64.zip
+            system: linux-x64
           - os: macos-latest
-            asset: JuRu-macos-arm64.zip
+            system: macos-arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -55,18 +55,18 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ github.ref_name }}
-          ASSET: ${{ matrix.asset }}
+          SYSTEM: ${{ matrix.system }}
         run: |
           set -e
           cd dist
-          VERSION="${VERSION#v}"
           cp ../packaging/INSTALL.txt .
+          export ASSET="JuRu-${VERSION#v}-${SYSTEM}.zip"
           python - <<'PY'
           import os
           import zipfile
 
           exe = "juru.exe" if os.name == "nt" else "juru"
-          asset = os.environ["ASSET"].replace("JuRu-", "JuRu-" + os.environ["VERSION"] + "-", 1)
+          asset = os.environ["ASSET"]
           with zipfile.ZipFile(asset, "w", zipfile.ZIP_DEFLATED) as z:
               z.write(exe)
               z.write("INSTALL.txt")
@@ -75,8 +75,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: dist/${{ matrix.asset }}*
+          name: ${{ matrix.system }}
+          path: dist/JuRu-*.zip
           if-no-files-found: error
 
   extension:
