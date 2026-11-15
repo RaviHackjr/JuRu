@@ -150,4 +150,13 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        # the reader walked away mid-output (`juru big.jr | head`) —
+        # point stdout at devnull so the shutdown flush stays quiet
+        try:
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        except OSError:
+            pass
+        sys.exit(1)
