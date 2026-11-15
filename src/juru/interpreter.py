@@ -20,6 +20,7 @@ How to run:
 import builtins
 import os
 import random as _random
+import time
 
 from .lexer import JuRuGalti
 from .parser import (
@@ -29,12 +30,13 @@ from .parser import (
     parse_source,
 )
 from .checker import check_source, did_you_mean
+from .helpdb import overview, card_for, unknown
 
 BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop",
             "sum", "min", "max",
             "split", "join", "trim", "replace", "abs", "round", "random", "sqrt",
             "sorted", "reverse", "find", "keys", "values", "count",
-            "pow", "type")
+            "pow", "type", "help", "sleep")
 MAX_LOOP_STEPS = 10_000_000        # runaway loop protection
 
 
@@ -141,9 +143,13 @@ def display(v):
 
 
 class Interpreter:
+    MAX_SLEEP_ONE = 30        # seconds per sleep() call
+    MAX_SLEEP_TOTAL = 120     # seconds a single run may sleep in total
+
     def __init__(self):
         self._modules = {}    # absolute path → ModuleValue (each file runs once)
         self._loading = []    # (path, base dir) stack — import loops die here
+        self.sleep_total = 0.0
 
     def run(self, tree, env=None, base_dir=None):
         """Run the whole tree. Returns the final environment (for the REPL)."""
@@ -335,15 +341,19 @@ class Interpreter:
         try:
             tree = check_source(src)              # modules are checked too — no unchecked code runs
         except JuRuGalti as err:
-            raise JuRuGalti(err.line, err.col,
-                            "in '{}': {}".format(st.path, err.message))
+            galti = JuRuGalti(err.line, err.col,
+                              "in '{}': {}".format(st.path, err.message))
+            galti.source_file = path
+            raise galti
         menv = Env()                              # a module sees nothing of the importer
         self._loading.append((path, os.path.dirname(path)))
         try:
             self._exec_block(tree.stmts, menv)
         except JuRuGalti as err:
-            raise JuRuGalti(err.line, err.col,
-                            "in '{}': {}".format(st.path, err.message))
+            galti = JuRuGalti(err.line, err.col,
+                              "in '{}': {}".format(st.path, err.message))
+            galti.source_file = path
+            raise galti
         finally:
             self._loading.pop()
         mod = ModuleValue(st.module, menv, path)
@@ -895,6 +905,50 @@ class Interpreter:
             if len(e.args) != 1:
                 raise JuRuGalti(e.line, e.col, "type(x) takes exactly 1 argument")
             return _typename(self.eval(e.args[0], env))
+        # help(name) — the built-in documentation
+        if name == "help":
+            if len(e.args) > 1:
+                raise JuRuGalti(e.line, e.col, "help() takes at most 1 argument")
+            if not e.args:
+                print(overview())
+                return None
+            topic = self.eval(e.args[0], env)
+            if not isinstance(topic, str):
+                raise JuRuGalti(e.line, e.col,
+                                "help() needs a name in quotes — got: {}".format(
+                                    display(topic)))
+            text = card_for(topic)
+            if text is None:
+                print(unknown(topic))
+                return None
+            print(text)
+            return None
+        # sleep(seconds)
+        if name == "sleep":
+            if len(e.args) != 1:
+                raise JuRuGalti(e.line, e.col,
+                                "sleep(seconds) takes exactly 1 argument")
+            v = self.eval(e.args[0], env)
+            if not _is_num(v):
+                raise JuRuGalti(e.line, e.col,
+                                "sleep() needs a number of seconds — got: {}".format(
+                                    _typename(v)))
+            if v < 0:
+                raise JuRuGalti(e.line, e.col,
+                                "sleep() cannot go back in time — seconds cannot "
+                                "be negative (got: {})".format(display(v)))
+            if v > self.MAX_SLEEP_ONE:
+                raise JuRuGalti(e.line, e.col,
+                                "sleep() takes at most {} seconds at a time "
+                                "(got: {})".format(self.MAX_SLEEP_ONE, display(v)))
+            if self.sleep_total + v > self.MAX_SLEEP_TOTAL:
+                raise JuRuGalti(e.line, e.col,
+                                "sleep() — this program has slept more than {} "
+                                "seconds in total; something may be stuck".format(
+                                    self.MAX_SLEEP_TOTAL))
+            time.sleep(v)
+            self.sleep_total += v
+            return None
         # int(x)
         if len(e.args) != 1:
             raise JuRuGalti(e.line, e.col, "int(x) takes exactly 1 argument")

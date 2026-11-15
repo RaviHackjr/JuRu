@@ -22,10 +22,13 @@ from .parser import parse_source, ExprSt, Call
 from .checker import Checker
 from .interpreter import Interpreter, Env, display
 from .version import VERSION
+from .helpdb import overview
+from .errfmt import render
 
 BANNER = ("JuRu {} REPL — full English, easy like Python, secure like Rust.\n"
           "type 'exit' or press Ctrl-D to leave\n"
-          "type 'cancel' or press Ctrl-C to drop an open block").format(VERSION)
+          "type 'cancel' or press Ctrl-C to drop an open block\n"
+          "type help() to see the whole toolbox").format(VERSION)
 PROMPT = "jruru> "
 CONT_PROMPT = "......> "
 
@@ -114,6 +117,9 @@ def main():
             text = line.strip()
             if text in ("exit", "quit"):
                 break
+            if text in ("help", "?"):
+                print(overview())          # bare help, no parens needed
+                continue
             if not text:
                 continue
         if looks_incomplete(text):
@@ -125,7 +131,7 @@ def main():
             if echo is not None:
                 print(echo)
         except JuRuGalti as err:
-            print(str(err))
+            print(render(err, text))
         except RecursionError:
             print("JuRu Error: recursion went too deep — it never stops")
         except MemoryError:

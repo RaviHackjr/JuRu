@@ -12,7 +12,7 @@ Syntax highlighting, snippets and friendly editing for **JuRu** (`.jr`)
 | Feature | Details |
 |---------|---------|
 | Language | `juru`, for every `.jr` file |
-| Grammar | full `source.juru` TextMate grammar: 19 keywords, 28 builtins, comments, strings, numbers, operators |
+| Grammar | full `source.juru` TextMate grammar: 19 keywords, 30 builtins, comments, strings, numbers, operators |
 | Snippets | `if`, `elseif`, `for`, `forin`, `while`, `func`, `say`, `ask`, `import` |
 | Editing | auto-closing braces/brackets/quotes, comment toggle with `#`, bracket matching, fold by block |
 
@@ -26,7 +26,7 @@ The grammar's keyword list is **test-enforced** to match the language's
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.4.0.vsix
+code --install-extension juru-vscode-1.5.0.vsix
 ```
 
 ### Option B — run from source

@@ -288,10 +288,12 @@ def t_unknown_flag_is_friendly():
     assert "I do not know '--wat' — try python3 juru.py --help" in proc.stdout
 
 
-def t_no_args_shows_usage():
-    proc = cli([])
-    assert proc.returncode == 1, proc.stdout
-    assert "python3 juru.py program.jr" in proc.stdout
+def t_no_args_opens_repl():
+    """No arguments opens the REPL — exactly like bare `python`."""
+    proc = cli([], input_text="say(7 * 6)\nexit\n")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "JuRu {} REPL".format(VERSION) in proc.stdout, proc.stdout
+    assert "jruru> 42" in proc.stdout, proc.stdout
 
 
 def t_templates_manifest_in_sync():
@@ -301,13 +303,14 @@ def t_templates_manifest_in_sync():
 
 
 def t_language_untouched_by_batch2():
-    """Templates added zero language surface; batch 3 added exactly 4 builtins
-    (float, pow, pop, type) and zero keywords: 19 keywords, 28 builtins."""
+    """Templates added zero language surface; later batches added exactly
+    6 builtins (float, pow, pop, type, help, sleep) and zero keywords:
+    19 keywords, 30 builtins."""
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 19
-    assert len(BUILTINS) == 28
-    for name in ("float", "pow", "pop", "type"):
+    assert len(BUILTINS) == 30
+    for name in ("float", "pow", "pop", "type", "help", "sleep"):
         assert name in BUILTINS
 
 
@@ -333,7 +336,7 @@ ALL = [
     ("--version", t_version_flag),
     ("--help / -h", t_help_flag),
     ("unknown flag is friendly", t_unknown_flag_is_friendly),
-    ("no args shows usage", t_no_args_shows_usage),
+    ("no args opens the REPL", t_no_args_opens_repl),
     ("manifest in sync with files", t_templates_manifest_in_sync),
     ("batch 2 added zero language surface", t_language_untouched_by_batch2),
 ]

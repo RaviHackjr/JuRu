@@ -58,10 +58,9 @@
       "comment": "The 19 keywords — must match juru.lexer KEYWORDS exactly (a test enforces it).",
       "match": "\\b(and|break|continue|else|false|for|from|func|if|import|in|not|null|or|return|say|to|true|while)\\b",
       "name": "keyword.control.juru"
-    },
-    "builtin": {
-      "comment": "The 28 builtins — the flat toolbox.",
-      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type)\\b",
+    },    "builtin": {
+      "comment": "The 30 builtins — the flat toolbox.",
+      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type|help|sleep)\\b",
       "name": "support.function.builtin.juru"
     },
     "constant": {

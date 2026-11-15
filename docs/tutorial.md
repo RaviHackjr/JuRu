@@ -520,7 +520,7 @@ global
 
 ## 11. The toolbox
 
-All the tools live in one flat set of 28 builtins. Text tools:
+All the tools live in one flat set of 30 builtins. Text tools:
 
 ```jr
 say(upper("juru"))
@@ -656,7 +656,7 @@ say(sqrt(-1))
 JuRu Error (line 1, col 9): sqrt(-1) — a negative number has no square root
 ```
 
-And the 28 builtins can never be shadowed by accident:
+And the 30 builtins can never be shadowed by accident:
 
 ```jr
 count = 5
@@ -740,16 +740,18 @@ never guess, never continue with a wrong value.
 
 ## 16. The REPL — try ideas instantly
 
-Run `python3 repl.py`. Every entry runs against a shared environment, so
-names survive from line to line. Blocks may span lines — the `......>`
-prompt keeps going until the block closes, and a bare `cancel` line drops
-an open block:
+Run `python3 repl.py` (or just `python3 juru.py` with no arguments — the
+same REPL, exactly like typing `python`). Every entry runs against a
+shared environment, so names survive from line to line. Blocks may span
+lines — the `......>` prompt keeps going until the block closes, and a
+bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.4 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.5 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
+type help() to see the whole toolbox
 jruru> for x in [10, 20] {
 ......>     say(x)
 ......> }
@@ -758,8 +760,16 @@ jruru> for x in [10, 20] {
 jruru> name = "JuRu"
 jruru> naame
 JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
+    naame
+        ^
 jruru> exit
 ```
+
+Like Python, the REPL has a built-in helper: `help()` lists the whole
+toolbox, and `help("pow")` prints one tool's card — what it does, worked
+examples, and its guards. Games get `sleep(seconds)` to pause between
+rounds: `sleep(1)` waits one second (at most 30 at a time, and a program
+may sleep at most 120 seconds in total — runaway loops cannot hide).
 
 ## 17. Where to go next
 

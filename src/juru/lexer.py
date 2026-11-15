@@ -49,6 +49,7 @@ class JuRuGalti(Exception):
         self.line = line
         self.col = col
         self.message = message
+        self.source_file = None   # set when the error came from an imported module
         super().__init__("JuRu Error (line {}, col {}): {}".format(line, col, message))
 
 

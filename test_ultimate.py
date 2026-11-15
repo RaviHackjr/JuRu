@@ -617,14 +617,16 @@ def t_checker_before_runtime():
 
 
 # ================================================================ security audit
-def t_reserved_audit_28():
-    assert len(BUILTINS) == 28
+def t_reserved_audit_30():
+    assert len(BUILTINS) == 30
     wave1 = {"split", "join", "trim", "replace", "abs", "round", "random", "sqrt"}
     wave2 = {"sorted", "reverse", "find", "keys", "values", "count"}
     wave3 = {"float", "pow", "pop", "type"}
+    wave4 = {"help", "sleep"}
     assert wave1 <= set(BUILTINS)
     assert wave2 <= set(BUILTINS)
     assert wave3 <= set(BUILTINS)
+    assert wave4 <= set(BUILTINS)
     for name in BUILTINS:
         expect_check_galti("{} = 1".format(name),
                            "'{}' is reserved (builtin) — pick another name".format(name))
@@ -694,7 +696,7 @@ def t_repl_dict_import_torture():
         if ln:
             clean.append(ln)
     text = "\n".join(clean)
-    assert clean[0].startswith("JuRu 1.4 REPL"), out
+    assert clean[0].startswith("JuRu 1.5 REPL"), out
     assert "=> {a: 1, b: 2}" in clean, text
     assert "42" in clean, text
     assert "=> true" in clean, text
@@ -932,13 +934,13 @@ def t_repl_new_builtins_live():
     assert "1" in clean, text
 
 
-# ================================================================ batch 2/3: version + language surface
-def t_batch3_version_bump():
-    assert VERSION == "1.4"
+# ================================================================ batch 2/3/4: version + language surface
+def t_batch4_version_bump():
+    assert VERSION == "1.5"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
-    assert len(KEYWORDS) == 19          # batch 3 added zero keywords
-    assert len(BUILTINS) == 28          # 24 from steps 1–11 + float/pow/pop/type
+    assert len(KEYWORDS) == 19          # batch 4 added zero keywords
+    assert len(BUILTINS) == 30          # 24 + wave3 (4) + wave4 (help, sleep)
 
 
 def t_templates_end_to_end():
@@ -1082,6 +1084,59 @@ def t_batch3_package_and_editor():
     assert "while" in pattern and "func" in pattern, pattern
 
 
+# ================================================================ batch 4: help + sleep + bare REPL + caret errors
+def t_batch4_help_and_sleep_live():
+    assert run("help(\"pow\")").startswith("pow(a, b)")
+    assert run("help()").startswith("JuRu toolbox — 19 keywords + 30 builtins")
+    assert run('say(type(sleep(0)))') == "null\n"
+    expect_galti("say(sleep(-1))", "cannot go back in time")
+    expect_galti("say(sleep(99))", "at most 30 seconds at a time")
+
+
+def t_batch4_helpdb_is_truthful():
+    """Cards == the real language tables; overview names everything."""
+    from juru import helpdb
+    assert set(helpdb.BUILTIN_CARDS) == set(BUILTINS)
+    assert set(helpdb.KEYWORD_CARDS) == set(KEYWORDS)
+    text = helpdb.overview()
+    for name in BUILTINS:
+        assert name in text
+    for kw in KEYWORDS:
+        assert kw in text
+
+
+def t_batch4_caret_errors_via_cli():
+    """The CLI now shows the line + caret under the exact column."""
+    import tempfile
+    d = tempfile.mkdtemp(prefix="juru_ult_")
+    path = os.path.join(d, "oops.jr")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("nums = [1, 2, 3]\nsay(nums[7])\n")
+    proc = subprocess.run(
+        [sys.executable, os.path.join(HERE, "juru.py"), path],
+        capture_output=True, text=True, cwd=d, timeout=60,
+    )
+    assert proc.returncode == 1, proc.stdout
+    assert "index 7 is out of range" in proc.stdout
+    lines = proc.stdout.splitlines()
+    code = [ln for ln in lines if "say(nums[7])" in ln][0]
+    caret = [ln for ln in lines if "^" in ln][0]
+    # both rendered lines carry the same 4-space indent, so the caret sits
+    # exactly under the offending index "7" at the same index
+    assert caret.index("^") == code.index("7"), (code, caret)
+    assert "Traceback" not in proc.stderr
+
+
+def t_batch4_bare_command_is_repl():
+    proc = subprocess.run(
+        [sys.executable, os.path.join(HERE, "juru.py")],
+        input="help\nexit\n", capture_output=True, text=True, cwd=HERE, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert proc.stdout.startswith("JuRu {} REPL".format(VERSION)), proc.stdout
+    assert "JuRu toolbox — 19 keywords + 30 builtins" in proc.stdout
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -1101,7 +1156,7 @@ ALL = [
     ("module readonly + member errors", t_module_readonly_and_errors),
     ("error gauntlet (steps 4–7 messages)", t_error_gauntlet),
     ("checker kills before runtime", t_checker_before_runtime),
-    ("reserved audit: all 28 builtins", t_reserved_audit_28),
+    ("reserved audit: all 30 builtins", t_reserved_audit_30),
     ("mirror rule: all 28 builtins", t_mirror_rule_full_24),
     ("did-you-mean gauntlet (every surface)", t_did_you_mean_gauntlet),
     ("typo storm over 40 near-identical funcs", t_typo_top_of_recursion_hell),
@@ -1113,7 +1168,7 @@ ALL = [
     ("REPL torture: dicts + import + recovery", t_repl_dict_import_torture),
     ("REPL multi-line session (blocks + recovery)", t_repl_multiline_session),
     ("REPL: the 6 new tools live", t_repl_new_builtins_live),
-    ("batch 3: version 1.4, 28 builtins, 19 keywords", t_batch3_version_bump),
+    ("batch 4: version 1.5, 30 builtins, 19 keywords", t_batch4_version_bump),
     ("batch 2: --new quiz end-to-end via CLI", t_templates_end_to_end),
     ("batch 2: --new refusal gauntlet", t_new_refusal_gauntlet),
     ("batch 2: --templates listing complete", t_templates_listing_complete),
@@ -1122,6 +1177,10 @@ ALL = [
     ("batch 3: repl subcommand", t_batch3_repl_subcommand),
     ("batch 3: calculator speaks decimals", t_batch3_calculator_float_session),
     ("batch 3: package + editor sanity", t_batch3_package_and_editor),
+    ("batch 4: help + sleep live", t_batch4_help_and_sleep_live),
+    ("batch 4: help database is truthful", t_batch4_helpdb_is_truthful),
+    ("batch 4: caret errors via the CLI", t_batch4_caret_errors_via_cli),
+    ("batch 4: bare command opens the REPL", t_batch4_bare_command_is_repl),
 ]
 
 if __name__ == "__main__":

@@ -213,7 +213,7 @@ def t_input_pipeline_int_and_float():
 
 def t_checker_and_interpreter_agree():
     """Every builtin in the checker has an arity and a hint (and vice versa)."""
-    assert len(BUILTINS) == 28
+    assert len(BUILTINS) == 30
     assert set(BUILTIN_ARITY) == set(BUILTINS)
     assert set(BUILTIN_HINT) == set(BUILTINS)
 

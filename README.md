@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 28 builtins · 5 templates · 15 examples · 577 tests green · version 1.4 (see version.py) · MIT`
+`19 keywords · 30 builtins · 5 templates · 15 examples · 619 tests green · version 1.5 (see version.py) · MIT`
 
 ---
 
@@ -37,7 +37,7 @@ python3 juru.py examples/demo.jr
 echo 'say("hello JuRu!")' > hello.jr
 python3 juru.py hello.jr
 
-# 3) try the live REPL
+# 3) try the live REPL (or just `python3 juru.py` — same thing, like `python`)
 python3 repl.py
 
 # 4) or start from a ready-made template
@@ -48,11 +48,17 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.4 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.5 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
+type help() to see the whole toolbox
 jruru> 1 + 2
 => 3
+jruru> help("pow")                   ← built-in docs, like Python's help()
+pow(a, b)
+
+raise a to the power b — the exponent tool (no ** to memorize).
+...
 jruru> d = {"name": "Aman", "age": 20}
 jruru> d["age"] + 2
 => 22
@@ -67,8 +73,9 @@ jruru> count(["go", "go", "stop"], "go")
 => 2
 jruru> name = "JuRu"
 jruru> naame                         ← a typo? it helps you
-JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'?
-                                     (nothing with this name is ever assigned)
+JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
+    naame
+    ^
 jruru> exit
 ```
 
@@ -117,7 +124,9 @@ say(factorial(5))                   # 120
 ```
 
 Every mistake gets a human message, with the exact line and column —
-and a typo gets the closest real name back:
+and since version 1.5 the CLI and the REPL also show the offending line
+with a caret under the exact character, like Python. A typo even gets
+the closest real name back:
 
 ```
 JuRu Error (line 3, col 10): missing closing " — text must be on one line
@@ -127,6 +136,13 @@ JuRu Error (line 4, col 14): key 'z' was not found — this dict has: a, b
 JuRu Error (line 1, col 1): cannot import 'ghost.jr' — file not found (looked at: /tmp/ghost.jr)
 JuRu Error (line 2, col 5): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
 JuRu Error (line 1, col 5): 'bolo' was not found (the old 'bolo' is now 'say')
+```
+
+```text
+$ python3 juru.py oops.jr            # oops.jr: nums = [1, 2, 3] / say(nums[7])
+JuRu Error (line 2, col 10): index 7 is out of range — this list has 3 items (0 to 2)
+    say(nums[7])
+             ^
 ```
 
 ## Keywords (19)
@@ -140,7 +156,7 @@ and   or    not     import
 `else if` is two words. Blocks are `{ }` — no indentation headaches.
 One statement per line; comments start with `#`.
 
-## Builtins (28 — all reserved names)
+## Builtins (30 — all reserved names)
 
 | Builtin | Does |
 |---------|------|
@@ -171,11 +187,15 @@ One statement per line; comments start with `#`.
 | `count(list, item)` | how many times the item appears (deep equality) |
 | `pow(a, b)` | exponents without `**` (`pow(2, 10)` → `1024`); impossible math is refused in words |
 | `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `func`, `module` |
+| `help(name)` | built-in docs — `help()` lists the whole toolbox, `help("pow")` prints one card |
+| `sleep(seconds)` | pause the program (`sleep(1)` waits one second) — at most 30 s per call, 120 s per run |
 
 Only `push` and `pop` change a list in place — `sorted` and `reverse` hand
-you a fresh list and leave the original alone. Wave 3 (`float`, `pow`,
-`pop`, `type`) added **zero** new keywords: the language stays 19 keywords
-big.
+you a fresh list and leave the original alone. Waves 3–4 (`float`, `pow`,
+`pop`, `type`, then `help`, `sleep`) added **zero** new keywords: the
+language stays 19 keywords big. And `help("anything")` never lies — a
+test suite runs every card's examples and checks its guard lines against
+the real error messages.
 
 ## Templates — start in one command
 
@@ -238,6 +258,10 @@ repl        same pipeline, one line at a time, one shared environment
   every imported module**
 - **interpreter** — runs the AST with guards: bounds checks, runaway-loop
   protection, short-circuit logic, friendly recursion limits
+- **helpdb** — the `help()` knowledge base: one truthful card per builtin
+  and keyword, aliases (`power` → `pow`), did-you-mean for unknown names
+- **errfmt** — error display: the message line plus the offending source
+  line and a caret under the exact column (CLI + REPL)
 
 ## Install it (pip)
 
@@ -245,7 +269,8 @@ The whole language is a pip package — `src/juru/`, one flat namespace:
 
 ```bash
 pip install juru            # from a release
-juru --version              # JuRu 1.4
+juru --version              # JuRu 1.5
+juru                        # bare command → the REPL (exactly like `python`)
 juru --new hello            # starter template
 juru hello.jr               # run it
 juru repl                   # try ideas live
@@ -257,20 +282,20 @@ are thin launchers into the same package.
 
 ## VS Code (official, ready to load)
 
-Syntax highlighting (all 19 keywords + 28 builtins), snippets, brackets and
+Syntax highlighting (all 19 keywords + 30 builtins), snippets, brackets and
 folding — the extension lives at `vscode/juru-vscode/` and its keyword list
 is test-enforced against the language. Load it in two minutes:
 
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.4.0.vsix
+code --install-extension juru-vscode-1.5.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 577, all green
+## Tests — 619, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -286,10 +311,13 @@ python3 test_step7.py         # 17   (modules: import, run-once, loops, isolatio
 python3 test_step8.py         # 19   (did-you-mean + the multi-line REPL)
 python3 test_step9.py         # 23   (sorted/reverse/find/keys/values/count)
 python3 test_step12.py        # 22   (float/pow/pop/type + all their guards)
+python3 test_step15.py        # 15   (help(): truthful cards, aliases, unknowns)
+python3 test_step16.py        # 13   (sleep() guards + the bare-`juru` REPL)
+python3 test_step17.py        # 10   (line + caret error display)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 38   (steps 1–14 combined, no mercy)
+python3 test_ultimate.py      # 42   (steps 1–17 combined, no mercy)
 ```
 
 ## Project structure
@@ -301,7 +329,7 @@ JuRu/
 ├── checker.py          # thin launcher → src/juru/checker.py (check a file)
 ├── pyproject.toml      # pip packaging (pip install juru)
 ├── src/juru/           # the package: lexer, parser, checker, interpreter,
-│                       #   cli, repl, version + templates/ (5 starters)
+│                       #   cli, repl, helpdb, errfmt, version + templates/
 ├── vscode/juru-vscode/  # the official VS Code extension (prepare-only)
 ├── design.md           # the full design document
 ├── docs/tutorial.md    # learn JuRu in one sitting (test-verified)
@@ -309,7 +337,7 @@ JuRu/
 ├── docs/vscode.md      # load the extension in 2 minutes
 ├── logo/juru_icon.svg  # the language icon (orange → red ruby + braces)
 ├── examples/           # 15 verified demo programs
-├── test_*.py           # 17 test suites, 577 tests
+├── test_*.py           # 20 test suites, 619 tests
 └── LICENSE             # MIT
 ```
 

@@ -2,7 +2,7 @@
   "name": "juru-vscode",
   "displayName": "JuRu Language (official)",
   "description": "Syntax highlighting, snippets and friendly editing for JuRu (.jr) — the easy, secure programming language.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "publisher": "juru-lang",
   "license": "MIT",
   "engines": {

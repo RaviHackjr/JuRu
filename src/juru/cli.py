@@ -25,6 +25,7 @@ from .parser import parse_source
 from .checker import Checker, did_you_mean
 from .interpreter import Interpreter
 from .version import VERSION
+from .errfmt import render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(HERE, "templates")
@@ -102,12 +103,12 @@ def run_program(path):
         tree = parse_source(src)
         Checker().check(tree)   # semantic checks before a single line runs
     except JuRuGalti as err:
-        fail(str(err))
+        fail(render(err, src))
     try:
         base = os.path.dirname(os.path.abspath(path))
         Interpreter().run(tree, base_dir=base)   # imports resolve next to the file
     except JuRuGalti as err:
-        fail(str(err))
+        fail(render(err, src))
     except (RecursionError, MemoryError):
         fail("JuRu Error: this program used too much of something — "
              "deep recursion or a value that grew too big")
@@ -124,8 +125,8 @@ def run_repl():
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        print(USAGE)
-        sys.exit(1)
+        run_repl()          # like typing `python` with no arguments
+        return
     first = args[0]
     if first in ("--help", "-h"):
         print(USAGE)

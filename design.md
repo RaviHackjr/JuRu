@@ -37,9 +37,11 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `lexer.py` | source text → tokens | **55 pass** |
 | `parser.py` | tokens → AST + parse-time safety checks | **111 pass** |
 | `checker.py` | semantic checks before running (Steps 3 + 5) | **47 pass** |
-| `interpreter.py` | runs the AST + the stdlib + modules (Steps 4–7, 12) | **93 pass** |
-| `juru.py` | `.jr` runner (`python3 juru.py file.jr`) | tested via checker suite |
-| `repl.py` | interactive REPL (Steps 5+8) | **10 pass** |
+| `interpreter.py` | runs the AST + the stdlib + modules (Steps 4–7, 12, 15–16) | **93 pass** |
+| `helpdb.py` | the `help()` knowledge base — 48 truthful cards (Step 15) | in test_step15 |
+| `errfmt.py` | error display: line + caret under the exact column (Step 17) | in test_step17 |
+| `juru.py` | `.jr` runner (`python3 juru.py file.jr`); bare → REPL (Step 16) | tested via checker suite |
+| `repl.py` | interactive REPL (Steps 5+8, banner + bare `help` in Step 16) | **10 pass** |
 | `test_programs.py` | 3 heavy programs: primes/gcd, algorithms, game | **13 pass** |
 | `test_stdlib.py` | the Step 5 builtins, both layers, mirror rule | **25 pass** |
 | `test_repl.py` | REPL behaviour, end to end via subprocess | **10 pass** |
@@ -49,12 +51,15 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_step8.py` | did-you-mean + the multi-line REPL | **19 pass** |
 | `test_step9.py` | sorted/reverse/find/keys/values/count | **23 pass** |
 | `test_step12.py` | float/pow/pop/type + all their guards | **22 pass** |
+| `test_step15.py` | help(): truthful cards, aliases, unknowns, guards | **15 pass** |
+| `test_step16.py` | sleep() guards + the bare-`juru` REPL | **13 pass** |
+| `test_step17.py` | line + caret error display, CLI + REPL + modules | **10 pass** |
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–14 combined, no mercy | **38 pass** |
+| `test_ultimate.py` | steps 1–17 combined, no mercy | **42 pass** |
 | `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **577 tests green** |
+| **Total** | | **619 tests green** |
 
 Run everything yourself:
 ```
@@ -162,7 +167,7 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 - **Runaway protection**: any loop over 10,000,000 steps stops itself.
 - **Recursion limit**: `RecursionError` becomes a friendly JuRu error.
 
-## The stdlib (Steps 5+6+9+12 — 28 reserved builtins)
+## The stdlib (Steps 5+6+9+12+15+16 — 30 reserved builtins)
 
 | Builtin | Does | Guard |
 |---------|------|-------|
@@ -194,17 +199,23 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 | `pow(a, b)` | exponents (`pow(2, 10)` → `1024`) | exactly 2 args; numbers; `0 ** negative` and negative base + fraction refused in words; huge results refused |
 | `pop(list)` | remove + return the last item, in place | exactly 1 arg; a list; empty list refused |
 | `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `func`, `module` | exactly 1 arg; never fails |
+| `help(name)` | built-in docs: no args → the whole toolbox; `"name"` → one card | at most 1 arg; non-string name refused; unknown names answer in words (never crash) |
+| `sleep(seconds)` | pause the program (games love this) | exactly 1 arg; number only; no negatives; at most 30 s per call; at most 120 s per run |
 
-Step 12's four tools add **zero keywords**. Purity rule: only `push` and
-`pop` mutate — `sorted` and `reverse` return fresh lists and leave the
-original untouched (test-enforced). `find` misses with `-1` (never a
-crash), and `count` counts with the same equality rules as `==`: `1` finds
-`1.0`, `true` matches nothing numeric. `pow` guards every impossible case
-**before** evaluating: Python would answer `(-2) ** 0.5` with a complex
-number — JuRu answers in words instead.
+Step 12's four tools and Batch 4's two (`help`, `sleep`) add **zero
+keywords**. Purity rule: only `push` and `pop` mutate — `sorted` and
+`reverse` return fresh lists and leave the original untouched
+(test-enforced). `find` misses with `-1` (never a crash), and `count`
+counts with the same equality rules as `==`: `1` finds `1.0`, `true`
+matches nothing numeric. `pow` guards every impossible case **before**
+evaluating: Python would answer `(-2) ** 0.5` with a complex number —
+JuRu answers in words instead. `sleep` carries its own budget so a
+runaway loop cannot hide inside it, and `help` is a knowledge base of
+48 cards that a test suite keeps truthful (every example runs, every
+guard line matches the real message).
 
 Two layers guard every builtin and both print the **exact same message**
-(mirror rule, test-enforced for all 28): the checker rejects a wrong arity
+(mirror rule, test-enforced for all 30): the checker rejects a wrong arity
 before a single line runs; the interpreter rejects wrong value types while
 running.
 
@@ -271,7 +282,7 @@ documentation: the test suite parses every ` ```jr ` block and enforces that
 - a block with no output block prints **nothing** (undocumented output
   would be a lie)
 - `ask()` blocks are checker-only (interactive) and never claim output
-- the tutorial mentions all 19 keywords, all 28 builtins, every example
+- the tutorial mentions all 19 keywords, all 30 builtins, every example
   file and every template — docs cannot silently drift from the language
 
 ## Packaging (Step 13 — `pip install juru`)
@@ -307,7 +318,7 @@ src/juru/
 `vscode/juru-vscode/` ships everything an editor needs, ready to package:
 
 - `package.json` — declares the `juru` language (`.jr`), the grammar and the snippets
-- `syntaxes/juru.tmLanguage.json` — colors the 19 keywords, all 28 builtins,
+- `syntaxes/juru.tmLanguage.json` — colors the 19 keywords, all 30 builtins,
   comments, strings, numbers and operators
 - `snippets/juru.json` — `if`, `elseif`, `for`, `forin`, `while`, `func`,
   `say`, `ask`, `import`
@@ -319,13 +330,14 @@ Two guarantees, both test-enforced: the grammar's keyword alternation is
 and every JSON file is valid. Publishing to the Marketplace is a later,
 separate step — `docs/vscode.md` has the two-minute load instructions.
 
-## The REPL (Steps 5+8 — `python3 repl.py`)
+## The REPL (Steps 5+8+16 — `python3 repl.py` or bare `juru`)
 
 ```
 $ python3 repl.py
-JuRu 1.4 REPL — full English, easy like Python, secure like Rust.
+JuRu 1.5 REPL — full English, easy like Python, secure like Rust.
 type 'exit' or press Ctrl-D to leave
 type 'cancel' or press Ctrl-C to drop an open block
+type help() to see the whole toolbox
 jruru> 1 + 2
 => 3
 jruru> d = {"name": "Aman", "age": 20}
@@ -339,11 +351,17 @@ jruru> for x in [10, 20] {
 jruru> name = "JuRu"
 jruru> naame
 JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
+    naame
+    ^
 jruru> exit
 ```
 
 - one shared environment — names, lists, dicts and funcs survive line to line
 - a lone expression echoes `=> value`; `say(...)` prints directly, no echo
+- **bare `juru` (no arguments) opens the same REPL** — exactly like typing
+  `python` with no arguments (Step 16)
+- **bare `help` (or `?`) prints the whole toolbox** without needing
+  parentheses — a REPL-only shortcut (Step 16)
 - **multi-line blocks** — a line that ends with an open brace/paren/bracket or
   a trailing operator/keyword continues on the `......> ` prompt until the
   block closes; completion is decided by the **real lexer**, so braces inside
@@ -354,8 +372,9 @@ jruru> exit
   starts fresh; vital when input is piped and Ctrl-C is absent
 - the checker runs on every entry against the live environment (typos,
   reserved names, arity — caught before the line runs)
-- dicts, `for x in`, `in`, slices, modules and all 28 builtins work in the REPL
-- a mistake prints the friendly error and the session **continues**
+- dicts, `for x in`, `in`, slices, modules and all 30 builtins work in the REPL
+- a mistake prints the friendly error with the line + caret (Step 17) and the
+  session **continues**
 - leave with `exit`, `quit`, or Ctrl-D
 
 ## Static semantic checks (Step 3 — the checker)
@@ -370,7 +389,7 @@ The checker runs AFTER parsing and BEFORE running. It catches:
    and missing module members; a hopeless typo stays plain (no wrong guess),
    and the old-Hinglish hint always wins: `'bolo' was not found (the old
    'bolo' is now 'say')`.
-2. **Reserved names** — assigning to / defining any of the 28 builtins.
+2. **Reserved names** — assigning to / defining any of the 30 builtins.
 3. **Duplicate parameters** — `func f(a, a)` is rejected.
 4. **Wrong argument counts** — for builtins always; for user funcs whenever
    the definition is unambiguous (exactly one `func` with that name).
@@ -396,7 +415,7 @@ Standalone use: `python3 checker.py file.jr` → `OK — no semantic errors ✅`
 - **Dict keys guarded** — text/int only; missing keys error with the real key list.
 - **Runaway loop protection** — 10M+ iterations stops the loop.
 - **Short-circuit logic** — `false and 1/0` never divides.
-- **Reserved builtins** — the 28 builtins (`ask` … `type`) cannot be shadowed,
+- **Reserved builtins** — the 30 builtins (`ask` … `sleep`) cannot be shadowed,
   not even as a module name (`import "len.jr"` is refused).
 - **Modules are sandboxed** — isolated env, checked source, loop detection,
   one run per file, no leaking names.
@@ -408,6 +427,29 @@ Standalone use: `python3 checker.py file.jr` → `OK — no semantic errors ✅`
 ```
 JuRu Error (line 3, col 10): missing closing " — text must be on one line
 ```
+
+Since Step 17, the CLI and the REPL **show the line and point at the exact
+column** — Python's caret style, in JuRu's plain words:
+
+```
+$ python3 juru.py oops.jr      # oops.jr contains: say(nums[7]) on line 2
+JuRu Error (line 2, col 10): index 7 is out of range — this list has 3 items (0 to 2)
+    say(nums[7])
+             ^
+```
+
+The rendering rules (all test-enforced in `errfmt.py` + `test_step17.py`):
+
+- the **message line never changes** — `str(err)` is byte-identical, so the
+  checker↔interpreter mirror rule and every existing message keep holding;
+  the context lines are display-only
+- the caret sits under the **exact column**, computed over the raw line
+  (leading indentation is stripped for display)
+- **module errors** (`in 'lib.jr': ...`) borrow the module's own file for
+  their context, so the caret points into the file that actually failed
+- if the source is unavailable, the line is out of range, or the line is
+  blank, `render()` falls back to the plain message — it can never show a
+  WRONG line, and nothing ever leaks a Python traceback
 
 Old Hinglish names (`bolo`, `agar`, ...) are ordinary names now — they parse
 and run; calling the old `bolo(...)` even gets a hint:
@@ -496,5 +538,12 @@ Notes:
 | 12 | Stdlib wave 3: float, pow, pop, type (the input/math wave) | ✅ DONE — 22 tests |
 | 13 | pip packaging: src/juru/ + pyproject.toml + `juru` command | ✅ DONE — 9 tests |
 | 14 | VS Code extension (prepare-only, files + docs ready) | ✅ DONE — 3 tests |
-| — | Ultimate torture: steps 1–14 combined | ✅ DONE — 38 tests |
-| — | **Total: 577 tests green** | |
+| 15 | `help()` — the built-in docs: 48 truthful cards, aliases, did-you-mean | ✅ DONE — 15 tests |
+| 16 | `sleep(seconds)` + the bare-`juru` REPL + REPL `help`/`?` | ✅ DONE — 13 tests |
+| 17 | Python-style error display: the line + a caret under the exact column | ✅ DONE — 10 tests |
+| — | Ultimate torture: steps 1–17 combined | ✅ DONE — 42 tests |
+| — | **Total: 619 tests green** | |
+
+After 17 the core language is complete. Still open, all optional and on
+demand: publishing the extension to the Marketplace, a docs website, and a
+stdlib wave 4 beyond `help`/`sleep` (only when a real use asks for it).

@@ -37,7 +37,7 @@ BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop"
             "sum", "min", "max",
             "split", "join", "trim", "replace", "abs", "round", "random", "sqrt",
             "sorted", "reverse", "find", "keys", "values", "count",
-            "pow", "type")
+            "pow", "type", "help", "sleep")
 
 # (min_args, max_args) for every builtin — checked before a single line runs
 BUILTIN_ARITY = {
@@ -69,6 +69,8 @@ BUILTIN_ARITY = {
     "count": (2, 2),
     "pow": (2, 2),
     "type": (1, 1),
+    "help": (0, 1),
+    "sleep": (1, 1),
 }
 
 # the exact message the interpreter would print — both layers say the same thing
@@ -101,6 +103,8 @@ BUILTIN_HINT = {
     "count": "count(list, item) takes exactly 2 arguments",
     "pow": "pow(a, b) takes exactly 2 arguments",
     "type": "type(x) takes exactly 1 argument",
+    "help": "help() takes at most 1 argument",
+    "sleep": "sleep(seconds) takes exactly 1 argument",
 }
 
 

@@ -232,7 +232,7 @@ if "y" in word { say("yes") }
 - membership uses the normal equality rules (`1 in [1.0]` → `true`,
   `true in [1]` → `false`)
 
-## 14. Builtins — the 28-tool toolbox
+## 14. Builtins — the 30-tool toolbox
 
 The classics:
 ```
@@ -288,6 +288,21 @@ pow(9, 0.5)     # 3.0
 type(5)         # int        ← one word: int, float, text, bool, null,
 type("hi")      # text         list, dict, func, module
 ```
+
+The Batch-4 helpers (still zero new keywords):
+```
+help()          # the whole toolbox, one line per tool
+help("pow")     # one card: what it does, worked examples, its guards
+help("for")     # keyword cards work too; unknown names answer in words
+sleep(1)        # pause one second — perfect between game rounds
+```
+
+Their guards:
+- `help(5)` → `help() needs a name in quotes — got: 5`
+- `help("a", "b")` → `help() takes at most 1 argument`
+- `sleep(-1)` → `sleep() cannot go back in time — seconds cannot be negative (got: -1)`
+- `sleep(31)` → `sleep() takes at most 30 seconds at a time (got: 31)`
+- more than 120 s of sleep in one run → `sleep() — this program has slept more than 120 seconds in total; something may be stuck`
 
 Guards that talk like a human (pow refuses impossible math BEFORE doing it):
 - `float("abc")` → `float('abc') — 'abc' is not a number`
@@ -414,12 +429,12 @@ Tip: `python3 checker.py file.jr` checks a file without running it.
 - Every list index **bounds-checked** (no memory-safe escape hatches)
 - **Runaway protection** — a loop over 10,000,000 steps stops itself
 - Short-circuit logic — wrong order still never crashes
-- Reserved builtins — the 28-tool toolbox can never be overwritten
+- Reserved builtins — the 30-tool toolbox can never be overwritten
 - Dict keys are guarded; missing keys are errors, not `null`
 - Modules are isolated and checked; import loops are detected
 - Friendly type checks at runtime, with line/col on every error
 
-## 20. The 19 keywords + 28 builtins
+## 20. The 19 keywords + 30 builtins
 
 ```
 say  if  else  while  for  from  to  in

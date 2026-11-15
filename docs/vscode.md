@@ -11,7 +11,7 @@ publishing anything.
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.4.0.vsix
+code --install-extension juru-vscode-1.5.0.vsix
 ```
 
 **Or from source:**
@@ -24,7 +24,7 @@ Open a `.jr` file → VS Code picks **JuRu** automatically.
 
 ## What you get
 
-- **Colors** — 19 keywords, all 28 builtins, comments (`#`), text, numbers,
+- **Colors** — 19 keywords, all 30 builtins, comments (`#`), text, numbers,
   operators; the keyword list is test-enforced against `KEYWORDS`, so
   highlighting and language can never disagree.
 - **Snippets** — type `if`, `for`, `forin`, `while`, `func`, `say`, `ask`,
