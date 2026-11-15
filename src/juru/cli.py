@@ -28,7 +28,10 @@ from .version import VERSION
 from .errfmt import render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TEMPLATES_DIR = os.path.join(HERE, "templates")
+# Frozen build (PyInstaller): the templates land in the bundle root,
+# which _MEIPASS points at. In a normal install or clone this attribute
+# does not exist and HERE/templates is used, as always.
+TEMPLATES_DIR = os.path.join(getattr(sys, "_MEIPASS", HERE), "templates")
 
 # template name → one-line description (kept in sync with templates/*.jr)
 TEMPLATES = {

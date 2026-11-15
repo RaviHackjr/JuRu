@@ -1142,11 +1142,14 @@ def t_batch4_bare_command_is_repl():
 def t_batch5_frozen_build_files():
     """The PyInstaller spec + entry + install note exist and agree."""
     spec = open(os.path.join(HERE, "juru.spec"), encoding="utf-8").read()
-    assert "juru_entry.py" in spec
-    assert "src/juru/templates" in spec          # templates frozen in
+    assert "packaging" in spec and "juru_entry.py" in spec
+    assert "templates" in spec                       # templates frozen in
     assert '"juru"' in spec
-    entry = open(os.path.join(HERE, "juru_entry.py"), encoding="utf-8").read()
+    entry = open(os.path.join(HERE, "packaging", "juru_entry.py"),
+                 encoding="utf-8").read()
     assert "from juru.cli import main" in entry
+    cli = open(os.path.join(HERE, "src", "juru", "cli.py"), encoding="utf-8").read()
+    assert "_MEIPASS" in cli                         # frozen template lookup
     install = open(os.path.join(HERE, "packaging", "INSTALL.txt"),
                    encoding="utf-8").read()
     assert "juru --version" in install and "PATH" in install

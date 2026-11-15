@@ -319,8 +319,10 @@ src/juru/
 executable per system — built with PyInstaller from two small files:
 
 - `juru.spec` — the build recipe: one file, the templates for `--new`
-  frozen in beside the package, console app
-- `juru_entry.py` — the frozen entry point (calls `juru.cli.main`)
+  frozen into the bundle, console app
+- `packaging/juru_entry.py` — the frozen entry point (calls
+  `juru.cli.main`; kept out of the repo root so the root launcher
+  `juru.py` can never shadow the package during the freeze)
 - `packaging/INSTALL.txt` — rides along in every zip: quick start, PATH
   setup per platform, the macOS Gatekeeper note
 

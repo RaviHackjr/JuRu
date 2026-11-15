@@ -5,16 +5,22 @@ Build:  python3 -m PyInstaller juru.spec
 Result: dist/juru          (Linux / macOS)
         dist/juru.exe      (Windows)
 
-The templates that power `juru --new` ride along as data, placed inside
-the bundle next to the frozen cli module — the same relative layout the
-package uses on disk.
+Two details that matter:
+  - the entry script lives in packaging/ so the repo-root launcher
+    `juru.py` can never shadow the real `juru` package during analysis;
+  - the templates for `--new` are collected into the bundle root, where
+    cli.py finds them via sys._MEIPASS.
 """
 
+import os
+
+SPECDIR = SPECPATH   # PyInstaller injects the spec file's directory
+
 a = Analysis(
-    ["juru_entry.py"],
-    pathex=["src"],
+    [os.path.join(SPECDIR, "packaging", "juru_entry.py")],
+    pathex=[os.path.join(SPECDIR, "src")],
     binaries=[],
-    datas=[("src/juru/templates", "juru/templates")],
+    datas=[(os.path.join(SPECDIR, "src", "juru", "templates"), "templates")],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

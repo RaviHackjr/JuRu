@@ -78,8 +78,9 @@ python3 -m PyInstaller juru.spec      # → dist/juru  (or dist/juru.exe)
 ```
 
 The templates for `--new` ride along automatically; `juru.spec` and
-`juru_entry.py` are the only build files. Pushing a `v*` tag builds the
-same binaries on GitHub's runners and attaches them to the release.
+`packaging/juru_entry.py` are the only build files. Pushing a `v*` tag
+builds the same binaries on GitHub's runners and attaches them to the
+release.
 
 ## Next step: VS Code
 

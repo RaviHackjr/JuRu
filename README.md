@@ -341,8 +341,7 @@ JuRu/
 ├── checker.py          # thin launcher → src/juru/checker.py (check a file)
 ├── pyproject.toml      # pip packaging (pip install juru)
 ├── juru.spec           # PyInstaller spec — the standalone interpreter
-├── juru_entry.py       # its entry point (frozen build only)
-├── packaging/          # files that ride along in the interpreter zips
+├── packaging/          # the frozen entry point + files that ride in the zips
 ├── src/juru/           # the package: lexer, parser, checker, interpreter,
 │                       #   cli, repl, helpdb, errfmt, version + templates/
 ├── vscode/juru-vscode/  # the official VS Code extension (prepare-only)
