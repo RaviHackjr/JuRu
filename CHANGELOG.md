@@ -3,6 +3,22 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.7 — 2026-11-16
+
+### Added
+- `.jr` files now carry the JuRu ruby in **VS Code's file tree** — the
+  same way Python files show theirs. The language icon
+  (`images/juru-file-icon.png`, a small-size variant of the logo with
+  bolder braces) works with any icon theme — Seti, Material, anything —
+  with no settings and no clicks.
+- The repository itself is kept deliberately clean: the test suite now
+  enforces the exact top-level file set (no stray files, no build
+  junk, `pr.txt` never in the repo).
+
+### Details
+- 30 builtins, still 19 keywords.
+- 20 test suites, 629 tests.
+
 ## 1.6 — 2026-11-16
 
 ### Changed

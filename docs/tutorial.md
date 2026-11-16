@@ -748,7 +748,7 @@ bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.6 (easy like Python, secure like Rust) on linux
+JuRu 1.7 (easy like Python, secure like Rust) on linux
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> for x in [10, 20] {

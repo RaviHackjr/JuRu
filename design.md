@@ -57,9 +57,9 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–20 combined, no mercy | **50 pass** |
+| `test_ultimate.py` | steps 1–20 combined, no mercy | **52 pass** |
 | `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **627 tests green** |
+| **Total** | | **629 tests green** |
 
 Run everything yourself:
 ```
@@ -595,8 +595,8 @@ Notes:
 | 18 | Standalone interpreter: PyInstaller spec → release zips, no Python needed | ✅ DONE — release workflow |
 | 19 | VS Code run button + REPL command + `juru.interpreterPath` | ✅ DONE — 3 tests |
 | 20 | Distribution polish — Python-grade REPL, real icons, one-step setup | ✅ DONE — 5 tests |
-| — | Ultimate torture: steps 1–20 combined | ✅ DONE — 50 tests |
-| — | **Total: 627 tests green** | |
+| — | Ultimate torture: steps 1–20 combined | ✅ DONE — 52 tests |
+| — | **Total: 629 tests green** | |
 
 After 20 the language, its distribution and its setup are complete, the
 way Python's is: download, one setup step, run. Still open, all optional

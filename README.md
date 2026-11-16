@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 30 builtins · 5 templates · 15 examples · 627 tests green · version 1.6 (see version.py) · MIT`
+`19 keywords · 30 builtins · 5 templates · 15 examples · 629 tests green · version 1.7 (see version.py) · MIT`
 
 ---
 
@@ -48,7 +48,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.6 (easy like Python, secure like Rust) on win32
+JuRu 1.7 (easy like Python, secure like Rust) on win32
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> 1 + 2
@@ -278,7 +278,7 @@ zip for your system and let its setup do the rest:
 Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.6
+juru --version              # JuRu 1.7
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -310,13 +310,13 @@ Load it in two minutes:
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.6.0.vsix
+code --install-extension juru-vscode-1.7.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 627, all green
+## Tests — 629, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -338,7 +338,7 @@ python3 test_step17.py        # 10   (line + caret error display)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 50   (steps 1–20 combined, no mercy)
+python3 test_ultimate.py      # 52   (steps 1–20 combined, no mercy)
 ```
 
 ## Project structure
@@ -363,7 +363,7 @@ JuRu/
 ├── logo/               # the icon set: juru_icon.svg (source),
 │                       #   juru_icon.ico (16→256 px, inside juru.exe)
 ├── examples/           # 15 verified demo programs
-├── test_*.py           # 20 test suites, 627 tests
+├── test_*.py           # 20 test suites, 629 tests
 └── LICENSE             # MIT
 ```
 

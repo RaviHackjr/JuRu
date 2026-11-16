@@ -16,6 +16,7 @@ import os
 import random as pyrandom
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -937,7 +938,7 @@ def t_repl_new_builtins_live():
 
 # ================================================================ batch 2/3/4: version + language surface
 def t_batch4_version_bump():
-    assert VERSION == "1.6"
+    assert VERSION == "1.7"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 19          # batch 4 added zero keywords
@@ -1275,6 +1276,49 @@ def t_batch6_extension_zero_config():
     assert "local/bin" in js                                     # install.sh's locations
 
 
+# ================================================================ batch 7: the .jr icon in VS Code's explorer + a tidy repo
+def t_batch7_language_icon():
+    """VS Code shows the JuRu icon next to .jr files (the language
+    default icon) — the same slot Python's .py icon gets."""
+    with open(os.path.join(HERE, "vscode", "juru-vscode", "package.json"),
+              encoding="utf-8") as f:
+        pkg = json.load(f)
+    lang = pkg["contributes"]["languages"][0]
+    assert lang["id"] == "juru"
+    icon = lang["icon"]
+    assert icon["light"] == icon["dark"] == "./images/juru-file-icon.png"
+    png = open(os.path.join(HERE, "vscode", "juru-vscode", "images",
+                            "juru-file-icon.png"), "rb").read()
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">I", png[16:20])[0] == 32      # small-size icon, crisp
+    guide = open(os.path.join(HERE, "docs", "vscode.md"), encoding="utf-8").read()
+    assert "file icon" in guide                          # documented
+
+
+def t_batch7_repo_tidy():
+    """The repo stays clean on GitHub: only deliberate files, no junk."""
+    git = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"],
+                         cwd=HERE, capture_output=True, text=True)
+    if git.returncode != 0:
+        return                                           # not a clone — nothing to enforce
+    tracked = subprocess.run(["git", "ls-files"], cwd=HERE,
+                             capture_output=True, text=True).stdout.splitlines()
+    top = sorted({p.split("/")[0] for p in tracked})
+    assert "pr.txt" not in top                           # never part of the repo
+    for junk in ("build", "dist", "__pycache__", "src/juru.egg-info", ".vscode"):
+        assert not any(p == junk or p.startswith(junk + "/") for p in tracked), junk
+    assert not any(p.endswith(".pyc") for p in tracked)
+    expected = sorted([
+        ".github", ".gitignore", "CHANGELOG.md", "LICENSE", "README.md",
+        "checker.py", "design.md", "docs", "examples", "juru.py", "juru.spec",
+        "logo", "packaging", "pyproject.toml", "repl.py", "src", "vscode",
+    ] + ["test_%s.py" % s for s in ("checker", "interpreter", "lexer", "mega",
+         "packaging", "parser", "programs", "repl", "stdlib", "step12",
+         "step15", "step16", "step17", "step6", "step7", "step8", "step9",
+         "templates", "tutorial", "ultimate")])
+    assert top == expected, (top, "unexpected or missing top-level files")
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -1327,6 +1371,8 @@ ALL = [
     ("batch 6: the icons are real", t_batch6_icons_shipped),
     ("batch 6: one-step setup files", t_batch6_one_step_setup),
     ("batch 6: the extension needs zero config", t_batch6_extension_zero_config),
+    ("batch 7: the .jr icon lives in VS Code's explorer", t_batch7_language_icon),
+    ("batch 7: the repo stays tidy on GitHub", t_batch7_repo_tidy),
 ]
 
 if __name__ == "__main__":

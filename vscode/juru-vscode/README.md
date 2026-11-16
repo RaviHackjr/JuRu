@@ -18,7 +18,7 @@ Syntax highlighting, snippets, a run button and a REPL for **JuRu** (`.jr`)
 | Run | ▶ button, **Ctrl+Alt+J**, right-click (editor + file tree) → **JuRu: Run File**, command palette; runs in a real terminal so `ask()` works |
 | REPL | **JuRu: Open REPL** — a live JuRu session in the terminal |
 | Setup | finds the interpreter by itself (`auto`); a missing interpreter gets a dialog with a link to the download |
-| Icon | the official JuRu ruby (`images/juru.png`) |
+| Icon | the official JuRu ruby (`images/juru.png`), and `.jr` files wear the ruby in the file tree too (`images/juru-file-icon.png`) |
 
 The grammar's keyword list is **test-enforced** to match the language's
 `KEYWORDS` exactly — highlighting can never drift from the language.
@@ -30,7 +30,7 @@ The grammar's keyword list is **test-enforced** to match the language's
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.6.0.vsix
+code --install-extension juru-vscode-1.7.0.vsix
 ```
 
 ### Option B — run from source
@@ -65,6 +65,7 @@ vscode/juru-vscode/
 ├── package.json                 the extension manifest
 ├── extension.js                 the run button + REPL commands
 ├── images/juru.png              the official icon (256×256)
+├── images/juru-file-icon.png    the .jr file icon for the Explorer (32×32)
 ├── language-configuration.json  comments, brackets, folding rules
 ├── syntaxes/juru.tmLanguage.json  the TextMate grammar
 ├── snippets/juru.json           the snippets

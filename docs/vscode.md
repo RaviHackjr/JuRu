@@ -11,7 +11,7 @@ publishing anything.
 `JuRu-vscode-<version>.vsix`), then:
 
 ```bash
-code --install-extension JuRu-vscode-1.6.0.vsix
+code --install-extension JuRu-vscode-1.7.0.vsix
 ```
 
 **Or build it from this repo:**
@@ -19,7 +19,7 @@ code --install-extension JuRu-vscode-1.6.0.vsix
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.6.0.vsix
+code --install-extension juru-vscode-1.7.0.vsix
 ```
 
 **Or from source:**
@@ -49,6 +49,14 @@ from setup.bat on Windows, `/usr/local/bin` or `~/.local/bin` from
 install.sh elsewhere). You never set an interpreter, never pick a
 version, never hunt for a path — like a real installer, the setup did
 it already.
+
+## The .jr file icon in the Explorer
+
+`.jr` files carry the JuRu ruby in the file tree — the same way Python
+files show theirs. It comes from the extension's language icon, so it
+works with any icon theme (Seti, Material, ...) without switching
+anything. No setting, no click — install the extension and the icon is
+there next to every `.jr` file.
 
 - **JuRu: Open REPL** — a live JuRu session in the terminal.
 - **juru.interpreterPath** — only for unusual setups: leave it as
