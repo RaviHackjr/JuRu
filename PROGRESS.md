@@ -9,12 +9,15 @@
 
 ## Current state (updated 2026-11-16)
 
-- **Version:** 1.8 — latest release **v1.8** (not draft), commit `dc2a49d` on `main`.
-- **Tests:** 20 suites, **633 green** (`test_ultimate` 56).
-- **Keywords:** 19. **Builtins:** 30. **Templates:** 5.
-- **CI:** both workflows (`tests`, `release`) green on the latest push.
-- **Status:** full audit complete; ROADMAP.md written; **awaiting
-  "START STEP 1"**. Nothing of the new roadmap is implemented yet.
+- **Version:** 1.9 — latest release **v1.9** (not draft), commit `6b83535` on `main`.
+- **Tests:** 21 suites, **704 green** (`test_step22` 71, `test_ultimate` 56).
+- **Keywords:** 19. **Builtins:** 47 (registry: `src/juru/stdlib.py`). **Templates:** 5.
+- **CI:** both workflows (`tests`, `release`) green on the latest push; release
+  assets verified by download + actually running the shipped Linux binary
+  (`ok 42`, `help()` overview line, starter template, wave features all pass)
+  and inspecting the vsix (1.9.0).
+- **Status:** Step 1 (collections & ergonomics wave 1) shipped as v1.9;
+  **awaiting "START STEP 2"** (try / rescue).
 
 ## Completed before the roadmap (batches 1–8 — do not rebuild)
 
@@ -31,7 +34,7 @@
 | Step | Theme | Status | Version | Commit | Tests after | Notes |
 |------|-------|--------|---------|--------|-------------|-------|
 | — | Audit + roadmap | ✅ DONE (2026-11-16) | 1.8 | (this commit) | 633/20 | ROADMAP.md + PROGRESS.md created; repo-tidy test updated for the two new files; NO language changes |
-| 1 | Collections & ergonomics | ⬜ PENDING — awaiting "START STEP 1" | | | | |
+| 1 | Collections & ergonomics wave 1 | ✅ DONE (2026-11-16) — v1.9 | 1.9 | `6b83535` | 704/21 | Aug-assign (`+= -= *= /= %=` on names, list items, dict values; old value read before RHS, RHS once), negative indexing (reads/writes/remove_at; legal range in the error), slice steps (Python rule; zero step refused), **17 new builtins** (insert, remove_at, clear, extend, unique, delete, items, merge, index_of, starts_with, ends_with, ord, chr, set_of, union, intersect, difference), sets (list-backed, first-seen order, ONE equality rule; `{}` stays a dict), min/max variadic, `\uXXXX` escapes, `src/juru/stdlib.py` = the one registry (mirror rule now structural). New suite `test_step22` (71). **Deliberate break, documented in CHANGELOG:** `items` is now reserved (starter renames its var to `bag`; printed text unchanged). **Preserved quirk:** `xs[0:1] = [9]` still means `xs[0] = [9]` (v1.8 behavior, test-pinned). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
 | 2 | try / rescue | ⬜ PENDING | | | | |
 | 3 | Text & formatting | ⬜ PENDING | | | | |
 | 4 | Files & JSON | ⬜ PENDING | | | | |
@@ -50,7 +53,8 @@
 ## The batch loop (follow for every step — from batches 1–8)
 
 1. `gh auth setup-git` (token expires every session — always first).
-2. Baseline: full 20-suite sweep green BEFORE touching anything.
+2. Baseline: full suite sweep green BEFORE touching anything
+   (live count in "Current state" above).
 3. Implement the step (scope locked to ROADMAP.md; no drive-bys).
 4. New suite `test_step<NN>.py` + update every keyword-sensitive
    suite when keywords change (lexer, extension grammar, guide
