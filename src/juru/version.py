@@ -4,4 +4,4 @@ repl.py imports it, README.md and design.md quote it.
 Bump here, and the whole project knows.
 """
 
-VERSION = "1.8"
+VERSION = "1.9"

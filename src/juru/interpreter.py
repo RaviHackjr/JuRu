@@ -31,12 +31,7 @@ from .parser import (
 )
 from .checker import check_source, did_you_mean
 from .helpdb import overview, card_for, unknown
-
-BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop",
-            "sum", "min", "max",
-            "split", "join", "trim", "replace", "abs", "round", "random", "sqrt",
-            "sorted", "reverse", "find", "keys", "values", "count",
-            "pow", "type", "help", "sleep")
+from .stdlib import BUILTINS, check_arity
 MAX_LOOP_STEPS = 10_000_000        # runaway loop protection
 
 
@@ -59,6 +54,49 @@ class ModuleValue:
         self.name = name
         self.env = env
         self.path = path
+
+
+class SetV:
+    """A JuRu set — a bag of values with no duplicates, in first-seen order.
+
+    Backed by a plain list (not Python's set) so equality stays exactly
+    JuRu's equality — true != 1, but 1 == 1.0 — and lists can ride along.
+    A set is born from set_of([...]); {} is a dict, forever.
+    """
+
+    __slots__ = ("items",)
+
+    def __init__(self, items=()):
+        self.items = []
+        for x in items:
+            self.add(x)
+
+    def add(self, x):
+        if not any(_same_value(x, y) for y in self.items):
+            self.items.append(x)
+
+    def has(self, x):
+        return any(_same_value(x, y) for y in self.items)
+
+    def __len__(self):
+        return len(self.items)
+
+
+def _same_value(a, b):
+    """The ONE equality rule for the whole language: ==, find, count,
+    unique and sets all share it. true != 1 (different categories),
+    but 1 == 1.0 (same number family)."""
+    if isinstance(a, bool) != isinstance(b, bool):
+        return False
+    if _is_num(a) and _is_num(b):
+        return a == b
+    if isinstance(a, SetV) and isinstance(b, SetV):
+        if len(a.items) != len(b.items):
+            return False
+        return all(any(_same_value(x, y) for y in b.items) for x in a.items)
+    if type(a) is not type(b):
+        return False
+    return a == b
 
 
 class BreakSignal(Exception):
@@ -97,6 +135,8 @@ def _typename(v):
         return "list"
     if isinstance(v, dict):
         return "dict"
+    if isinstance(v, SetV):
+        return "set"
     if isinstance(v, FuncValue):
         return "func"
     if isinstance(v, ModuleValue):
@@ -117,6 +157,8 @@ def _truthy(v):
         return v != 0
     if isinstance(v, (str, list, dict)):
         return len(v) > 0
+    if isinstance(v, SetV):
+        return len(v.items) > 0
     return True
 
 
@@ -133,6 +175,10 @@ def display(v):
     if isinstance(v, dict):
         return "{" + ", ".join(
             display(k) + ": " + display(x) for k, x in v.items()) + "}"
+    if isinstance(v, SetV):
+        if not v.items:
+            return "set()"
+        return "{" + ", ".join(display(x) for x in v.items) + "}"
     if isinstance(v, str):
         return v
     if isinstance(v, FuncValue):
@@ -150,6 +196,7 @@ class Interpreter:
         self._modules = {}    # absolute path → ModuleValue (each file runs once)
         self._loading = []    # (path, base dir) stack — import loops die here
         self.sleep_total = 0.0
+        self._builtin_call = self._make_builtin_call()
 
     def run(self, tree, env=None, base_dir=None):
         """Run the whole tree. Returns the final environment (for the REPL)."""
@@ -169,20 +216,35 @@ class Interpreter:
             if st.name in BUILTINS:
                 raise JuRuGalti(st.line, st.col,
                                 "'{}' is reserved (builtin) — pick another name".format(st.name))
-            env.vars[st.name] = self.eval(st.value, env)
+            if st.op is not None:         # x += e — the shorthand for x = x + e
+                cur = self._lookup(st.name, st, env)
+                env.vars[st.name] = self._op_apply(
+                    st.line, st.col, st.op, cur, self.eval(st.value, env))
+            else:
+                env.vars[st.name] = self.eval(st.value, env)
             return
 
         if isinstance(st, SetIndex):
             seq = self.eval(st.seq, env)
             if isinstance(seq, dict):
-                key = self._check_key(self.eval(st.idx, env), st.idx)
-                seq[key] = self.eval(st.value, env)
+                key = self._check_key(self.eval(st.idx, env), st.idx.line, st.idx.col)
+                if st.op is not None:     # d["n"] += e — reads the old value first
+                    if key not in seq:
+                        self._missing_key(key, seq, st.idx)
+                    seq[key] = self._op_apply(
+                        st.line, st.col, st.op, seq[key], self.eval(st.value, env))
+                else:
+                    seq[key] = self.eval(st.value, env)
                 return
             if not isinstance(seq, list):
                 raise JuRuGalti(st.line, st.col,
                                 "only lists and dicts support item assignment (this is {})".format(_typename(seq)))
             idx = self._check_index(seq, st.idx, env)
-            seq[idx] = self.eval(st.value, env)
+            if st.op is not None:         # xs[i] += e — reads the old item first
+                seq[idx] = self._op_apply(
+                    st.line, st.col, st.op, seq[idx], self.eval(st.value, env))
+            else:
+                seq[idx] = self.eval(st.value, env)
             return
 
         if isinstance(st, Say):
@@ -274,9 +336,11 @@ class Interpreter:
             items = list(seq)          # one character at a time
         elif isinstance(seq, dict):
             items = list(seq.keys())   # dicts iterate over their keys
+        elif isinstance(seq, SetV):
+            items = list(seq.items)    # sets iterate their values, in order
         else:
             raise JuRuGalti(st.line, st.col,
-                            "'for x in ...' needs a list, text, or dict — got: {}".format(display(seq)))
+                            "'for x in ...' needs a list, text, dict, or set — got: {}".format(display(seq)))
         steps = 0
         for item in items:
             steps += 1
@@ -293,11 +357,11 @@ class Interpreter:
 
     # ---------- dicts ----------
     @staticmethod
-    def _check_key(key, node):
+    def _check_key(key, line, col):
         """Dict keys are text or whole numbers — everything else is a mistake."""
         if isinstance(key, (str, int)) and not isinstance(key, bool):
             return key
-        raise JuRuGalti(node.line, node.col,
+        raise JuRuGalti(line, col,
                         "a dict key must be text or a whole number — got: {}".format(display(key)))
 
     @staticmethod
@@ -360,17 +424,18 @@ class Interpreter:
         self._modules[path] = mod
         env.vars[st.module] = mod
 
-    def _slice_bound(self, seq, node, env, default, label):
+    def _slice_part(self, node, env, label, default):
+        """One slice bound: None → default; anything non-int is refused.
+
+        Negative values are fine now — they count backwards, Python-style.
+        """
         if node is None:
             return default
         v = self.eval(node, env)
         if isinstance(v, bool) or not isinstance(v, int):
             raise JuRuGalti(node.line, node.col,
                             "the slice {} must be a whole number (int) — got: {}".format(label, display(v)))
-        if v < 0:
-            raise JuRuGalti(node.line, node.col,
-                            "the slice {} cannot be negative — slices do not count backwards".format(label, display(v)))
-        return min(v, len(seq))
+        return v
 
     def _member(self, seq, e):
         if isinstance(seq, dict):
@@ -423,11 +488,18 @@ class Interpreter:
                 if not isinstance(seq, (list, str)):
                     raise JuRuGalti(e.line, e.col,
                                     "slices work on lists and text — got: {}".format(display(seq)))
-                start = self._slice_bound(seq, e.idx, env, 0, "start")
-                end = self._slice_bound(seq, e.idx_end, env, len(seq), "end")
-                return seq[start:end]
+                start = self._slice_part(e.idx, env, "start", None)
+                end = self._slice_part(e.idx_end, env, "end", None)
+                step = self._slice_part(e.idx_step, env, "step", 1)
+                if step == 0:
+                    raise JuRuGalti(e.idx_step.line, e.idx_step.col,
+                                    "the slice step cannot be zero")
+                lo, hi, st = slice(start, end, step).indices(len(seq))
+                if st < 0 and hi == -1:
+                    hi = None        # indices() marks "down to the very start" as -1
+                return seq[lo:hi:st]
             if isinstance(seq, dict):
-                key = self._check_key(self.eval(e.idx, env), e.idx)
+                key = self._check_key(self.eval(e.idx, env), e.idx.line, e.idx.col)
                 if key not in seq:
                     self._missing_key(key, seq, e.idx)
                 return seq[key]
@@ -441,7 +513,7 @@ class Interpreter:
         if isinstance(e, DictLit):
             result = {}
             for k_node, v_node in zip(e.keys, e.values):
-                key = self._check_key(self.eval(k_node, env), k_node)
+                key = self._check_key(self.eval(k_node, env), k_node.line, k_node.col)
                 result[key] = self.eval(v_node, env)
             return result
         if isinstance(e, Call):
@@ -473,11 +545,13 @@ class Interpreter:
             raise JuRuGalti(idx_node.line, idx_node.col,
                             "the index must be a whole number (int) — got: {}".format(display(idx)))
         n = len(seq)
-        if not 0 <= idx < n:
+        # negative indexes count backwards: -1 is the last item, -len is the first
+        if not -n <= idx < n:
+            low = -n if idx < 0 else 0
             raise JuRuGalti(idx_node.line, idx_node.col,
-                            "index {} is out of range — this {} has {} items (0 to {})".format(
-                                idx, _typename(seq), n, n - 1))
-        return idx
+                            "index {} is out of range — this {} has {} items ({} to {})".format(
+                                idx, _typename(seq), n, low, n - 1))
+        return idx + n if idx < 0 else idx
 
     def _binop(self, e, env):
         op = e.op
@@ -492,43 +566,50 @@ class Interpreter:
 
         left = self.eval(e.left, env)
         right = self.eval(e.right, env)
+        return self._op_apply(e.line, e.col, op, left, right)
 
+    def _op_apply(self, line, col, op, left, right):
+        """Apply one binary operator to two VALUES (already evaluated).
+
+        Shared by `a + b` and by the augmented shorthands: x += e,
+        xs[i] -= e — one rule table, never two.
+        """
         if op in ("in", "not in"):
-            found = self._membership(left, right, e)
+            found = self._membership(left, right, line, col)
             return found if op == "in" else not found
 
         if op == "+":
             if isinstance(left, str) or isinstance(right, str):
                 if isinstance(left, (list, FuncValue)) or isinstance(right, (list, FuncValue)):
-                    raise JuRuGalti(e.line, e.col,
+                    raise JuRuGalti(line, col,
                                     "a list or func cannot be joined with text")
                 return display(left) + display(right)
             if isinstance(left, list) and isinstance(right, list):
                 return left + right
             if _is_num(left) and _is_num(right):
                 return left + right
-            raise JuRuGalti(e.line, e.col,
+            raise JuRuGalti(line, col,
                             "cannot use '+' on {} and {}".format(_typename(left), _typename(right)))
 
         if op in ("-", "*", "/", "%"):
             if op == "*" and isinstance(left, str):
                 if isinstance(right, int) and not isinstance(right, bool) and right >= 0:
                     if len(left) * right > MAX_LOOP_STEPS:
-                        raise JuRuGalti(e.line, e.col,
+                        raise JuRuGalti(line, col,
                                         "text * {} would be too big — text cannot grow "
                                         "over 10,000,000 characters".format(display(right)))
                     return left * right
-                raise JuRuGalti(e.line, e.col,
+                raise JuRuGalti(line, col,
                                 "text * number needs a whole number (0 or more) — got: {}".format(
                                     display(right)))
             if not (_is_num(left) and _is_num(right)):
-                raise JuRuGalti(e.line, e.col,
+                raise JuRuGalti(line, col,
                                 "'{}' only works on numbers — got {} and {}".format(
                                     op, _typename(left), _typename(right)))
             if op == "/" and right == 0:
-                raise JuRuGalti(e.line, e.col, "cannot divide by zero (x / 0)")
+                raise JuRuGalti(line, col, "cannot divide by zero (x / 0)")
             if op == "%" and right == 0:
-                raise JuRuGalti(e.line, e.col, "cannot use '%' with zero (x % 0)")
+                raise JuRuGalti(line, col, "cannot use '%' with zero (x % 0)")
             if op == "-":
                 return left - right
             if op == "*":
@@ -544,7 +625,7 @@ class Interpreter:
         if op in ("<", "<=", ">", ">="):
             if not ((_is_num(left) and _is_num(right)) or
                     (isinstance(left, str) and isinstance(right, str))):
-                raise JuRuGalti(e.line, e.col,
+                raise JuRuGalti(line, col,
                                 "'{}' cannot compare {} and {} — different worlds".format(
                                     op, _typename(left), _typename(right)))
             if op == "<":
@@ -555,33 +636,29 @@ class Interpreter:
                 return left > right
             return left >= right
 
-        raise JuRuGalti(e.line, e.col, "unknown operator: " + op)
+        raise JuRuGalti(line, col, "unknown operator: " + op)
 
-    def _membership(self, item, container, e):
-        """x in list / x in text / key in dict (and the 'not in' twin)."""
+    def _membership(self, item, container, line, col):
+        """x in list / x in text / key in dict / x in set (and 'not in')."""
         if isinstance(container, list):
             return any(self._equals(item, x) for x in container)
         if isinstance(container, str):
             if not isinstance(item, str):
-                raise JuRuGalti(e.line, e.col,
+                raise JuRuGalti(line, col,
                                 "'in' on text needs text on the left — got: {}".format(display(item)))
             return item in container
         if isinstance(container, dict):
-            key = self._check_key(item, e)
+            key = self._check_key(item, line, col)
             return key in container
-        raise JuRuGalti(e.line, e.col,
-                        "'in' needs a list, text, or dict on the right — got: {}".format(display(container)))
+        if isinstance(container, SetV):
+            return any(self._equals(item, x) for x in container.items)
+        raise JuRuGalti(line, col,
+                        "'in' needs a list, text, dict, or set on the right — got: {}".format(display(container)))
 
     @staticmethod
     def _equals(a, b):
         # true != 1 (different categories), but 1 == 1.0 (same number family)
-        if isinstance(a, bool) != isinstance(b, bool):
-            return False
-        if _is_num(a) and _is_num(b):
-            return a == b
-        if type(a) is not type(b):
-            return False
-        return a == b
+        return _same_value(a, b)
 
     def _call(self, e, env):
         if e.callee is not None:                    # utils.double(...) / mod tools
@@ -611,347 +688,33 @@ class Interpreter:
                             "recursion went too deep — it never stops")
         return None
 
+    # ---------- builtins (the registry lives in stdlib.py) ----------
+    # Every builtin is a small method here; the shared rules (name,
+    # argument count, the exact refusal message) live in ONE table.
     def _builtin(self, e, env):
-        name = e.name
-        if name == "ask":
-            if len(e.args) > 1:
-                raise JuRuGalti(e.line, e.col, "ask(prompt) takes at most 1 argument")
-            prompt = display(self.eval(e.args[0], env)) if e.args else ""
-            try:
-                return builtins.input(prompt)
-            except EOFError:
-                raise JuRuGalti(
-                    e.line, e.col,
-                    "ask() could not read any more input — the program was "
-                    "waiting for an answer and the input ended")
-        if name == "len":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "len(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if isinstance(v, (str, list, dict)):
-                return len(v)
-            raise JuRuGalti(e.line, e.col,
-                            "'{}' has no length — only text, lists and dicts do".format(_typename(v)))
-        # ---- Step 5 stdlib: upper / lower / str / push / sum / min / max ----
-        if name == "upper":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "upper(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, str):
-                raise JuRuGalti(e.line, e.col,
-                                "upper() needs text — got: {}".format(display(v)))
-            return v.upper()
-        if name == "lower":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "lower(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, str):
-                raise JuRuGalti(e.line, e.col,
-                                "lower() needs text — got: {}".format(display(v)))
-            return v.lower()
-        if name == "str":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "str(x) takes exactly 1 argument")
-            return display(self.eval(e.args[0], env))
-        if name == "push":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "push(list, item) takes exactly 2 arguments")
-            lst = self.eval(e.args[0], env)
-            if not isinstance(lst, list):
-                raise JuRuGalti(e.line, e.col,
-                                "push() needs a list — got: {}".format(display(lst)))
-            lst.append(self.eval(e.args[1], env))
-            return lst
-        if name == "sum":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "sum(list) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, list):
-                raise JuRuGalti(e.line, e.col,
-                                "sum() needs a list — got: {}".format(display(v)))
-            total = 0
-            for item in v:
-                if not _is_num(item):
-                    raise JuRuGalti(e.line, e.col,
-                                    "sum() needs only numbers — found: {}".format(display(item)))
-                total = total + item
-            return total
-        if name == "min":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "min(a, b) takes exactly 2 arguments")
-            a = self.eval(e.args[0], env)
-            b = self.eval(e.args[1], env)
-            if not (_is_num(a) and _is_num(b)):
-                raise JuRuGalti(e.line, e.col,
-                                "min() needs numbers — got {} and {}".format(
-                                    _typename(a), _typename(b)))
-            return a if a <= b else b
-        if name == "max":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "max(a, b) takes exactly 2 arguments")
-            a = self.eval(e.args[0], env)
-            b = self.eval(e.args[1], env)
-            if not (_is_num(a) and _is_num(b)):
-                raise JuRuGalti(e.line, e.col,
-                                "max() needs numbers — got {} and {}".format(
-                                    _typename(a), _typename(b)))
-            return a if a >= b else b
-        # ---- Step 6 stdlib: split / join / trim / replace / abs / round / random / sqrt ----
-        if name == "split":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "split(text, separator) takes exactly 2 arguments")
-            v = self.eval(e.args[0], env)
-            sep = self.eval(e.args[1], env)
-            if not isinstance(v, str):
-                raise JuRuGalti(e.line, e.col,
-                                "split() needs text — got: {}".format(display(v)))
-            if not isinstance(sep, str):
-                raise JuRuGalti(e.line, e.col,
-                                "the split separator must be text — got: {}".format(display(sep)))
-            if sep == "":
-                raise JuRuGalti(e.line, e.col,
-                                "the split separator cannot be empty")
-            return v.split(sep)
-        if name == "join":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "join(list, separator) takes exactly 2 arguments")
-            lst = self.eval(e.args[0], env)
-            sep = self.eval(e.args[1], env)
-            if not isinstance(lst, list):
-                raise JuRuGalti(e.line, e.col,
-                                "join() needs a list — got: {}".format(display(lst)))
-            if not isinstance(sep, str):
-                raise JuRuGalti(e.line, e.col,
-                                "the join separator must be text — got: {}".format(display(sep)))
-            return sep.join(display(x) for x in lst)
-        if name == "trim":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "trim(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, str):
-                raise JuRuGalti(e.line, e.col,
-                                "trim() needs text — got: {}".format(display(v)))
-            return v.strip()
-        if name == "replace":
-            if len(e.args) != 3:
-                raise JuRuGalti(e.line, e.col, "replace(text, old, new) takes exactly 3 arguments")
-            v = self.eval(e.args[0], env)
-            old = self.eval(e.args[1], env)
-            new = self.eval(e.args[2], env)
-            for part in (v, old, new):
-                if not isinstance(part, str):
-                    raise JuRuGalti(e.line, e.col,
-                                    "replace() needs text — got: {}".format(display(part)))
-            if old == "":
-                raise JuRuGalti(e.line, e.col,
-                                "the old text cannot be empty in replace()")
-            return v.replace(old, new)
-        if name == "abs":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "abs(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not _is_num(v):
-                raise JuRuGalti(e.line, e.col,
-                                "abs() needs a number — got: {}".format(display(v)))
-            return abs(v)
-        if name == "round":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "round(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not _is_num(v):
-                raise JuRuGalti(e.line, e.col,
-                                "round() needs a number — got: {}".format(display(v)))
-            if isinstance(v, int):
-                return v
-            # half away from zero: 2.5 → 3, -2.5 → -3 (no surprises)
-            return int(v + 0.5) if v >= 0 else int(v - 0.5)
-        if name == "random":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "random(low, high) takes exactly 2 arguments")
-            low = self.eval(e.args[0], env)
-            high = self.eval(e.args[1], env)
-            for v in (low, high):
-                if isinstance(v, bool) or not isinstance(v, int):
-                    raise JuRuGalti(e.line, e.col,
-                                    "random() needs whole numbers — got: {}".format(display(v)))
-            if low > high:
-                raise JuRuGalti(e.line, e.col,
-                                "in random(low, high), low cannot be bigger than high ({} > {})".format(low, high))
-            return _random.randint(low, high)
-        if name == "sqrt":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "sqrt(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not _is_num(v):
-                raise JuRuGalti(e.line, e.col,
-                                "sqrt() needs a number — got: {}".format(display(v)))
-            if v < 0:
-                raise JuRuGalti(e.line, e.col,
-                                "sqrt({}) — a negative number has no square root".format(display(v)))
-            return v ** 0.5
-        # ---- Step 9 stdlib: sorted / reverse / find / keys / values / count ----
-        if name == "sorted":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "sorted(list) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, list):
-                raise JuRuGalti(e.line, e.col,
-                                "sorted() needs a list — got: {}".format(display(v)))
-            if not all(_is_num(x) for x in v) and not all(isinstance(x, str) for x in v):
-                raise JuRuGalti(e.line, e.col,
-                                "sorted() needs a list of only numbers or only text — got: {}".format(display(v)))
-            return sorted(v)          # a NEW list — the original stays as it is
-        if name == "reverse":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "reverse(list) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, list):
-                raise JuRuGalti(e.line, e.col,
-                                "reverse() needs a list — got: {}".format(display(v)))
-            return list(reversed(v))  # a NEW list — the original stays as it is
-        if name == "find":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "find(list, item) takes exactly 2 arguments")
-            lst = self.eval(e.args[0], env)
-            target = self.eval(e.args[1], env)
-            if not isinstance(lst, list):
-                raise JuRuGalti(e.line, e.col,
-                                "find() needs a list first — got: {}".format(display(lst)))
-            for i, x in enumerate(lst):
-                if self._equals(x, target):
-                    return i
-            return -1                 # not found — a plain -1, easy to check
-        if name == "keys":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "keys(dict) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, dict):
-                raise JuRuGalti(e.line, e.col,
-                                "keys() needs a dict — got: {}".format(display(v)))
-            return list(v.keys())
-        if name == "values":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "values(dict) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not isinstance(v, dict):
-                raise JuRuGalti(e.line, e.col,
-                                "values() needs a dict — got: {}".format(display(v)))
-            return list(v.values())
-        if name == "count":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "count(list, item) takes exactly 2 arguments")
-            lst = self.eval(e.args[0], env)
-            target = self.eval(e.args[1], env)
-            if not isinstance(lst, list):
-                raise JuRuGalti(e.line, e.col,
-                                "count() needs a list first — got: {}".format(display(lst)))
-            return sum(1 for x in lst if self._equals(x, target))
-        # float(x)
-        if name == "float":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "float(x) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if isinstance(v, bool) or v is None or isinstance(
-                    v, (list, dict, FuncValue, ModuleValue)):
-                raise JuRuGalti(e.line, e.col,
-                                "float({}) — this cannot be converted to float".format(display(v)))
-            if isinstance(v, (int, float)):
-                return float(v)
-            try:
-                return float(v.strip())
-            except ValueError:
-                raise JuRuGalti(e.line, e.col,
-                                "float('{}') — '{}' is not a number".format(v, v))
-        # pow(a, b)
-        if name == "pow":
-            if len(e.args) != 2:
-                raise JuRuGalti(e.line, e.col, "pow(a, b) takes exactly 2 arguments")
-            a = self.eval(e.args[0], env)
-            b = self.eval(e.args[1], env)
-            if not _is_num(a) or not _is_num(b):
-                raise JuRuGalti(e.line, e.col,
-                                "pow() needs numbers — got: {} and {}".format(
-                                    _typename(a), _typename(b)))
-            if a == 0 and b < 0:
-                raise JuRuGalti(e.line, e.col,
-                                "in pow(a, b), 0 cannot be raised to a negative power")
-            if a < 0 and b != int(b):
-                raise JuRuGalti(e.line, e.col,
-                                "in pow(a, b), a negative base needs a whole-number "
-                                "exponent (got: {})".format(display(b)))
-            if isinstance(a, int) and isinstance(b, int) \
-                    and abs(b) > 10000 and abs(a) > 1:
-                raise JuRuGalti(e.line, e.col,
-                                "pow({}, {}) — the result is too big to show".format(
-                                    display(a), display(b)))
-            try:
-                return a ** b
-            except OverflowError:
-                raise JuRuGalti(e.line, e.col, "pow(...) — the result is too big to show")
-        # pop(list) — remove and return the last item, in place
-        if name == "pop":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "pop(list) takes exactly 1 argument")
-            lst = self.eval(e.args[0], env)
-            if not isinstance(lst, list):
-                raise JuRuGalti(e.line, e.col,
-                                "pop() needs a list — got: {}".format(display(lst)))
-            if not lst:
-                raise JuRuGalti(e.line, e.col,
-                                "pop() — this list is empty, there is nothing to take")
-            return lst.pop()
-        # type(x)
-        if name == "type":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col, "type(x) takes exactly 1 argument")
-            return _typename(self.eval(e.args[0], env))
-        # help(name) — the built-in documentation
-        if name == "help":
-            if len(e.args) > 1:
-                raise JuRuGalti(e.line, e.col, "help() takes at most 1 argument")
-            if not e.args:
-                print(overview())
-                return None
-            topic = self.eval(e.args[0], env)
-            if not isinstance(topic, str):
-                raise JuRuGalti(e.line, e.col,
-                                "help() needs a name in quotes — got: {}".format(
-                                    display(topic)))
-            text = card_for(topic)
-            if text is None:
-                print(unknown(topic))
-                return None
-            print(text)
-            return None
-        # sleep(seconds)
-        if name == "sleep":
-            if len(e.args) != 1:
-                raise JuRuGalti(e.line, e.col,
-                                "sleep(seconds) takes exactly 1 argument")
-            v = self.eval(e.args[0], env)
-            if not _is_num(v):
-                raise JuRuGalti(e.line, e.col,
-                                "sleep() needs a number of seconds — got: {}".format(
-                                    _typename(v)))
-            if v < 0:
-                raise JuRuGalti(e.line, e.col,
-                                "sleep() cannot go back in time — seconds cannot "
-                                "be negative (got: {})".format(display(v)))
-            if v > self.MAX_SLEEP_ONE:
-                raise JuRuGalti(e.line, e.col,
-                                "sleep() takes at most {} seconds at a time "
-                                "(got: {})".format(self.MAX_SLEEP_ONE, display(v)))
-            if self.sleep_total + v > self.MAX_SLEEP_TOTAL:
-                raise JuRuGalti(e.line, e.col,
-                                "sleep() — this program has slept more than {} "
-                                "seconds in total; something may be stuck".format(
-                                    self.MAX_SLEEP_TOTAL))
-            time.sleep(v)
-            self.sleep_total += v
-            return None
-        # int(x)
-        if len(e.args) != 1:
-            raise JuRuGalti(e.line, e.col, "int(x) takes exactly 1 argument")
+        bad = check_arity(e.name, len(e.args))
+        if bad is not None:
+            raise JuRuGalti(e.line, e.col, bad)
+        return self._builtin_call[e.name](e, env)
+
+    def _bi_ask(self, e, env):
+        prompt = display(self.eval(e.args[0], env)) if e.args else ""
+        try:
+            return builtins.input(prompt)
+        except EOFError:
+            raise JuRuGalti(
+                e.line, e.col,
+                "ask() could not read any more input — the program was "
+                "waiting for an answer and the input ended")
+
+    def _bi_len(self, e, env):
+        v = self.eval(e.args[0], env)
+        if isinstance(v, (str, list, dict, SetV)):
+            return len(v)
+        raise JuRuGalti(e.line, e.col,
+                        "'{}' has no length — only text, lists, dicts and sets do".format(_typename(v)))
+
+    def _bi_int(self, e, env):
         v = self.eval(e.args[0], env)
         if isinstance(v, bool) or v is None or isinstance(
                 v, (list, dict, FuncValue, ModuleValue)):
@@ -966,6 +729,556 @@ class Interpreter:
         except ValueError:
             raise JuRuGalti(e.line, e.col,
                             "int('{}') — '{}' is not a whole number".format(v, v))
+
+    def _bi_float(self, e, env):
+        v = self.eval(e.args[0], env)
+        if isinstance(v, bool) or v is None or isinstance(
+                v, (list, dict, FuncValue, ModuleValue)):
+            raise JuRuGalti(e.line, e.col,
+                            "float({}) — this cannot be converted to float".format(display(v)))
+        if isinstance(v, (int, float)):
+            return float(v)
+        try:
+            return float(v.strip())
+        except ValueError:
+            raise JuRuGalti(e.line, e.col,
+                            "float('{}') — '{}' is not a number".format(v, v))
+
+    def _bi_upper(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "upper() needs text — got: {}".format(display(v)))
+        return v.upper()
+
+    def _bi_lower(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "lower() needs text — got: {}".format(display(v)))
+        return v.lower()
+
+    def _bi_str(self, e, env):
+        return display(self.eval(e.args[0], env))
+
+    def _bi_push(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "push() needs a list — got: {}".format(display(lst)))
+        lst.append(self.eval(e.args[1], env))
+        return lst
+
+    def _bi_pop(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "pop() needs a list — got: {}".format(display(lst)))
+        if not lst:
+            raise JuRuGalti(e.line, e.col,
+                            "pop() — this list is empty, there is nothing to take")
+        return lst.pop()
+
+    def _bi_sum(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, list):
+            raise JuRuGalti(e.line, e.col,
+                            "sum() needs a list — got: {}".format(display(v)))
+        total = 0
+        for item in v:
+            if not _is_num(item):
+                raise JuRuGalti(e.line, e.col,
+                                "sum() needs only numbers — found: {}".format(display(item)))
+            total = total + item
+        return total
+
+    def _bi_min(self, e, env):
+        values = [self.eval(a, env) for a in e.args]
+        if len(values) == 1 and isinstance(values[0], list):
+            values = list(values[0])          # min(list) — scan the list
+            if not values:
+                raise JuRuGalti(e.line, e.col,
+                                "min() — this list is empty, there is nothing to compare")
+            for item in values:
+                if not _is_num(item):
+                    raise JuRuGalti(e.line, e.col,
+                                    "min() needs only numbers — found: {}".format(display(item)))
+        elif len(values) == 2:
+            # the classic pair — the message stayed exactly as it always was
+            a, b = values
+            if not (_is_num(a) and _is_num(b)):
+                raise JuRuGalti(e.line, e.col,
+                                "min() needs numbers — got {} and {}".format(
+                                    _typename(a), _typename(b)))
+        else:
+            for v in values:
+                if not _is_num(v):
+                    raise JuRuGalti(e.line, e.col,
+                                    "min() needs numbers — got: {}".format(_typename(v)))
+        return min(values)
+
+    def _bi_max(self, e, env):
+        values = [self.eval(a, env) for a in e.args]
+        if len(values) == 1 and isinstance(values[0], list):
+            values = list(values[0])          # max(list) — scan the list
+            if not values:
+                raise JuRuGalti(e.line, e.col,
+                                "max() — this list is empty, there is nothing to compare")
+            for item in values:
+                if not _is_num(item):
+                    raise JuRuGalti(e.line, e.col,
+                                    "max() needs only numbers — found: {}".format(display(item)))
+        elif len(values) == 2:
+            # the classic pair — the message stayed exactly as it always was
+            a, b = values
+            if not (_is_num(a) and _is_num(b)):
+                raise JuRuGalti(e.line, e.col,
+                                "max() needs numbers — got {} and {}".format(
+                                    _typename(a), _typename(b)))
+        else:
+            for v in values:
+                if not _is_num(v):
+                    raise JuRuGalti(e.line, e.col,
+                                    "max() needs numbers — got: {}".format(_typename(v)))
+        return max(values)
+
+    def _bi_split(self, e, env):
+        v = self.eval(e.args[0], env)
+        sep = self.eval(e.args[1], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "split() needs text — got: {}".format(display(v)))
+        if not isinstance(sep, str):
+            raise JuRuGalti(e.line, e.col,
+                            "the split separator must be text — got: {}".format(display(sep)))
+        if sep == "":
+            raise JuRuGalti(e.line, e.col,
+                            "the split separator cannot be empty")
+        return v.split(sep)
+
+    def _bi_join(self, e, env):
+        lst = self.eval(e.args[0], env)
+        sep = self.eval(e.args[1], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "join() needs a list — got: {}".format(display(lst)))
+        if not isinstance(sep, str):
+            raise JuRuGalti(e.line, e.col,
+                            "the join separator must be text — got: {}".format(display(sep)))
+        return sep.join(display(x) for x in lst)
+
+    def _bi_trim(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "trim() needs text — got: {}".format(display(v)))
+        return v.strip()
+
+    def _bi_replace(self, e, env):
+        v = self.eval(e.args[0], env)
+        old = self.eval(e.args[1], env)
+        new = self.eval(e.args[2], env)
+        for part in (v, old, new):
+            if not isinstance(part, str):
+                raise JuRuGalti(e.line, e.col,
+                                "replace() needs text — got: {}".format(display(part)))
+        if old == "":
+            raise JuRuGalti(e.line, e.col,
+                            "the old text cannot be empty in replace()")
+        return v.replace(old, new)
+
+    def _bi_abs(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not _is_num(v):
+            raise JuRuGalti(e.line, e.col,
+                            "abs() needs a number — got: {}".format(display(v)))
+        return abs(v)
+
+    def _bi_round(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not _is_num(v):
+            raise JuRuGalti(e.line, e.col,
+                            "round() needs a number — got: {}".format(display(v)))
+        if isinstance(v, int):
+            return v
+        # half away from zero: 2.5 → 3, -2.5 → -3 (no surprises)
+        return int(v + 0.5) if v >= 0 else int(v - 0.5)
+
+    def _bi_random(self, e, env):
+        low = self.eval(e.args[0], env)
+        high = self.eval(e.args[1], env)
+        for v in (low, high):
+            if isinstance(v, bool) or not isinstance(v, int):
+                raise JuRuGalti(e.line, e.col,
+                                "random() needs whole numbers — got: {}".format(display(v)))
+        if low > high:
+            raise JuRuGalti(e.line, e.col,
+                            "in random(low, high), low cannot be bigger than high ({} > {})".format(low, high))
+        return _random.randint(low, high)
+
+    def _bi_sqrt(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not _is_num(v):
+            raise JuRuGalti(e.line, e.col,
+                            "sqrt() needs a number — got: {}".format(display(v)))
+        if v < 0:
+            raise JuRuGalti(e.line, e.col,
+                            "sqrt({}) — a negative number has no square root".format(display(v)))
+        return v ** 0.5
+
+    def _bi_sorted(self, e, env):
+        v = self.eval(e.args[0], env)
+        items = v.items if isinstance(v, SetV) else v
+        if not isinstance(items, list):
+            raise JuRuGalti(e.line, e.col,
+                            "sorted() needs a list — got: {}".format(display(v)))
+        if not all(_is_num(x) for x in items) and not all(isinstance(x, str) for x in items):
+            raise JuRuGalti(e.line, e.col,
+                            "sorted() needs a list of only numbers or only text — got: {}".format(display(v)))
+        return sorted(items)      # a NEW list — the original stays as it is
+
+    def _bi_reverse(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, list):
+            raise JuRuGalti(e.line, e.col,
+                            "reverse() needs a list — got: {}".format(display(v)))
+        return list(reversed(v))  # a NEW list — the original stays as it is
+
+    def _bi_find(self, e, env):
+        lst = self.eval(e.args[0], env)
+        target = self.eval(e.args[1], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "find() needs a list first — got: {}".format(display(lst)))
+        for i, x in enumerate(lst):
+            if self._equals(x, target):
+                return i
+        return -1                 # not found — a plain -1, easy to check
+
+    def _bi_keys(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, dict):
+            raise JuRuGalti(e.line, e.col,
+                            "keys() needs a dict — got: {}".format(display(v)))
+        return list(v.keys())
+
+    def _bi_values(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, dict):
+            raise JuRuGalti(e.line, e.col,
+                            "values() needs a dict — got: {}".format(display(v)))
+        return list(v.values())
+
+    def _bi_count(self, e, env):
+        lst = self.eval(e.args[0], env)
+        target = self.eval(e.args[1], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "count() needs a list first — got: {}".format(display(lst)))
+        return sum(1 for x in lst if self._equals(x, target))
+
+    def _bi_pow(self, e, env):
+        a = self.eval(e.args[0], env)
+        b = self.eval(e.args[1], env)
+        if not _is_num(a) or not _is_num(b):
+            raise JuRuGalti(e.line, e.col,
+                            "pow() needs numbers — got: {} and {}".format(
+                                _typename(a), _typename(b)))
+        if a == 0 and b < 0:
+            raise JuRuGalti(e.line, e.col,
+                            "in pow(a, b), 0 cannot be raised to a negative power")
+        if a < 0 and b != int(b):
+            raise JuRuGalti(e.line, e.col,
+                            "in pow(a, b), a negative base needs a whole-number "
+                            "exponent (got: {})".format(display(b)))
+        if isinstance(a, int) and isinstance(b, int) \
+                and abs(b) > 10000 and abs(a) > 1:
+            raise JuRuGalti(e.line, e.col,
+                            "pow({}, {}) — the result is too big to show".format(
+                                display(a), display(b)))
+        try:
+            return a ** b
+        except OverflowError:
+            raise JuRuGalti(e.line, e.col, "pow(...) — the result is too big to show")
+
+    def _bi_type(self, e, env):
+        return _typename(self.eval(e.args[0], env))
+
+    def _bi_help(self, e, env):
+        if not e.args:
+            print(overview())
+            return None
+        topic = self.eval(e.args[0], env)
+        if not isinstance(topic, str):
+            raise JuRuGalti(e.line, e.col,
+                            "help() needs a name in quotes — got: {}".format(
+                                display(topic)))
+        text = card_for(topic)
+        if text is None:
+            print(unknown(topic))
+            return None
+        print(text)
+        return None
+
+    def _bi_sleep(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not _is_num(v):
+            raise JuRuGalti(e.line, e.col,
+                            "sleep() needs a number of seconds — got: {}".format(
+                                _typename(v)))
+        if v < 0:
+            raise JuRuGalti(e.line, e.col,
+                            "sleep() cannot go back in time — seconds cannot "
+                            "be negative (got: {})".format(display(v)))
+        if v > self.MAX_SLEEP_ONE:
+            raise JuRuGalti(e.line, e.col,
+                            "sleep() takes at most {} seconds at a time "
+                            "(got: {})".format(self.MAX_SLEEP_ONE, display(v)))
+        if self.sleep_total + v > self.MAX_SLEEP_TOTAL:
+            raise JuRuGalti(e.line, e.col,
+                            "sleep() — this program has slept more than {} "
+                            "seconds in total; something may be stuck".format(
+                                self.MAX_SLEEP_TOTAL))
+        time.sleep(v)
+        self.sleep_total += v
+        return None
+
+    # ---------- Step 22: collections & ergonomics ----------
+    def _bi_insert(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "insert() needs a list — got: {}".format(display(lst)))
+        i = self.eval(e.args[1], env)
+        if isinstance(i, bool) or not isinstance(i, int):
+            raise JuRuGalti(e.line, e.col,
+                            "insert() needs a whole number (int) — got: {}".format(display(i)))
+        lst.insert(i, self.eval(e.args[2], env))
+        # Python-like: a negative i counts backwards, a big i clamps to the end
+        return lst
+
+    def _bi_remove_at(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "remove_at() needs a list — got: {}".format(display(lst)))
+        idx = self._check_index(lst, e.args[1], env)   # bounds-checked, -1 = last
+        return lst.pop(idx)
+
+    def _bi_clear(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "clear() needs a list — got: {}".format(display(lst)))
+        del lst[:]
+        return lst
+
+    def _bi_extend(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "extend() needs a list — got: {}".format(display(lst)))
+        more = self.eval(e.args[1], env)
+        if not isinstance(more, list):
+            raise JuRuGalti(e.line, e.col,
+                            "the extend items must be a list — got: {}".format(display(more)))
+        lst.extend(more)
+        return lst
+
+    def _bi_unique(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "unique() needs a list — got: {}".format(display(lst)))
+        seen = SetV(lst)          # first occurrence wins, same equality as ==
+        return list(seen.items)   # a NEW list — the original stays as it is
+
+    def _bi_delete(self, e, env):
+        d = self.eval(e.args[0], env)
+        if not isinstance(d, dict):
+            raise JuRuGalti(e.line, e.col,
+                            "delete() needs a dict — got: {}".format(display(d)))
+        key = self._check_key(self.eval(e.args[1], env), e.args[1].line, e.args[1].col)
+        if key not in d:
+            self._missing_key(key, d, e.args[1])
+        del d[key]
+        return d
+
+    def _bi_items(self, e, env):
+        d = self.eval(e.args[0], env)
+        if not isinstance(d, dict):
+            raise JuRuGalti(e.line, e.col,
+                            "items() needs a dict — got: {}".format(display(d)))
+        return [[k, v] for k, v in d.items()]
+
+    def _bi_merge(self, e, env):
+        a = self.eval(e.args[0], env)
+        b = self.eval(e.args[1], env)
+        if not isinstance(a, dict) or not isinstance(b, dict):
+            raise JuRuGalti(e.line, e.col,
+                            "merge() needs dicts — got: {} and {}".format(
+                                _typename(a), _typename(b)))
+        out = dict(a)
+        out.update(b)             # a NEW dict — later keys win
+        return out
+
+    def _bi_index_of(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "index_of() needs text — got: {}".format(display(v)))
+        piece = self.eval(e.args[1], env)
+        if not isinstance(piece, str):
+            raise JuRuGalti(e.line, e.col,
+                            "the index_of piece must be text — got: {}".format(display(piece)))
+        if piece == "":
+            raise JuRuGalti(e.line, e.col,
+                            "the index_of piece cannot be empty")
+        return v.find(piece)      # first index, or -1 — mirrors find() on lists
+
+    def _bi_starts_with(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "starts_with() needs text — got: {}".format(display(v)))
+        prefix = self.eval(e.args[1], env)
+        if not isinstance(prefix, str):
+            raise JuRuGalti(e.line, e.col,
+                            "the starts_with prefix must be text — got: {}".format(display(prefix)))
+        if prefix == "":
+            raise JuRuGalti(e.line, e.col,
+                            "the starts_with prefix cannot be empty")
+        return v.startswith(prefix)
+
+    def _bi_ends_with(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "ends_with() needs text — got: {}".format(display(v)))
+        suffix = self.eval(e.args[1], env)
+        if not isinstance(suffix, str):
+            raise JuRuGalti(e.line, e.col,
+                            "the ends_with suffix must be text — got: {}".format(display(suffix)))
+        if suffix == "":
+            raise JuRuGalti(e.line, e.col,
+                            "the ends_with suffix cannot be empty")
+        return v.endswith(suffix)
+
+    def _bi_ord(self, e, env):
+        v = self.eval(e.args[0], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "ord() needs text — got: {}".format(display(v)))
+        if len(v) != 1:
+            raise JuRuGalti(e.line, e.col,
+                            "ord() needs exactly one character — got {}".format(len(v)))
+        return ord(v)
+
+    def _bi_chr(self, e, env):
+        v = self.eval(e.args[0], env)
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise JuRuGalti(e.line, e.col,
+                            "chr() needs a whole number (int) — got: {}".format(display(v)))
+        if not 0 <= v <= 0x10FFFF:
+            raise JuRuGalti(e.line, e.col,
+                            "chr({}) — the code must be between 0 and 1114111".format(display(v)))
+        if 0xD800 <= v <= 0xDFFF:
+            raise JuRuGalti(e.line, e.col,
+                            "chr({}) — codes 55296 to 57343 are reserved; "
+                            "this character cannot be shown".format(display(v)))
+        return chr(v)
+
+    def _bi_set_of(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "set_of() needs a list — got: {}".format(display(lst)))
+        return SetV(lst)
+
+    def _set_pair(self, e, env, name):
+        a = self.eval(e.args[0], env)
+        b = self.eval(e.args[1], env)
+        if not isinstance(a, SetV) or not isinstance(b, SetV):
+            raise JuRuGalti(e.line, e.col,
+                            "{}() needs two sets — got: {} and {} "
+                            "(build one with set_of([...]))".format(
+                                name, _typename(a), _typename(b)))
+        return a, b
+
+    def _bi_union(self, e, env):
+        a, b = self._set_pair(e, env, "union")
+        out = SetV(a.items)
+        for x in b.items:
+            out.add(x)
+        return out
+
+    def _bi_intersect(self, e, env):
+        a, b = self._set_pair(e, env, "intersect")
+        out = SetV()
+        for x in a.items:
+            if b.has(x):
+                out.add(x)
+        return out
+
+    def _bi_difference(self, e, env):
+        a, b = self._set_pair(e, env, "difference")
+        out = SetV()
+        for x in a.items:
+            if not b.has(x):
+                out.add(x)
+        return out
+
+    def _make_builtin_call(self):
+        """name → handler, straight from the registry (single source)."""
+        return {
+            "ask": self._bi_ask,
+            "len": self._bi_len,
+            "int": self._bi_int,
+            "float": self._bi_float,
+            "upper": self._bi_upper,
+            "lower": self._bi_lower,
+            "str": self._bi_str,
+            "push": self._bi_push,
+            "pop": self._bi_pop,
+            "sum": self._bi_sum,
+            "min": self._bi_min,
+            "max": self._bi_max,
+            "split": self._bi_split,
+            "join": self._bi_join,
+            "trim": self._bi_trim,
+            "replace": self._bi_replace,
+            "abs": self._bi_abs,
+            "round": self._bi_round,
+            "random": self._bi_random,
+            "sqrt": self._bi_sqrt,
+            "sorted": self._bi_sorted,
+            "reverse": self._bi_reverse,
+            "find": self._bi_find,
+            "keys": self._bi_keys,
+            "values": self._bi_values,
+            "count": self._bi_count,
+            "pow": self._bi_pow,
+            "type": self._bi_type,
+            "help": self._bi_help,
+            "sleep": self._bi_sleep,
+            "insert": self._bi_insert,
+            "remove_at": self._bi_remove_at,
+            "clear": self._bi_clear,
+            "extend": self._bi_extend,
+            "unique": self._bi_unique,
+            "delete": self._bi_delete,
+            "items": self._bi_items,
+            "merge": self._bi_merge,
+            "index_of": self._bi_index_of,
+            "starts_with": self._bi_starts_with,
+            "ends_with": self._bi_ends_with,
+            "ord": self._bi_ord,
+            "chr": self._bi_chr,
+            "set_of": self._bi_set_of,
+            "union": self._bi_union,
+            "intersect": self._bi_intersect,
+            "difference": self._bi_difference,
+        }
 
 
 def run_source(src):

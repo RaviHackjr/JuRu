@@ -135,7 +135,7 @@ def t_pow_arity():
 # ------------------------------------------------------------------ pop
 def t_pop_returns_and_mutates():
     assert run("nums = [1, 2, 3]\nsay(pop(nums))\nsay(nums)") == "3\n[1, 2]\n"
-    assert run("items = [\"a\"]\nsay(pop(items))\nsay(items)") == "a\n[]\n"
+    assert run("stack = [\"a\"]\nsay(pop(stack))\nsay(stack)") == "a\n[]\n"
 
 
 def t_pop_pairs_with_push():
@@ -213,7 +213,7 @@ def t_input_pipeline_int_and_float():
 
 def t_checker_and_interpreter_agree():
     """Every builtin in the checker has an arity and a hint (and vice versa)."""
-    assert len(BUILTINS) == 30
+    assert len(BUILTINS) == 47
     assert set(BUILTIN_ARITY) == set(BUILTINS)
     assert set(BUILTIN_HINT) == set(BUILTINS)
 

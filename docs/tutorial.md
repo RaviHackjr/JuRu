@@ -236,7 +236,7 @@ for i from 1 to 6 {
 5
 ```
 
-`for x in items` walks any list (or text, or dict keys):
+`for x in things` walks any list (or text, dict keys, or set values):
 
 ```jr
 for fruit in ["mango", "banana", "apple"] {
@@ -520,7 +520,7 @@ global
 
 ## 11. The toolbox
 
-All the tools live in one flat set of 30 builtins. Text tools:
+All the tools live in one flat set of 47 builtins. Text tools:
 
 ```jr
 say(upper("juru"))
@@ -529,6 +529,11 @@ say(trim("  hi  "))
 say(replace("aaa", "a", "b"))
 say(split("a,b,c", ","))
 say(join([1, 2], "-"))
+say(index_of("hello", "ll"))
+say(starts_with("hello", "he"))
+say(ends_with("photo.png", ".png"))
+say(ord("A"))
+say(chr(98))
 ```
 
 ```
@@ -538,7 +543,14 @@ hi
 bbb
 [a, b, c]
 1-2
+2
+true
+true
+65
+b
 ```
+
+`ord` and `chr` are a pair: `ord("A")` is `65`, `chr(65)` is `"A"`.
 
 Math tools:
 
@@ -556,6 +568,8 @@ say(float("3.5"))
 say(str(2.5))
 say(min(3, 9))
 say(max(3, 9))
+say(min(5, 2, 8))
+say(max([7, 2, 4]))
 ```
 
 ```
@@ -572,23 +586,79 @@ say(max(3, 9))
 2.5
 3
 9
+2
+7
 ```
 
 `pow(a, b)` raises to a power (no `**` to memorize) and refuses impossible
 math in words — `pow(0, -1)` and `pow(-2, 0.5)` each get a one-line
 explanation, never a crash. `float(x)` is the other half of `int(x)`: it
-turns text (or a whole number) into a decimal.
+turns text (or a whole number) into a decimal. `min` and `max` take one
+or more numbers — two, twenty, or a whole list.
 
-Membership works on text, lists and dicts — and asks about **keys** on dicts:
+List and dict tools:
+
+```jr
+nums = [3, 1, 2, 3]
+insert(nums, 0, 9)          # [9, 3, 1, 2, 3]
+say(remove_at(nums, 1))     # 3 — and nums is now [9, 1, 2, 3]
+extend(nums, [7, 8])        # glue more onto the end, in place
+say(unique(nums))           # [9, 1, 2, 3, 7, 8]
+say(sorted(nums))           # [1, 2, 3, 7, 8, 9] — a NEW list
+clear(nums)                 # nums is empty again: []
+prices = {"tea": 3, "cake": 5}
+delete(prices, "cake")      # remove a key, in place
+say(items(prices))          # [[tea, 3]] — the dict as [key, value] pairs
+say(merge({"a": 1}, {"a": 2, "b": 3}))   # b wins: {a: 2, b: 3}
+```
+
+```
+3
+[9, 1, 2, 3, 7, 8]
+[1, 2, 3, 7, 8, 9]
+[[tea, 3]]
+{a: 2, b: 3}
+```
+
+Sets — a bag of values with no duplicates:
+
+```jr
+s = set_of([3, 1, 3, 2])
+say(s)                      # {3, 1, 2} — first-seen order, dupes gone
+say(len(s))
+say(3 in s)
+t = set_of([2, 4])
+say(union(s, t))            # everything from both
+say(intersect(s, t))        # only what is in both
+say(difference(s, t))       # what is in s but not in t
+```
+
+```
+{3, 1, 2}
+3
+true
+{3, 1, 2, 4}
+{2}
+{3, 1}
+```
+
+A set shows as `{a, b, c}` (empty sets print `set()`), sorts with
+`sorted(...)`, and walks with `for x in s`. `{ }` alone is still a dict —
+sets are born from `set_of([...])`.
+
+Membership works on text, lists, dicts and sets — and asks about **keys**
+on dicts:
 
 ```jr
 say("ell" in "hello")
 say(7 in [1, 7, 9])
 say("age" in {"age": 20})
+say(2 in set_of([1, 2]))
 say(5 not in [1, 2, 3])
 ```
 
 ```
+true
 true
 true
 true
@@ -656,7 +726,7 @@ say(sqrt(-1))
 JuRu Error (line 1, col 9): sqrt(-1) — a negative number has no square root
 ```
 
-And the 30 builtins can never be shadowed by accident:
+And the 47 builtins can never be shadowed by accident:
 
 ```jr
 count = 5
@@ -748,7 +818,7 @@ bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.8 (easy like Python, secure like Rust) on linux
+JuRu 1.9 (easy like Python, secure like Rust) on linux
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> for x in [10, 20] {

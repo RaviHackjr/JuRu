@@ -39,6 +39,7 @@ nothing = null
 | bool | `true`, `false` |
 | list | `[1, "two", 3.0]` |
 | dict | `{"name": "Aman", 1: "one"}` |
+| set | `set_of([3, 1, 3])` → `{3, 1}` — no duplicates |
 | null (nothing) | `null` |
 
 int + float = float **automatically** (`1 + 2.5` → `3.5`). No int/float traps.
@@ -57,7 +58,21 @@ say((2 + 3) * 4) # 20    ← brackets first
 
 Plus the number tools: `abs(-5)` → `5`, `round(2.5)` → `3`,
 `round(-2.5)` → `-3` (half away from zero — no surprises), `sqrt(9)` → `3.0`,
-`random(1, 6)` → a dice roll, both ends included.
+`random(1, 6)` → a dice roll, both ends included. `min` and `max` take one
+or more numbers: `min(3, 9, 1)`, `max([7, 2, 4])`.
+
+### Augmented assignment — the `+=` family
+```
+x = 5
+x += 2     # 7      ← the shorthand for x = x + 2
+x -= 3     # 4
+x *= 2     # 8
+x /= 4     # 2.0
+x %= 3     # 2
+x += "!"   # works on text too
+nums[0] += 1        # one list item, in place
+d["score"] += 10    # one dict value, in place
+```
 
 ## 5. Text superpowers
 
@@ -65,9 +80,19 @@ Plus the number tools: `abs(-5)` → `5`, `round(2.5)` → `3`,
 "n = " + 5       # "n = 5"     ← text + anything = text
 "ab" * 3         # "ababab"    ← repeat text
 "hello"[1]       # "e"         ← index into text
+"hello"[-1]      # "o"         ← -1 is the LAST character
 "hello"[1:4]     # "ell"       ← slice text (see §12)
 len("hello")     # 5
 "apple" < "banana"   # true    ← text compares like a dictionary
+```
+
+More text tools:
+```
+index_of("hello", "ll")     # 2     ← where it starts, or -1
+starts_with("hello", "he")  # true
+ends_with("photo.png", ".png")  # true
+ord("A")                    # 65    ← one character → its code number
+chr(98)                     # "b"   ← a code number → its character
 ```
 
 ## 6. Compare and logic
@@ -118,6 +143,7 @@ for i from 5 to 1 { say(i) }    # 5 4 3 2 1   ← start > end → counts down
 for x in [10, 20, 30] { say(x) }   # each item of a list
 for ch in "ab" { say(ch) }         # each character of text
 for k in {"a": 1} { say(k) }       # each KEY of a dict
+for x in set_of([2, 1]) { say(x) } # each value of a set, in order
 ```
 
 ### `break` / `continue` — the game buttons
@@ -160,6 +186,7 @@ func nothing() {
 ```
 fruits = ["apple", "mango", "grape"]
 say(fruits[0])          # apple
+say(fruits[-1])         # grape    ← -1 is the LAST item, -3 is the first
 fruits[2] = "apple"     # change an item
 say(len(fruits))        # 3
 say([1] + [2])          # [1, 2]     ← join lists
@@ -172,8 +199,21 @@ say(grid)               # [[1, 9], [3, 4]]
 
 **Security:** every index is bounds-checked — `fruits[99]` never crashes
 Python-style; it gives a human error:
-`index 99 is out of range — this list has 3 items (0 to 2)`
-The index must be a whole int; negative indexing (`a[-1]`) is not allowed.
+`index 99 is out of range — this list has 3 items (0 to 2)`.
+Negative indexes count backwards: `-1` is the last item, and going past the
+start is still a friendly error:
+`index -4 is out of range — this list has 3 items (-3 to 2)`.
+The index must be a whole int.
+
+More list tools (insert/remove_at/clear/extend change the list IN place;
+unique hands you a fresh list):
+```
+insert(nums, 0, 9)      # put 9 IN at position 0 — the rest shifts right
+remove_at(nums, 0)      # take the item at 0 OUT and hand it back (-1 = last)
+clear(nums)             # empty the list, in place
+extend(nums, [3, 4])    # glue every item of the second list onto the end
+unique([1, 2, 1, 3])    # [1, 2, 3]  ← a NEW list, first copy wins
+```
 
 ## 11. Dicts — labelled boxes
 
@@ -197,10 +237,17 @@ The rules (they keep dicts simple and safe):
 - reading a missing key is a friendly error, never `null` and never a crash:
   `key 'z' was not found — this dict has: a, b` (or `has 10 keys` if huge,
   or `this dict is empty`)
-- `d.key = value` does not work — the error tells you to write
+- `d.name = value` does not work — the error tells you to write
   `d["key"] = value` instead
 - a dict is `false` when empty, `true` otherwise
 - `d.name` is sugar for `d["name"]` — reading only
+
+Dict tools:
+```
+delete(prices, "cake")  # remove a key and its value, in place
+items(prices)           # [[tea, 3], [cake, 5]]  ← the dict as [key, value] pairs
+merge(a, b)             # a NEW dict: everything from a, then b (b wins)
+```
 
 ## 12. Slices — a piece of a list or text
 
@@ -210,10 +257,16 @@ say("abcdef"[:3])       # abc
 say("abcdef"[1:4])      # bcd
 say([1, 2, 3, 4][1:3])  # [2, 3]
 say([1, 2, 3][:])       # [1, 2, 3]   ← a whole copy
+say([1, 2, 3, 4, 5][::2])   # [1, 3, 5]   ← every 2nd item — the STEP
+say([1, 2, 3, 4, 5][1:4:2]) # [2, 4]      ← start : end : step
+say([1, 2, 3, 4, 5][::-1])  # [5, 4, 3, 2, 1]  ← step -1: back to front
+say([1, 2, 3, 4, 5][-3:])   # [3, 4, 5]   ← negative bounds count backwards
 ```
 
 - slices **clamp, they never crash**: `[1, 2, 3][1:99]` → `[2, 3]`
-- negative bounds are errors (`[-1:]`) — slices do not count backwards
+- negative bounds count backwards: `[-3:]` is the last three, `[:-2]` drops
+  the last two — Python's rule, exactly
+- the **step** must not be zero: `[::0]` → `the slice step cannot be zero`
 - the bounds must be whole ints (`"ab"[0:1.5]` is an error)
 - slices work on **lists and text** only
 
@@ -223,6 +276,7 @@ say([1, 2, 3][:])       # [1, 2, 3]   ← a whole copy
 say(2 in [1, 2, 3])        # true
 say("ell" in "hello")      # true
 say("name" in {"a": 1})    # keys of a dict
+say(2 in set_of([1, 2]))   # values of a set
 say(4 not in [1, 2, 3])    # true
 if "y" in word { say("yes") }
 ```
@@ -232,13 +286,43 @@ if "y" in word { say("yes") }
 - membership uses the normal equality rules (`1 in [1.0]` → `true`,
   `true in [1]` → `false`)
 
-## 14. Builtins — the 30-tool toolbox
+## 14. Sets — a bag with no duplicates
+
+A set is born from a list: `set_of([...])`. It keeps the FIRST-seen order
+and drops the duplicates. `{ }` alone is still a dict — sets never have a
+literal of their own.
+
+```
+s = set_of([3, 1, 3, 2])
+say(s)          # {3, 1, 2}     ← no duplicates, first-seen order
+say(len(s))     # 3
+say(3 in s)     # true
+say(s == set_of([2, 1, 3]))   # true  ← order does not matter
+say(set_of([])) # set()         ← an empty set; it counts as false
+say(sorted(s))  # [1, 2, 3]     ← a NEW sorted list
+```
+
+The set algebra (each hands back a NEW set):
+```
+a = set_of([1, 2, 3])
+b = set_of([3, 4])
+say(union(a, b))        # {1, 2, 3, 4}  ← everything from both
+say(intersect(a, b))    # {3}           ← only what is in both
+say(difference(a, b))   # {1, 2}        ← what is in a but not in b
+```
+
+Sets play by the ONE equality rule: `true != 1`, but `1 == 1.0`.
+And like every collection, they refuse wrong tools in words:
+`union([1], [2])` → `union() needs two sets — got: list and list
+(build one with set_of([...]))`.
+
+## 15. Builtins — the 47-tool toolbox
 
 The classics:
 ```
 name = ask("your name: ")
 age = int(ask("age: "))     # text → whole number
-say(len(name))              # length of text, list, or dict
+say(len(name))              # length of text, list, dict, or set
 int("42")     # 42
 int(2.9)      # 2
 ```
@@ -250,8 +334,8 @@ lower("HELLO")    # "hello"   ← text only
 str(42)           # "42"      ← anything → text (2.5 → "2.5", true → "true")
 push(nums, 7)     # appends 7 IN PLACE and returns the list
 sum([3, 1, 4])    # 8         ← numbers only; sum([]) is 0
-min(3, 9)         # 3
-max(3, 9)         # 9
+min(3, 9)         # 3         ← one or more numbers, or a whole list: min(list)
+max(3, 9)         # 9         ← max([7, 2, 4]) works too
 ```
 
 ```
@@ -286,7 +370,28 @@ pow(2, 10)      # 1024       ← exponents, no ** to memorize
 pow(2, -2)      # 0.25
 pow(9, 0.5)     # 3.0
 type(5)         # int        ← one word: int, float, text, bool, null,
-type("hi")      # text         list, dict, func, module
+type("hi")      # text         list, dict, set, func, module
+```
+
+The collection wave (lists, dicts, text, sets — still zero new keywords):
+```
+insert(nums, 0, 9)          # put IN at a position, in place
+remove_at(nums, 0)          # take OUT and hand back — -1 is the last
+clear(nums)                 # empty the list, in place
+extend(nums, [3, 4])        # glue a second list onto the end, in place
+unique([1, 2, 1, 3])        # [1, 2, 3]  ← a NEW list without duplicates
+delete(prices, "tea")       # remove a dict key, in place
+items(prices)               # [[tea, 3]] ← the dict as [key, value] pairs
+merge(a, b)                 # a NEW dict — b wins on shared keys
+index_of("hello", "ll")     # 2          ← -1 when it is not there
+starts_with("hi", "h")      # true
+ends_with("a.png", ".png")  # true
+ord("A")                    # 65         ← one character → its code
+chr(98)                     # "b"        ← a code → its character
+set_of([3, 1, 3])           # {3, 1}     ← a set: no duplicates, order kept
+union(a_s, b_s)             # the set algebra — see §14
+intersect(a_s, b_s)
+difference(a_s, b_s)
 ```
 
 The Batch-4 helpers (still zero new keywords):
@@ -323,8 +428,9 @@ values({"a": 1, "b": 2}) # [1, 2]     ← the values, in insertion order
 count(["x", "y", "x"], "x")  # 2      ← how many times (same rules as ==)
 ```
 
-Easy to remember: only `push` and `pop` change a list in place — `sorted`
-and `reverse` hand you a fresh list and leave your original alone.
+Easy to remember: `push`, `pop`, `insert`, `remove_at`, `clear`, `extend`
+and `delete` change the list/dict IN place — `sorted`, `reverse`, `unique`
+and `merge` hand you a fresh one and leave your original alone.
 
 Guards that talk like a human:
 - `split("a", "")` → `the split separator cannot be empty`
@@ -336,11 +442,11 @@ Guards that talk like a human:
 - `keys([1])` → `keys() needs a dict — got: [1]`
 - `count(5, 1)` → `count() needs a list first — got: 5`
 
-All 28 are **reserved** — no variable or func can take their name, and both
+All 47 are **reserved** — no variable or func can take their name, and both
 the checker and the interpreter print the same argument-count message:
 `push(list, item) takes exactly 2 arguments`.
 
-## 15. Modules — code from another file
+## 16. Modules — code from another file
 
 ```
 # helpers.jr
@@ -370,13 +476,13 @@ The rules:
 - imports resolve next to **your file**, so `python3 juru.py src/main.jr`
   finds `src/helpers.jr`
 
-## 16. Comments
+## 17. Comments
 
 ```
 # from # to the end of the line — the machine ignores it
 ```
 
-## 17. Golden rules
+## 18. Golden rules
 
 1. One statement per line (no semicolons)
 2. Blocks are `{ }` — no indentation headaches
@@ -389,7 +495,7 @@ The rules:
 7. Names: letters, digits, `_` (unicode letters work too — Devanagari incl.)
 8. Dicts: write `d["key"] = value`, read with `d["key"]` or `d.key`
 
-## 18. Errors that talk like a human
+## 19. Errors that talk like a human
 
 Every error says exactly where and what:
 ```
@@ -422,19 +528,19 @@ work, so it never complains about a program that would run fine.
 Modules get the same treatment: their source is checked **before** they run.
 Tip: `python3 checker.py file.jr` checks a file without running it.
 
-## 19. Security by design 🛡️
+## 20. Security by design 🛡️
 
 - No `eval` — code is never built from strings
 - `null` exists but the null-pointer bug class is blocked by design
 - Every list index **bounds-checked** (no memory-safe escape hatches)
 - **Runaway protection** — a loop over 10,000,000 steps stops itself
 - Short-circuit logic — wrong order still never crashes
-- Reserved builtins — the 30-tool toolbox can never be overwritten
+- Reserved builtins — the 47-tool toolbox can never be overwritten
 - Dict keys are guarded; missing keys are errors, not `null`
 - Modules are isolated and checked; import loops are detected
 - Friendly type checks at runtime, with line/col on every error
 
-## 20. The 19 keywords + 30 builtins
+## 21. The 19 keywords + 47 builtins
 
 ```
 say  if  else  while  for  from  to  in
@@ -448,5 +554,9 @@ push( )  pop( )    sum( )     min( )     max( )
 split( ) join( )   trim( )    replace( )
 abs( )   round( )  random( )  sqrt( )
 sorted( )  reverse( )  find( )  keys( )  values( )  count( )
-pow( )  type( )
+pow( )  type( )  help( )  sleep( )
+insert( )  remove_at( )  clear( )  extend( )  unique( )
+delete( )  items( )  merge( )
+index_of( )  starts_with( )  ends_with( )  ord( )  chr( )
+set_of( )  union( )  intersect( )  difference( )
 ```

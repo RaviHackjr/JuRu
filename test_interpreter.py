@@ -347,9 +347,10 @@ def t_list_bounds_error():
     expect_run_galti(src, "out of range")
 
 
-def t_negative_index_error():
-    src = "a = [1, 2]\nsay(a[-1])"
-    expect_run_galti(src, "out of range")
+def t_negative_index_works():
+    """Since Step 22, -1 is the last item; only past the start is out of range."""
+    assert run("a = [1, 2]\nsay(a[-1])") == "2\n"
+    expect_run_galti("a = [1, 2]\nsay(a[-3])", "out of range")
 
 
 def t_index_type_error():
@@ -772,7 +773,7 @@ TESTS = [
     t_func_as_value, t_args_count_error, t_recursion_depth_error,
     t_call_non_func,
     t_list_ops, t_list_concat_vars, t_list_of_mixed, t_list_bounds_error,
-    t_negative_index_error, t_index_type_error, t_grid_setindex,
+    t_negative_index_works, t_index_type_error, t_grid_setindex,
     t_setindex_on_text,
     t_text_repeat_cap,
     t_compare_type_guards,

@@ -7,7 +7,7 @@
 #     python3 juru.py examples/guide/05_for_in.jr
 #
 # Counting numbers is one thing; walking through a LIST is the
-# other half of for. "for x in items" gives you one item per
+# other half of for. "for x in things" gives you one item per
 # round, no index bookkeeping at all.
 # ============================================================
 

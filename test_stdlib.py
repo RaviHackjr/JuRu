@@ -201,9 +201,8 @@ def t_checker_arity_push_sum():
 
 
 def t_checker_arity_min_max():
-    expect_check_galti("min(3)", "min(a, b) takes exactly 2 arguments")
-    expect_check_galti("min(1, 2, 3)", "min(a, b) takes exactly 2 arguments")
-    expect_check_galti("max(3)", "max(a, b) takes exactly 2 arguments")
+    expect_check_galti("min()", "min() takes one or more arguments — like min(a, b) or min(list)")
+    expect_check_galti("max()", "max() takes one or more arguments — like max(a, b) or max(list)")
 
 
 def t_checker_arity_old_ones_still_hold():
@@ -220,8 +219,8 @@ def t_runtime_arity():
         ("str(1, 2)", "str(x) takes exactly 1 argument"),
         ("push(1)", "push(list, item) takes exactly 2 arguments"),
         ("sum()", "sum(list) takes exactly 1 argument"),
-        ("min(3)", "min(a, b) takes exactly 2 arguments"),
-        ("max(1, 2, 3)", "max(a, b) takes exactly 2 arguments"),
+        ("min()", "min() takes one or more arguments — like min(a, b) or min(list)"),
+        ("max()", "max() takes one or more arguments — like max(a, b) or max(list)"),
     ]:
         try:
             run(src, with_checker=False)
@@ -237,8 +236,8 @@ def t_mirror_checker_vs_runtime():
         ("upper(1, 2)", "upper(x) takes exactly 1 argument"),
         ("push(1, 2, 3)", "push(list, item) takes exactly 2 arguments"),
         ("sum()", "sum(list) takes exactly 1 argument"),
-        ("min(1)", "min(a, b) takes exactly 2 arguments"),
-        ("max(1)", "max(a, b) takes exactly 2 arguments"),
+        ("min()", "min() takes one or more arguments — like min(a, b) or min(list)"),
+        ("max()", "max() takes one or more arguments — like max(a, b) or max(list)"),
         ("len(1, 2)", "len(x) takes exactly 1 argument"),
         ("int(1, 2)", "int(x) takes exactly 1 argument"),
     ]

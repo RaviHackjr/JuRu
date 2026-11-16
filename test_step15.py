@@ -56,14 +56,14 @@ def t_overview_lists_everything():
         assert builtin in text, "overview misses builtin: " + builtin
     for kw in KEYWORDS:
         assert kw in text, "overview misses keyword: " + kw
-    assert "19 keywords + 30 builtins" in text, text.splitlines()[0]
+    assert "19 keywords + 47 builtins" in text, text.splitlines()[0]
     assert text.rstrip().endswith(helpdb.USAGE_LINE)
 
 
 def t_cards_cover_every_topic():
     assert set(helpdb.BUILTIN_CARDS) == set(BUILTINS)
     assert set(helpdb.KEYWORD_CARDS) == set(KEYWORDS)
-    assert len(helpdb.BUILTIN_CARDS) == 30
+    assert len(helpdb.BUILTIN_CARDS) == 47
     assert len(helpdb.KEYWORD_CARDS) == 19
 
 
@@ -167,7 +167,7 @@ def cli(args, input_text=None, cwd=HERE):
 def t_repl_bare_help_command():
     proc = cli(["repl"], input_text="help\nexit\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "JuRu toolbox — 19 keywords + 30 builtins" in proc.stdout, proc.stdout
+    assert "JuRu toolbox — 19 keywords + 47 builtins" in proc.stdout, proc.stdout
 
 
 def t_repl_help_call_works():
@@ -193,7 +193,7 @@ def t_help_in_a_real_program():
 
 
 ALL = [
-    ("overview lists all 30 builtins + 19 keywords", t_overview_lists_everything),
+    ("overview lists all 47 builtins + 19 keywords", t_overview_lists_everything),
     ("cards cover every topic exactly", t_cards_cover_every_topic),
     ("every card renders and is labelled", t_every_card_renders_and_is_labelled),
     ("card examples are true", t_card_examples_are_true),

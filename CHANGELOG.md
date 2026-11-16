@@ -3,6 +3,74 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.9 — 2026-11-16
+
+Step 22 — **collections & ergonomics wave 1**. Lists, dicts, text and
+sets get their power tools; the language stays 19 keywords big and every
+old message stays byte-identical except the ones listed under *Changed*.
+
+### Added
+- **Augmented assignment**: `x += 1` (also `-=`, `*=`, `/=`, `%=`) on
+  plain variables, list items and dict values — `nums[0] += 1`,
+  `d["score"] += 10`, perfect for loop counters. The old value is read
+  before the right side is evaluated, and the right side runs exactly once.
+- **Negative indexing**: `nums[-1]` is the last item, `text[-2]` the
+  second-to-last — in reads, writes and `remove_at`. Past the start is
+  still a friendly error that shows the legal range:
+  `index -4 is out of range — this list has 3 items (-3 to 2)`.
+- **Slice steps**: `[::-1]` reverses, `[::2]` takes every second item,
+  `[1:7:2]` slices with a stride — Python's rule, exactly. Negative bounds
+  count backwards now (`nums[-3:]` is the last three), clamps still hold,
+  and a zero step is refused in words: `the slice step cannot be zero`.
+- **17 new reserved builtins** (all guarded by the checker *and* the
+  runtime, with human error messages):
+  `insert(list, i, item)`, `remove_at(list, i)`, `clear(list)`,
+  `extend(list, more)`, `unique(list)`, `delete(dict, key)`,
+  `items(dict)`, `merge(a, b)`, `index_of(text, piece)`,
+  `starts_with(text, prefix)`, `ends_with(text, suffix)`, `ord(x)`,
+  `chr(x)`, `set_of(list)`, `union(a, b)`, `intersect(a, b)`,
+  `difference(a, b)`.
+- **Sets**: `set_of([3, 1, 3])` → `{3, 1}` — no duplicates, first-seen
+  order, JuRu's own equality (`true != 1`, `1 == 1.0`, order-insensitive
+  set equality). Sets work with `len`, `in`, `for x in`, `sorted`,
+  truthiness (`set()` is false), and display as `{a, b}` / `set()`.
+  `{ }` alone is still a dict — sets have no literal.
+- **min/max variadic**: `min(3, 9, 1)`, `min([7, 2, 4])` — one or more
+  numbers, or a whole list. The old two-argument form and its exact
+  error messages are untouched.
+- **`\uXXXX` escapes** in text: exactly 4 hex digits (`"\u0041"` → `"A"`),
+  reserved surrogate codes (55296–57343) refused with a pointer to pick
+  another character.
+- The builtin registry moved into one table (`src/juru/stdlib.py`):
+  names, arities and the exact wrong-count messages live there once; the
+  checker and the interpreter both read it, so they can never drift
+  apart (the mirror rule is now structural).
+- VS Code grammar colors all 47 builtins and the five augmented
+  operators; `help()` grew a truthful card for every new tool (66 cards
+  total), a "sets" group, and the aliases `remove` → `remove_at`,
+  `del` → `delete`.
+
+### Changed (deliberate, documented)
+- **`items` is now a reserved builtin** — a variable or func named
+  `items` stops compiling:
+  `'items' is reserved (builtin) — pick another name`. Rename it
+  (the starter template now calls its inventory `bag`). This is the
+  price of `items(dict)` being a real tool; every other old program
+  runs unchanged.
+- Two messages learned a fourth and fifth allowed type (sets):
+  `'for x in ...' needs a list, text, dict, or set — got: 5` and
+  `'in' needs a list, text, dict, or set on the right — got: 5`.
+  Same for `len`: `'…' has no length — only text, lists, dicts and sets do`.
+- The unknown-escape hint now lists `\u`:
+  `only \n, \t, \", \\ and \u work`.
+- Negative slice bounds are a feature now — the old refusals
+  (`the slice start cannot be negative`) are gone, replaced by Python
+  semantics and a zero-step guard.
+
+### Details
+- 47 builtins, still 19 keywords.
+- 21 test suites, 704 tests.
+
 ## 1.8 — 2026-11-16
 
 ### Added

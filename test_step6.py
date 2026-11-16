@@ -188,11 +188,11 @@ def t_for_in_break_continue():
 
 def t_for_in_guarded_types():
     expect_galti("for x in 5 { say(x) }",
-                 "'for x in ...' needs a list, text, or dict — got: 5")
+                 "'for x in ...' needs a list, text, dict, or set — got: 5")
     expect_galti("for x in null { say(x) }",
-                 "'for x in ...' needs a list, text, or dict — got: null")
+                 "'for x in ...' needs a list, text, dict, or set — got: null")
     expect_galti("for x in true { say(x) }",
-                 "'for x in ...' needs a list, text, or dict — got: true")
+                 "'for x in ...' needs a list, text, dict, or set — got: true")
 
 
 def t_for_in_loop_var_survives():
@@ -246,8 +246,8 @@ def t_in_precedence():
 
 
 def t_in_type_guards():
-    expect_galti("say(5 in 5)", "'in' needs a list, text, or dict on the right — got: 5")
-    expect_galti("say(5 in null)", "'in' needs a list, text, or dict on the right — got: null")
+    expect_galti("say(5 in 5)", "'in' needs a list, text, dict, or set on the right — got: 5")
+    expect_galti("say(5 in null)", "'in' needs a list, text, dict, or set on the right — got: null")
     expect_galti('say(5 in "abc")', "'in' on text needs text on the left — got: 5")
     expect_galti('say(1.5 in {"a": 1})', "a dict key must be text or a whole number")
 
@@ -277,8 +277,11 @@ def t_slice_clamps():
 
 
 def t_slice_guards():
-    expect_galti("say([1][-1:2])", "the slice start cannot be negative")
-    expect_galti("say([1][0:-1])", "the slice end cannot be negative")
+    # negative bounds now count backwards (Step 22) — they are a feature
+    assert run("say([1][-1:2])") == "[1]\n"
+    assert run("say([1][0:-1])") == "[]\n"
+    expect_galti("say([1, 2, 3][::0])", "the slice step cannot be zero")
+    expect_galti("say([1, 2, 3][::1.5])", "the slice step must be a whole number (int)")
     expect_galti('say("ab"["x":1])', "the slice start must be a whole number")
     expect_galti('say("ab"[0:"x"])', "the slice end must be a whole number")
     expect_galti("say([1][true:2])", "the slice start must be a whole number")

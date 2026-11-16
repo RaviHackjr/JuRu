@@ -285,8 +285,8 @@ def t_stdlib_arity_push():
 
 
 def t_stdlib_arity_min_max():
-    expect_check_galti("min(3)", "min(a, b) takes exactly 2 arguments")
-    expect_check_galti("max(1, 2, 3)", "max(a, b) takes exactly 2 arguments")
+    expect_check_galti("min()", "min() takes one or more arguments — like min(a, b) or min(list)")
+    expect_check_galti("max()", "max() takes one or more arguments — like max(a, b) or max(list)")
 
 
 def t_stdlib_reserved_upper():

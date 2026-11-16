@@ -34,11 +34,12 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 
 | Piece | What it does | Tests |
 |-------|--------------|-------|
-| `lexer.py` | source text → tokens | **55 pass** |
+| `lexer.py` | source text → tokens (aug ops, `\uXXXX` escapes) | **55 pass** |
 | `parser.py` | tokens → AST + parse-time safety checks | **111 pass** |
-| `checker.py` | semantic checks before running (Steps 3 + 5) | **47 pass** |
-| `interpreter.py` | runs the AST + the stdlib + modules (Steps 4–7, 12, 15–16) | **93 pass** |
-| `helpdb.py` | the `help()` knowledge base — 48 truthful cards (Step 15) | in test_step15 |
+| `checker.py` | semantic checks before running (Steps 3 + 5, registry in stdlib.py) | **47 pass** |
+| `interpreter.py` | runs the AST + the stdlib + modules (Steps 4–7, 12, 15–16, 22) | **93 pass** |
+| `stdlib.py` | the ONE builtin registry: names, arities, hint messages | in test_step12/22 |
+| `helpdb.py` | the `help()` knowledge base — 66 truthful cards (Step 15 + 22) | in test_step15 |
 | `errfmt.py` | error display: line + caret under the exact column (Step 17) | in test_step17 |
 | `juru.py` | `.jr` runner (`python3 juru.py file.jr`); bare → REPL (Step 16) | tested via checker suite |
 | `repl.py` | interactive REPL (Steps 5+8, banner + bare `help` in Step 16) | **10 pass** |
@@ -54,12 +55,13 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_step15.py` | help(): truthful cards, aliases, unknowns, guards | **15 pass** |
 | `test_step16.py` | sleep() guards + the bare-`juru` REPL | **13 pass** |
 | `test_step17.py` | line + caret error display, CLI + REPL + modules | **10 pass** |
+| `test_step22.py` | collections & ergonomics wave 1, both layers | **71 pass** |
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–21 combined, no mercy | **56 pass** |
+| `test_ultimate.py` | steps 1–22 combined, no mercy | **56 pass** |
 | `examples/` | guide: 14 lessons covering all 19 keywords · test: 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **633 tests green** |
+| **Total** | | **704 tests green** |
 
 Run everything yourself:
 ```
@@ -137,14 +139,19 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 - **Text repeat**: `"ab" * 3` → `"ababab"` (whole int ≥ 0 only; the result can
   never pass 10,000,000 characters — a friendly error instead of a freeze).
 - **Equality categories**: `true != 1` (bool vs number = different worlds),
-  but `1 == 1.0` (same number family). Same rules drive `in`, list equality
-  and dict equality (deep compare).
-- **Truthiness**: `null`, `0`, `""`, `[]`, `{}` are false; everything else true.
+  but `1 == 1.0` (same number family). ONE rule drives everything — `==`,
+  `in`, `find`, `count`, `unique` and set membership/equality (order does
+  not matter inside a set).
+- **Truthiness**: `null`, `0`, `""`, `[]`, `{}`, an empty `set()` are false;
+  everything else true.
 - **Short-circuit**: `and`/`or` never evaluate the right side unnecessarily.
 - **Scoping**: assignment inside a func is local; reads walk the parent chain
   (recursion works through the global env). `import` inside a func is a local
   binding.
-- **Indexing**: always bounds-checked, no negative indexes, int only.
+- **Indexing**: always bounds-checked, int only; negative indexes count
+  backwards (`-1` is the last item; `-len` is the first) — past the start
+  is a friendly error that shows the legal range:
+  `index -4 is out of range — this list has 3 items (-3 to 2)`.
 - **Dicts**: keys are text or whole ints (bool/float/null/list rejected with a
   human message); missing keys are friendly errors that list the keys that DO
   exist (≤ 6 shown, otherwise the count; empty → `this dict is empty`);
@@ -152,14 +159,22 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
   dicts are references — `same = d` aliases one dict; assignment needs
   `d["key"] = value` (`d.key = value` is refused with the fix in the message).
 - **for x in ...**: walks a **copy** of the list (pushing during the loop is
-  safe), one char at a time for text, keys for dicts; wrong types rejected:
-  `'for x in ...' needs a list, text, or dict — got: 5`.
-- **Slices**: `[a:b]` on lists/text; open ends default to 0 and len; every
-  bound **clamps** (never crashes); negative bounds and non-int bounds are
-  friendly errors; `say([1:2])` parses as the dict `{1: 2}` (and then fails
-  the dict-key check — consistent with the grammar).
+  safe), one char at a time for text, keys for dicts, values in order for
+  sets; wrong types rejected:
+  `'for x in ...' needs a list, text, dict, or set — got: 5`.
+- **Slices**: `[a:b]` and `[a:b:step]` on lists/text, Python's rule exactly:
+  open ends follow the step's sign, negative bounds count backwards, every
+  bound **clamps** (never crashes); a zero step is refused
+  (`the slice step cannot be zero`) and non-int bounds stay friendly errors;
+  `say([1:2])` parses as the dict `{1: 2}` (and then fails the dict-key
+  check — consistent with the grammar).
+- **Augmented assignment**: `x += e` (also `-=`, `*=`, `/=`, `%=`) on names,
+  list items and dict values — the old value is read BEFORE the right side
+  is evaluated, and the right side is evaluated exactly once. Plain `=` and
+  the dump forms of the shorthands stay byte-identical to v1.8.
 - **in / not in**: lists (deep equality), text (substring, text-on-left only),
-  dicts (keys); chains (`a in b in c`) are refused at parse time.
+  dicts (keys), sets (values); chains (`a in b in c`) are refused at parse
+  time.
 - **round**: half away from zero — `2.5` → `3`, `-2.5` → `-3` (no banker's
   rounding surprises).
 - **random(low, high)**: whole ints, both ends included, `low > high` refused.
@@ -167,55 +182,81 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 - **Runaway protection**: any loop over 10,000,000 steps stops itself.
 - **Recursion limit**: `RecursionError` becomes a friendly JuRu error.
 
-## The stdlib (Steps 5+6+9+12+15+16 — 30 reserved builtins)
+## The stdlib (Steps 5+6+9+12+15+16+22 — 47 reserved builtins)
+
+The registry lives in ONE table (`src/juru/stdlib.py`): the name, its
+`(min, max)` arity (max `None` = one or more) and the exact wrong-count
+message. The checker and the interpreter both read it — they cannot
+drift apart.
 
 | Builtin | Does | Guard |
 |---------|------|-------|
 | `ask(prompt)` | read a line from the user | at most 1 argument; end-of-input is a friendly error |
-| `len(x)` | length of text, a list, or a dict | exactly 1 arg; text/list/dict only |
+| `len(x)` | length of text, a list, a dict, or a set | exactly 1 arg; text/list/dict/set only |
 | `int(x)` | text or float → whole number | exactly 1 arg; rejects bool/null/list/dict/func |
 | `upper(x)` | text → CAPITALS | exactly 1 arg; text only |
 | `lower(x)` | text → lowercase | exactly 1 arg; text only |
 | `str(x)` | anything → its text form | exactly 1 arg |
 | `push(list, item)` | appends **in place**, returns the list | exactly 2 args; list first |
+| `pop(list)` | remove + return the last item, in place | exactly 1 arg; a list; empty list refused |
+| `insert(list, i, item)` | put item IN at `i`, the rest shifts right | exactly 3 args; a list; whole-int `i`; negative counts back, big `i` clamps |
+| `remove_at(list, i)` | remove + return the item at `i` | exactly 2 args; a list; bounds-checked, `-1` = last |
+| `clear(list)` | empty the list, in place | exactly 1 arg; a list |
+| `extend(list, more)` | glue `more` onto the end, in place | exactly 2 args; both lists |
+| `unique(list)` | a NEW list, duplicates gone (first copy wins) | exactly 1 arg; a list |
 | `sum(list)` | adds the numbers (empty list → `0`) | exactly 1 arg; list of numbers only |
-| `min(a, b)` | the smaller number | exactly 2 args; numbers only |
-| `max(a, b)` | the bigger number | exactly 2 args; numbers only |
+| `min(...)` | the smallest of one-or-more numbers, or of a list | one or more args; numbers only; empty list refused in words |
+| `max(...)` | the biggest of one-or-more numbers, or of a list | one or more args; numbers only; empty list refused in words |
 | `split(text, sep)` | text → list | exactly 2 args; text both; empty sep refused |
 | `join(list, sep)` | list → text (readable display per item) | exactly 2 args; list + text |
 | `trim(text)` | spaces/tabs/newlines off both ends | exactly 1 arg; text only |
 | `replace(text, old, new)` | every `old` → `new` | exactly 3 args; text; empty `old` refused |
+| `index_of(text, piece)` | first index of piece, or `-1` | exactly 2 args; text both; empty piece refused |
+| `starts_with(text, prefix)` | does text begin with prefix? | exactly 2 args; text both; empty prefix refused |
+| `ends_with(text, suffix)` | does text end with suffix? | exactly 2 args; text both; empty suffix refused |
+| `ord(x)` | ONE character → its code number | exactly 1 arg; exactly one character |
+| `chr(x)` | a code number → its character | exactly 1 arg; whole int; 0–1114111; surrogates refused |
 | `abs(x)` | distance from zero | exactly 1 arg; numbers only |
 | `round(x)` | nearest int, half away from zero | exactly 1 arg; numbers only |
 | `random(low, high)` | one whole int, both ends included | exactly 2 args; ints; low ≤ high |
 | `sqrt(x)` | the square root (float) | exactly 1 arg; numbers; x ≥ 0 |
-| `sorted(list)` | a NEW sorted list | exactly 1 arg; a list of only numbers or only text |
+| `sorted(list)` | a NEW sorted list (sets sort into lists) | exactly 1 arg; a list of only numbers or only text |
 | `reverse(list)` | a NEW reversed list | exactly 1 arg; a list |
 | `find(list, item)` | first index, or `-1` when missing | exactly 2 args; list first |
+| `count(list, item)` | how many times the item appears | exactly 2 args; list first |
 | `keys(dict)` | the keys as a list (insertion order) | exactly 1 arg; a dict |
 | `values(dict)` | the values as a list (insertion order) | exactly 1 arg; a dict |
-| `count(list, item)` | how many times the item appears | exactly 2 args; list first |
+| `delete(dict, key)` | remove key + value, in place | exactly 2 args; a dict; missing keys are friendly errors |
+| `items(dict)` | the dict as `[key, value]` pairs | exactly 1 arg; a dict |
+| `merge(a, b)` | a NEW dict; `b` wins on shared keys | exactly 2 args; both dicts |
+| `set_of(list)` | a set: no duplicates, first-seen order | exactly 1 arg; a list |
+| `union(a, b)` | a NEW set with everything from both | exactly 2 args; both sets |
+| `intersect(a, b)` | a NEW set with what is in both | exactly 2 args; both sets |
+| `difference(a, b)` | a NEW set with what is in `a` but not `b` | exactly 2 args; both sets |
 | `float(x)` | int/text → decimal (`float("3.5")` → `3.5`) | exactly 1 arg; bool/null/list/dict/module refused |
 | `pow(a, b)` | exponents (`pow(2, 10)` → `1024`) | exactly 2 args; numbers; `0 ** negative` and negative base + fraction refused in words; huge results refused |
-| `pop(list)` | remove + return the last item, in place | exactly 1 arg; a list; empty list refused |
-| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `func`, `module` | exactly 1 arg; never fails |
+| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `set`, `func`, `module` | exactly 1 arg; never fails |
 | `help(name)` | built-in docs: no args → the whole toolbox; `"name"` → one card | at most 1 arg; non-string name refused; unknown names answer in words (never crash) |
 | `sleep(seconds)` | pause the program (games love this) | exactly 1 arg; number only; no negatives; at most 30 s per call; at most 120 s per run |
 
-Step 12's four tools and Batch 4's two (`help`, `sleep`) add **zero
-keywords**. Purity rule: only `push` and `pop` mutate — `sorted` and
-`reverse` return fresh lists and leave the original untouched
-(test-enforced). `find` misses with `-1` (never a crash), and `count`
-counts with the same equality rules as `==`: `1` finds `1.0`, `true`
-matches nothing numeric. `pow` guards every impossible case **before**
-evaluating: Python would answer `(-2) ** 0.5` with a complex number —
-JuRu answers in words instead. `sleep` carries its own budget so a
-runaway loop cannot hide inside it, and `help` is a knowledge base of
-48 cards that a test suite keeps truthful (every example runs, every
-guard line matches the real message).
+Step 22's seventeen tools add **zero keywords**. Sets are list-backed
+(first-seen order, ONE equality rule) and are born only from
+`set_of([...])` — `{ }` stays a dict; sets refuse `+` and indexing in
+words, an empty set is false, and `sorted(set)` hands back a plain list.
+
+Purity rule: `push`, `pop`, `insert`, `remove_at`, `clear`, `extend` and
+`delete` mutate; `sorted`, `reverse`, `unique` and `merge` return fresh
+values and leave the original untouched (test-enforced). `find` misses
+with `-1` (never a crash), and `count` counts with the same equality rules
+as `==`: `1` finds `1.0`, `true` matches nothing numeric. `pow` guards
+every impossible case **before** evaluating: Python would answer
+`(-2) ** 0.5` with a complex number — JuRu answers in words instead.
+`sleep` carries its own budget so a runaway loop cannot hide inside it,
+and `help` is a knowledge base of 66 cards that a test suite keeps
+truthful (every example runs, every guard line matches the real message).
 
 Two layers guard every builtin and both print the **exact same message**
-(mirror rule, test-enforced for all 30): the checker rejects a wrong arity
+(mirror rule, test-enforced for all 47): the checker rejects a wrong arity
 before a single line runs; the interpreter rejects wrong value types while
 running.
 
@@ -282,7 +323,7 @@ documentation: the test suite parses every ` ```jr ` block and enforces that
 - a block with no output block prints **nothing** (undocumented output
   would be a lie)
 - `ask()` blocks are checker-only (interactive) and never claim output
-- the tutorial mentions all 19 keywords, all 30 builtins, every example
+- the tutorial mentions all 19 keywords, all 47 builtins, every example
   file and every template — docs cannot silently drift from the language
 
 ## Packaging (Step 13 — `pip install juru`)
@@ -361,7 +402,7 @@ setup:
 `vscode/juru-vscode/` ships everything an editor needs, ready to package:
 
 - `package.json` — declares the `juru` language (`.jr`), the grammar and the snippets
-- `syntaxes/juru.tmLanguage.json` — colors the 19 keywords, all 30 builtins,
+- `syntaxes/juru.tmLanguage.json` — colors the 19 keywords, all 47 builtins,
   comments, strings, numbers and operators
 - `snippets/juru.json` — `if`, `elseif`, `for`, `forin`, `while`, `func`,
   `say`, `ask`, `import`
@@ -423,7 +464,7 @@ juru> exit
   starts fresh; vital when input is piped and Ctrl-C is absent
 - the checker runs on every entry against the live environment (typos,
   reserved names, arity — caught before the line runs)
-- dicts, `for x in`, `in`, slices, modules and all 30 builtins work in the REPL
+- dicts, `for x in`, `in`, slices, modules and all 47 builtins work in the REPL
 - a mistake prints the friendly error with the line + caret (Step 17) and the
   session **continues**
 - leave with `exit`, `quit`, or Ctrl-D
@@ -440,7 +481,7 @@ The checker runs AFTER parsing and BEFORE running. It catches:
    and missing module members; a hopeless typo stays plain (no wrong guess),
    and the old-Hinglish hint always wins: `'bolo' was not found (the old
    'bolo' is now 'say')`.
-2. **Reserved names** — assigning to / defining any of the 30 builtins.
+2. **Reserved names** — assigning to / defining any of the 47 builtins.
 3. **Duplicate parameters** — `func f(a, a)` is rejected.
 4. **Wrong argument counts** — for builtins always; for user funcs whenever
    the definition is unambiguous (exactly one `func` with that name).
@@ -466,7 +507,7 @@ Standalone use: `python3 checker.py file.jr` → `OK — no semantic errors ✅`
 - **Dict keys guarded** — text/int only; missing keys error with the real key list.
 - **Runaway loop protection** — 10M+ iterations stops the loop.
 - **Short-circuit logic** — `false and 1/0` never divides.
-- **Reserved builtins** — the 30 builtins (`ask` … `sleep`) cannot be shadowed,
+- **Reserved builtins** — the 47 builtins (`ask` … `difference`) cannot be shadowed,
   not even as a module name (`import "len.jr"` is refused).
 - **Modules are sandboxed** — isolated env, checked source, loop detection,
   one run per file, no leaking names.
@@ -600,8 +641,9 @@ keyword each, covering all 19 keywords, with a full walkthrough in
 | 19 | VS Code run button + REPL command + `juru.interpreterPath` | ✅ DONE — 3 tests |
 | 20 | Distribution polish — Python-grade REPL, real icons, one-step setup | ✅ DONE — 5 tests |
 | 21 | A beginner guide: one runnable lesson per keyword, all linked | ✅ DONE — 4 tests |
-| — | Ultimate torture: steps 1–21 combined | ✅ DONE — 56 tests |
-| — | **Total: 633 tests green** | |
+| 22 | Collections & ergonomics wave 1: aug-assign, negative indexing, slice steps, 17 collection builtins, sets, the stdlib registry | ✅ DONE — 71 tests |
+| — | Ultimate torture: steps 1–22 combined | ✅ DONE — 56 tests |
+| — | **Total: 704 tests green** | |
 
 After 21 the language, its distribution, its setup and its on-ramp are
 complete, the way Python's is: download, one setup step, run — and a

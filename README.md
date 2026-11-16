@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 30 builtins · 5 templates · 14 guide lessons + 15 demos · 633 tests green · version 1.8 (see version.py) · MIT`
+`19 keywords · 47 builtins · 5 templates · 14 guide lessons + 15 demos · 704 tests green · version 1.9 (see version.py) · MIT`
 
 ---
 
@@ -54,7 +54,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.8 (easy like Python, secure like Rust) on win32
+JuRu 1.9 (easy like Python, secure like Rust) on win32
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> 1 + 2
@@ -106,6 +106,13 @@ nums[0] = 30
 push(nums, 9)                       # appends in place
 say(nums)                           # [30, 1, 4, 1, 5, 9]
 say(sum(nums))                      # 50
+nums[-1] += 1                       # shorthand for nums[-1] = nums[-1] + 1
+say(nums[-1])                       # 10  ← -1 is the last item
+say(nums[::2])                      # [30, 4, 9] ← slices take a step now
+
+s = set_of([3, 1, 3, 2])            # sets: no duplicates, order kept
+say(s)                              # {3, 1, 2}
+say(union(s, set_of([9])))          # {3, 1, 2, 9}
 
 person = {"name": "Aman", "age": 20}    # dicts: text or whole-number keys
 say(person["name"])                     # Aman
@@ -161,12 +168,12 @@ and   or    not     import
 `else if` is two words. Blocks are `{ }` — no indentation headaches.
 One statement per line; comments start with `#`.
 
-## Builtins (30 — all reserved names)
+## Builtins (47 — all reserved names)
 
 | Builtin | Does |
 |---------|------|
 | `ask(prompt)` | read a line from the user |
-| `len(x)` | length of text, a list, or a dict |
+| `len(x)` | length of text, a list, a dict, or a set |
 | `int(x)` | text/float → whole number (`int("42")` → `42`, `int(2.9)` → `2`) |
 | `float(x)` | text/int → decimal (`float("3.5")` → `3.5`, `float(5)` → `5.0`) |
 | `upper(x)` | text → CAPITALS |
@@ -174,33 +181,51 @@ One statement per line; comments start with `#`.
 | `str(x)` | anything → text (`str(2.5)` → `"2.5"`) |
 | `push(list, item)` | append in place, returns the list |
 | `pop(list)` | remove and return the last item, in place (empty → friendly error) |
+| `insert(list, i, item)` | put item IN at position `i`, the rest shifts right (in place) |
+| `remove_at(list, i)` | remove and return the item at `i` — `-1` is the last |
+| `clear(list)` | empty the list, in place |
+| `extend(list, more)` | glue every item of `more` onto the end, in place |
+| `unique(list)` | a NEW list without duplicates — the first copy wins |
 | `sum(list)` | add the numbers (empty list → `0`) |
-| `min(a, b)` / `max(a, b)` | the smaller / bigger number |
+| `min(a, b)` / `max(a, b)` | the smaller / bigger number — also `min(list)`, `max(a, b, c)` |
 | `split(text, sep)` | text → list (`split("a,b", ",")` → `[a, b]`) |
 | `join(list, sep)` | list → text (`join([1, 2], "-")` → `1-2`) |
 | `trim(text)` | drop spaces/tabs/newlines from both ends |
 | `replace(text, old, new)` | swap every `old` for `new` |
+| `index_of(text, piece)` | where `piece` starts, or `-1` when it is not there |
+| `starts_with(text, prefix)` | does text begin with prefix? |
+| `ends_with(text, suffix)` | does text end with suffix? |
+| `ord(x)` | ONE character → its code number (`ord("A")` → `65`) |
+| `chr(x)` | a code number → its character (`chr(98)` → `"b"`) |
 | `abs(x)` | distance from zero (`abs(-5)` → `5`) |
 | `round(x)` | nearest whole number, half away from zero (`2.5` → `3`, `-2.5` → `-3`) |
 | `random(low, high)` | one whole number, both ends included |
 | `sqrt(x)` | square root (`sqrt(9)` → `3.0`) |
-| `sorted(list)` | a NEW sorted list — numbers or text, never mutates |
+| `sorted(list)` | a NEW sorted list — numbers or text (sets sort into lists too), never mutates |
 | `reverse(list)` | a NEW reversed list — never mutates |
 | `find(list, item)` | first index of the item, or `-1` when it is not there |
+| `count(list, item)` | how many times the item appears (deep equality) |
 | `keys(dict)` | the dict's keys as a list, in insertion order |
 | `values(dict)` | the dict's values as a list, in insertion order |
-| `count(list, item)` | how many times the item appears (deep equality) |
+| `delete(dict, key)` | remove a key and its value, in place |
+| `items(dict)` | the dict as `[key, value]` pairs, in key order |
+| `merge(a, b)` | a NEW dict — everything from `a`, then `b` (`b` wins on shared keys) |
+| `set_of(list)` | build a set: no duplicates, first-seen order kept |
+| `union(a, b)` | a NEW set with everything from both |
+| `intersect(a, b)` | a NEW set with only what is in both |
+| `difference(a, b)` | a NEW set with what is in `a` but not in `b` |
 | `pow(a, b)` | exponents without `**` (`pow(2, 10)` → `1024`); impossible math is refused in words |
-| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `func`, `module` |
+| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `set`, `func`, `module` |
 | `help(name)` | built-in docs — `help()` lists the whole toolbox, `help("pow")` prints one card |
 | `sleep(seconds)` | pause the program (`sleep(1)` waits one second) — at most 30 s per call, 120 s per run |
 
-Only `push` and `pop` change a list in place — `sorted` and `reverse` hand
-you a fresh list and leave the original alone. Waves 3–4 (`float`, `pow`,
-`pop`, `type`, then `help`, `sleep`) added **zero** new keywords: the
-language stays 19 keywords big. And `help("anything")` never lies — a
-test suite runs every card's examples and checks its guard lines against
-the real error messages.
+`push`, `pop`, `insert`, `remove_at`, `clear`, `extend` and `delete` change
+the list/dict in place — `sorted`, `reverse`, `unique` and `merge` hand you
+a fresh one and leave the original alone. Every wave so far (`float`, `pow`,
+`pop`, `type`, then `help`, `sleep`, then the collection tools above) added
+**zero** new keywords: the language stays 19 keywords big. And
+`help("anything")` never lies — a test suite runs every card's examples and
+checks its guard lines against the real error messages.
 
 ## Templates — start in one command
 
@@ -310,7 +335,7 @@ zip for your system and let its setup do the rest:
 Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.8
+juru --version              # JuRu 1.9
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -333,7 +358,7 @@ Full walkthrough with every platform detail:
 
 ## VS Code (official, ready to load)
 
-Syntax highlighting (all 19 keywords + 30 builtins), snippets, brackets,
+Syntax highlighting (all 19 keywords + 47 builtins), snippets, brackets,
 folding, and the run button — the extension lives at
 `vscode/juru-vscode/`, finds the interpreter by itself (nothing to
 configure), and its keyword list is test-enforced against the language.
@@ -342,13 +367,13 @@ Load it in two minutes:
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.8.0.vsix
+code --install-extension juru-vscode-1.9.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 633, all green
+## Tests — 704, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -367,10 +392,11 @@ python3 test_step12.py        # 22   (float/pow/pop/type + all their guards)
 python3 test_step15.py        # 15   (help(): truthful cards, aliases, unknowns)
 python3 test_step16.py        # 13   (sleep() guards + the bare-`juru` REPL)
 python3 test_step17.py        # 10   (line + caret error display)
+python3 test_step22.py        # 71   (collections & ergonomics wave 1)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 56   (steps 1–20 combined, no mercy)
+python3 test_ultimate.py      # 56   (steps 1–22 combined, no mercy)
 ```
 
 ## Project structure
@@ -396,7 +422,7 @@ JuRu/
 │                       #   juru_icon.ico (16→256 px, inside juru.exe)
 ├── examples/           # guide/ = 14 beginner lessons (all 19 keywords),
 │                       #   test/ = 15 verified demo programs
-├── test_*.py           # 20 test suites, 633 tests
+├── test_*.py           # 21 test suites, 704 tests
 └── LICENSE             # MIT
 ```
 

@@ -304,13 +304,15 @@ def t_templates_manifest_in_sync():
 
 def t_language_untouched_by_batch2():
     """Templates added zero language surface; later batches added exactly
-    6 builtins (float, pow, pop, type, help, sleep) and zero keywords:
-    19 keywords, 30 builtins."""
+    6 builtins (float, pow, pop, type, help, sleep) and zero keywords;
+    Step 22 added 17 collection builtins, still zero keywords:
+    19 keywords, 47 builtins."""
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 19
-    assert len(BUILTINS) == 30
-    for name in ("float", "pow", "pop", "type", "help", "sleep"):
+    assert len(BUILTINS) == 47
+    for name in ("float", "pow", "pop", "type", "help", "sleep",
+                 "insert", "remove_at", "unique", "set_of", "union"):
         assert name in BUILTINS
 
 

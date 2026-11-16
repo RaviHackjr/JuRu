@@ -37,7 +37,10 @@ KEYWORDS = {
 }
 
 SINGLE_OPS = set("+-*/%=<>(){}[],:.")
-DOUBLE_OPS = {"==", "!=", "<=", ">="}
+DOUBLE_OPS = {"==", "!=", "<=", ">=",
+              # augmented assignment: x += 1, xs[0] -= 2, ...
+              "+=", "-=", "*=", "/=", "%="}
+HEX_DIGITS = set("0123456789abcdefABCDEF")
 ASCII_DIGITS = set("0123456789")
 SPACES = (" ", "\t", "\r")
 
@@ -189,10 +192,25 @@ class Lexer:
                     chars.append('"')
                 elif esc == "\\":
                     chars.append("\\")
+                elif esc == "u":          # \u0041 → "A" — exactly 4 hex digits
+                    hex4 = self.src[self.pos:self.pos + 4]
+                    if len(hex4) < 4 or any(c not in HEX_DIGITS for c in hex4):
+                        raise JuRuGalti(
+                            self.line, self.col,
+                            "the \\u escape needs 4 hex digits — like \\u0041")
+                    for _ in range(4):
+                        self._step()
+                    code = int(hex4, 16)
+                    if 0xD800 <= code <= 0xDFFF:
+                        raise JuRuGalti(
+                            self.line, self.col,
+                            "\\u{} is a reserved code (55296 to 57343) — "
+                            "pick another character".format(hex4))
+                    chars.append(chr(code))
                 else:
                     raise JuRuGalti(
                         self.line, self.col - 1,
-                        "I do not know the escape '\\{}' — only \\n, \\t, \\\" and \\\\ work".format(esc),
+                        "I do not know the escape '\\{}' — only \\n, \\t, \\\", \\\\ and \\u work".format(esc),
                     )
             else:
                 chars.append(ch)

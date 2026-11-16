@@ -60,7 +60,7 @@
       "name": "keyword.control.juru"
     },    "builtin": {
       "comment": "The 30 builtins — the flat toolbox.",
-      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type|help|sleep)\\b",
+      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type|help|sleep|insert|remove_at|clear|extend|unique|delete|items|merge|index_of|starts_with|ends_with|ord|chr|set_of|union|intersect|difference)\\b",
       "name": "support.function.builtin.juru"
     },
     "constant": {
@@ -73,7 +73,7 @@
     },
     "operator": {
       "comment": "Arithmetic, comparison, assignment.",
-      "match": "(==|!=|<=|>=|\\+|\\-|\\*|/|%|=|<|>)",
+      "match": "(==|!=|<=|>=|\\+=|\\-=|\\*=|/=|%=|\\+|\\-|\\*|/|%|=|<|>)",
       "name": "keyword.operator.juru"
     },
     "punctuation": {

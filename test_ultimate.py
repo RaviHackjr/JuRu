@@ -561,15 +561,15 @@ def t_error_gauntlet():
     """Every big error message of steps 4–7, exact fragments, in one go."""
     expect_galti('d = {"a": 1}\nsay(d["z"])',
                  "key 'z' was not found — this dict has: a")
-    expect_galti("say([1, 2, 3][1:99][-5:2])",
-                 "the slice start cannot be negative")
+    expect_galti("say([1, 2, 3][0:2:0])",
+                 "the slice step cannot be zero")
     expect_galti('split("a", "")', "the split separator cannot be empty")
     expect_galti('replace("a", "", "b")', "the old text cannot be empty in replace()")
     expect_galti("sqrt(-1)", "sqrt(-1) — a negative number has no square root")
     expect_galti('say({"a": 1}[1.5])', "a dict key must be text or a whole number — got: 1.5")
     expect_galti('for x in 5 { say(x) }',
-                 "'for x in ...' needs a list, text, or dict — got: 5")
-    expect_galti('say(5 in 5)', "'in' needs a list, text, or dict on the right — got: 5")
+                 "'for x in ...' needs a list, text, dict, or set — got: 5")
+    expect_galti('say(5 in 5)', "'in' needs a list, text, dict, or set on the right — got: 5")
     expect_galti('d = {}\nd.name = 1', "'data.key = value' does not work")
     expect_galti('s = "abc"\ns[0] = "x"', "only lists and dicts support item assignment")
     # import errors need a real base dir
@@ -619,35 +619,43 @@ def t_checker_before_runtime():
 
 
 # ================================================================ security audit
-def t_reserved_audit_30():
-    assert len(BUILTINS) == 30
+def t_reserved_audit():
+    assert len(BUILTINS) == 47
     wave1 = {"split", "join", "trim", "replace", "abs", "round", "random", "sqrt"}
     wave2 = {"sorted", "reverse", "find", "keys", "values", "count"}
     wave3 = {"float", "pow", "pop", "type"}
     wave4 = {"help", "sleep"}
+    wave22 = {"insert", "remove_at", "clear", "extend", "unique",
+              "delete", "items", "merge", "index_of", "starts_with",
+              "ends_with", "ord", "chr", "set_of", "union", "intersect",
+              "difference"}
     assert wave1 <= set(BUILTINS)
     assert wave2 <= set(BUILTINS)
     assert wave3 <= set(BUILTINS)
     assert wave4 <= set(BUILTINS)
+    assert wave22 <= set(BUILTINS)
     for name in BUILTINS:
         expect_check_galti("{} = 1".format(name),
                            "'{}' is reserved (builtin) — pick another name".format(name))
         expect_check_galti(
             "func {}(a) {{\n    return a\n}}".format(name),
             "'{}' is reserved (builtin) — pick another name".format(name))
-    assert len(KEYWORDS) == 19          # steps 8–9 added zero keywords
+    assert len(KEYWORDS) == 19          # steps 8–22 added zero keywords
     assert {"in", "import"} <= set(KEYWORDS)
 
 
-def t_mirror_rule_full_24():
-    """Wrong arity: checker message == runtime message == hint, for all 28."""
+def t_mirror_rule_full():
+    """Wrong arity: checker message == runtime message == hint, for every builtin."""
     for name, (lo, hi) in BUILTIN_ARITY.items():
         hint = BUILTIN_HINT[name]
         calls = []
-        if lo > 0:                      # too few (ask() alone is legal: (0, 1))
+        if lo > 0:                      # too few (ask()/help() with none is legal)
             inner = ", ".join(["1"] * (lo - 1))
             calls.append("{}({})".format(name, inner))
-        calls.append("{}({})".format(name, ", ".join(["1"] * (hi + 1))))   # too many
+        if hi is not None:
+            calls.append("{}({})".format(name, ", ".join(["1"] * (hi + 1))))   # too many
+        else:                           # variadic: only zero args is wrong
+            calls.append("{}()".format(name))
         for call in calls:
             expect_check_galti(call, hint)
             expect_galti(call, hint)
@@ -940,11 +948,11 @@ def t_repl_new_builtins_live():
 
 # ================================================================ batch 2/3/4: version + language surface
 def t_batch4_version_bump():
-    assert VERSION == "1.8"
+    assert VERSION == "1.9"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
-    assert len(KEYWORDS) == 19          # batch 4 added zero keywords
-    assert len(BUILTINS) == 30          # 24 + wave3 (4) + wave4 (help, sleep)
+    assert len(KEYWORDS) == 19          # Step 22 added zero keywords
+    assert len(BUILTINS) == 47          # 24 + wave3 (4) + wave4 (help, sleep) + Step 22 (17)
 
 
 def t_templates_end_to_end():
@@ -1036,7 +1044,7 @@ def t_batch3_wave3_builtins_live():
     """float/pow/pop/type, live through the real pipeline."""
     assert run("say(float(\"3.5\") + int(\"1\"))") == "4.5\n"
     assert run("say(pow(2, 8))") == "256\n"
-    assert run("items = [\"x\", \"y\"]\nsay(pop(items))\nsay(len(items))") == "y\n1\n"
+    assert run("stack = [\"x\", \"y\"]\nsay(pop(stack))\nsay(len(stack))") == "y\n1\n"
     assert run("say(type(2.5) == \"float\")") == "true\n"
     expect_galti("say(pow(0, -2))", "0 cannot be raised to a negative power")
     expect_galti("say(pop([]))", "this list is empty")
@@ -1091,7 +1099,7 @@ def t_batch3_package_and_editor():
 # ================================================================ batch 4: help + sleep + bare REPL + caret errors
 def t_batch4_help_and_sleep_live():
     assert run("help(\"pow\")").startswith("pow(a, b)")
-    assert run("help()").startswith("JuRu toolbox — 19 keywords + 30 builtins")
+    assert run("help()").startswith("JuRu toolbox — 19 keywords + 47 builtins")
     assert run('say(type(sleep(0)))') == "null\n"
     expect_galti("say(sleep(-1))", "cannot go back in time")
     expect_galti("say(sleep(99))", "at most 30 seconds at a time")
@@ -1138,7 +1146,7 @@ def t_batch4_bare_command_is_repl():
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout.startswith("JuRu {} (".format(VERSION)), proc.stdout
-    assert "JuRu toolbox — 19 keywords + 30 builtins" in proc.stdout
+    assert "JuRu toolbox — 19 keywords + 47 builtins" in proc.stdout
 
 
 # ================================================================ batch 5: the standalone interpreter + the run button
@@ -1317,8 +1325,8 @@ def t_batch7_repo_tidy():
         "ROADMAP.md", "src", "vscode",
     ] + ["test_%s.py" % s for s in ("checker", "interpreter", "lexer", "mega",
          "packaging", "parser", "programs", "repl", "stdlib", "step12",
-         "step15", "step16", "step17", "step6", "step7", "step8", "step9",
-         "templates", "tutorial", "ultimate")])
+         "step15", "step16", "step17", "step22", "step6", "step7", "step8",
+         "step9", "templates", "tutorial", "ultimate")])
     assert top == expected, (top, "unexpected or missing top-level files")
 
 
@@ -1430,8 +1438,8 @@ ALL = [
     ("module readonly + member errors", t_module_readonly_and_errors),
     ("error gauntlet (steps 4–7 messages)", t_error_gauntlet),
     ("checker kills before runtime", t_checker_before_runtime),
-    ("reserved audit: all 30 builtins", t_reserved_audit_30),
-    ("mirror rule: all 28 builtins", t_mirror_rule_full_24),
+    ("reserved audit: all 47 builtins", t_reserved_audit),
+    ("mirror rule: all 47 builtins", t_mirror_rule_full),
     ("did-you-mean gauntlet (every surface)", t_did_you_mean_gauntlet),
     ("typo storm over 40 near-identical funcs", t_typo_top_of_recursion_hell),
     ("step 9 pipeline: top words ranked", t_top_words_pipeline),
@@ -1442,7 +1450,7 @@ ALL = [
     ("REPL torture: dicts + import + recovery", t_repl_dict_import_torture),
     ("REPL multi-line session (blocks + recovery)", t_repl_multiline_session),
     ("REPL: the 6 new tools live", t_repl_new_builtins_live),
-    ("batch 4: version 1.5, 30 builtins, 19 keywords", t_batch4_version_bump),
+    ("batch 4: version 1.9, 47 builtins, 19 keywords", t_batch4_version_bump),
     ("batch 2: --new quiz end-to-end via CLI", t_templates_end_to_end),
     ("batch 2: --new refusal gauntlet", t_new_refusal_gauntlet),
     ("batch 2: --templates listing complete", t_templates_listing_complete),

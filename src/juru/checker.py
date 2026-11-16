@@ -31,81 +31,7 @@ from .parser import (
     Node, Name, Assign, Call, For, FuncDef, Import, Member,
     parse_source,
 )
-
-# same reserved names as the interpreter (kept independent on purpose)
-BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop",
-            "sum", "min", "max",
-            "split", "join", "trim", "replace", "abs", "round", "random", "sqrt",
-            "sorted", "reverse", "find", "keys", "values", "count",
-            "pow", "type", "help", "sleep")
-
-# (min_args, max_args) for every builtin — checked before a single line runs
-BUILTIN_ARITY = {
-    "ask": (0, 1),
-    "len": (1, 1),
-    "int": (1, 1),
-    "float": (1, 1),
-    "upper": (1, 1),
-    "lower": (1, 1),
-    "str": (1, 1),
-    "push": (2, 2),
-    "pop": (1, 1),
-    "sum": (1, 1),
-    "min": (2, 2),
-    "max": (2, 2),
-    "split": (2, 2),
-    "join": (2, 2),
-    "trim": (1, 1),
-    "replace": (3, 3),
-    "abs": (1, 1),
-    "round": (1, 1),
-    "random": (2, 2),
-    "sqrt": (1, 1),
-    "sorted": (1, 1),
-    "reverse": (1, 1),
-    "find": (2, 2),
-    "keys": (1, 1),
-    "values": (1, 1),
-    "count": (2, 2),
-    "pow": (2, 2),
-    "type": (1, 1),
-    "help": (0, 1),
-    "sleep": (1, 1),
-}
-
-# the exact message the interpreter would print — both layers say the same thing
-BUILTIN_HINT = {
-    "ask": "ask(prompt) takes at most 1 argument",
-    "len": "len(x) takes exactly 1 argument",
-    "int": "int(x) takes exactly 1 argument",
-    "float": "float(x) takes exactly 1 argument",
-    "upper": "upper(x) takes exactly 1 argument",
-    "lower": "lower(x) takes exactly 1 argument",
-    "str": "str(x) takes exactly 1 argument",
-    "push": "push(list, item) takes exactly 2 arguments",
-    "pop": "pop(list) takes exactly 1 argument",
-    "sum": "sum(list) takes exactly 1 argument",
-    "min": "min(a, b) takes exactly 2 arguments",
-    "max": "max(a, b) takes exactly 2 arguments",
-    "split": "split(text, separator) takes exactly 2 arguments",
-    "join": "join(list, separator) takes exactly 2 arguments",
-    "trim": "trim(x) takes exactly 1 argument",
-    "replace": "replace(text, old, new) takes exactly 3 arguments",
-    "abs": "abs(x) takes exactly 1 argument",
-    "round": "round(x) takes exactly 1 argument",
-    "random": "random(low, high) takes exactly 2 arguments",
-    "sqrt": "sqrt(x) takes exactly 1 argument",
-    "sorted": "sorted(list) takes exactly 1 argument",
-    "reverse": "reverse(list) takes exactly 1 argument",
-    "find": "find(list, item) takes exactly 2 arguments",
-    "keys": "keys(dict) takes exactly 1 argument",
-    "values": "values(dict) takes exactly 1 argument",
-    "count": "count(list, item) takes exactly 2 arguments",
-    "pow": "pow(a, b) takes exactly 2 arguments",
-    "type": "type(x) takes exactly 1 argument",
-    "help": "help() takes at most 1 argument",
-    "sleep": "sleep(seconds) takes exactly 1 argument",
-}
+from .stdlib import BUILTINS, BUILTIN_ARITY, BUILTIN_HINT, check_arity
 
 
 def did_you_mean(name, candidates):
@@ -224,9 +150,9 @@ class Checker:
             return
         name, count = n.name, len(n.args)
         if name in BUILTIN_ARITY:
-            low, high = BUILTIN_ARITY[name]
-            if count < low or count > high:
-                raise JuRuGalti(n.line, n.col, BUILTIN_HINT[name])
+            bad = check_arity(name, count)
+            if bad is not None:
+                raise JuRuGalti(n.line, n.col, bad)
             return
         if name in self.funcs:
             counts = self.funcs[name]

@@ -51,10 +51,10 @@ class DictLit(Node):  _fields = ("keys", "values")          # {"name": 5} — ke
 class BinOp(Node):    _fields = ("op", "left", "right")     # + - * / % == < in and or...
 class UnaryOp(Node):  _fields = ("op", "operand")           # - + not
 class Call(Node):     _fields = ("name", "args", "callee")  # add(1, 2) — or callee (utils.add(1, 2))
-class Index(Node):    _fields = ("seq", "idx", "idx_end", "is_slice")   # nums[0], nums[1:3]
+class Index(Node):    _fields = ("seq", "idx", "idx_end", "is_slice", "idx_step")  # nums[0], nums[1:3], nums[1:7:2]
 class Member(Node):   _fields = ("seq", "name")             # utils.double, d.name
-class Assign(Node):   _fields = ("name", "value")           # x = 5
-class SetIndex(Node): _fields = ("seq", "idx", "value")     # nums[0] = 5
+class Assign(Node):   _fields = ("name", "value", "op")     # x = 5 — op is "+"/"-"/... when written x += e
+class SetIndex(Node): _fields = ("seq", "idx", "value", "op")  # nums[0] = 5 — op for nums[0] += 5
 class ExprSt(Node):   _fields = ("expr",)                   # a bare expression line
 class Say(Node):      _fields = ("args",)                   # say(...)
 class If(Node):       _fields = ("cond", "then", "orelse")  # if / else if / else
@@ -101,6 +101,10 @@ def dump(node):
         if node.is_slice:                                 # nums[1:3]
             def _slice_part(x):
                 return "(null)" if x is None else dump(x)
+            if node.idx_step is not None:                 # nums[1:7:2]
+                return "(slice-step {} {} {} {})".format(
+                    dump(node.seq), _slice_part(node.idx),
+                    _slice_part(node.idx_end), dump(node.idx_step))
             return "(slice {} {} {})".format(
                 dump(node.seq), _slice_part(node.idx), _slice_part(node.idx_end))
         return "(index {} {})".format(dump(node.seq), dump(node.idx))
@@ -111,8 +115,13 @@ def dump(node):
             [kv for pair in zip(node.keys, node.values) for kv in pair])
         return "(dict{})".format(pairs)
     if isinstance(node, Assign):
+        if node.op is not None:                           # x += e
+            return "(augassign {} {} {})".format(node.op, node.name, dump(node.value))
         return "(assign {} {})".format(node.name, dump(node.value))
     if isinstance(node, SetIndex):
+        if node.op is not None:                           # xs[i] += e
+            return "(augsetindex {} {} {} {})".format(
+                node.op, dump(node.seq), dump(node.idx), dump(node.value))
         return "(setindex {} {} {})".format(
             dump(node.seq), dump(node.idx), dump(node.value))
     if isinstance(node, ExprSt):
@@ -185,6 +194,7 @@ def _module_name(path):
 # ------------------------------------------------------------------ parser
 
 COMP_OPS = {"==", "!=", "<=", ">=", "<", ">"}
+AUG_OPS = {"+=", "-=", "*=", "/=", "%="}   # augmented assignment: x += e
 
 
 class Parser:
@@ -325,26 +335,42 @@ class Parser:
 
     def name_stmt(self):
         name_tok = self.cur()
-        if self.peek(1).type == OPERATOR and self.peek(1).value == "=":
+        nxt = self.peek(1)
+        if nxt.type == OPERATOR and nxt.value == "=":
             self.next()                  # name
             self.next()                  # =
             self.skip_nl()               # x =\n 5 is allowed
             val = self.expr()
             self._after_stmt(name_tok)
             return Assign(name_tok.line, name_tok.col, name_tok.value, val)
+        if nxt.type == OPERATOR and nxt.value in AUG_OPS:
+            # x += e — the shorthand for x = x + e. The Assign remembers the
+            # op; the interpreter reads the old value and applies it once.
+            self.next()                  # name
+            op_tok = self.next()         # += -= *= /= %=
+            self.skip_nl()
+            val = self.expr()
+            self._after_stmt(name_tok)
+            return Assign(name_tok.line, name_tok.col, name_tok.value, val,
+                          op_tok.value[0])
         expr = self.expr()
-        if self.at(OPERATOR, "="):
-            self.next()                  # =
+        t2 = self.cur()
+        if t2.type == OPERATOR and (t2.value == "=" or t2.value in AUG_OPS):
+            self.next()                  # = or an augmented op (+= ...)
             self.skip_nl()
             val = self.expr()
             self._after_stmt(name_tok)
             if isinstance(expr, Index):
-                return SetIndex(expr.line, expr.col, expr.seq, expr.idx, val)
+                if t2.value == "=":
+                    return SetIndex(expr.line, expr.col, expr.seq, expr.idx, val)
+                # xs[i] += e — the shorthand for xs[i] = xs[i] + e
+                return SetIndex(expr.line, expr.col, expr.seq, expr.idx, val,
+                                t2.value[0])
             if isinstance(expr, Member):
                 raise JuRuGalti(name_tok.line, name_tok.col,
                                 "assign to a dict with 'data[\"key\"] = value' — 'data.key = value' does not work")
             raise JuRuGalti(name_tok.line, name_tok.col,
-                            "write plain 'name = value' or 'list[index] = value' — '=' cannot follow an expression")
+                            "write plain 'name = value' or 'list[index] = value' — '{}' cannot follow an expression".format(t2.value))
         self._after_stmt(name_tok)
         return ExprSt(name_tok.line, name_tok.col, expr)
 
@@ -586,15 +612,22 @@ class Parser:
                 if not self.at(OPERATOR, ":"):
                     first = self.expr()
                     self.skip_nl()
-                if self.at(OPERATOR, ":"):                 # nums[1:3] / nums[:2] / nums[1:]
+                if self.at(OPERATOR, ":"):                 # nums[1:3] / nums[:2] / nums[1:] / nums[1:7:2]
                     self.next()
                     self.skip_nl()
                     second = None
-                    if not self.at(OPERATOR, "]"):
+                    if not self.at(OPERATOR, ":") and not self.at(OPERATOR, "]"):
                         second = self.expr()
                         self.skip_nl()
+                    step = None
+                    if self.at(OPERATOR, ":"):             # a third part: the step
+                        self.next()
+                        self.skip_nl()
+                        if not self.at(OPERATOR, "]"):
+                            step = self.expr()
+                            self.skip_nl()
                     self.expect_op("]", "a slice ends with ']' — like nums[1:3]")
-                    node = Index(t.line, t.col, node, first, second, True)
+                    node = Index(t.line, t.col, node, first, second, True, step)
                 else:
                     if first is None:
                         raise JuRuGalti(t.line, t.col,

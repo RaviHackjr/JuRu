@@ -41,6 +41,7 @@ CONT_PROMPT = "....> "
 
 # a line (or block so far) that ends with one of these wants MORE input
 CONTINUE_OPS = {"+", "-", "*", "/", "%", ",", "=",
+                "+=", "-=", "*=", "/=", "%=",
                 "==", "!=", "<", "<=", ">", ">=", "(", "[", "{"}
 CONTINUE_KWS = {"and", "or", "not", "from", "to", "in", "import", "else"}
 
