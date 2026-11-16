@@ -1313,7 +1313,8 @@ def t_batch7_repo_tidy():
     expected = sorted([
         ".github", ".gitignore", "CHANGELOG.md", "LICENSE", "README.md",
         "checker.py", "design.md", "docs", "examples", "juru.py", "juru.spec",
-        "logo", "packaging", "pyproject.toml", "repl.py", "src", "vscode",
+        "logo", "packaging", "PROGRESS.md", "pyproject.toml", "repl.py",
+        "ROADMAP.md", "src", "vscode",
     ] + ["test_%s.py" % s for s in ("checker", "interpreter", "lexer", "mega",
          "packaging", "parser", "programs", "repl", "stdlib", "step12",
          "step15", "step16", "step17", "step6", "step7", "step8", "step9",
