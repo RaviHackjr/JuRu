@@ -57,9 +57,9 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–19 combined, no mercy | **45 pass** |
+| `test_ultimate.py` | steps 1–20 combined, no mercy | **50 pass** |
 | `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **622 tests green** |
+| **Total** | | **627 tests green** |
 
 Run everything yourself:
 ```
@@ -333,6 +333,29 @@ as `JuRu-<version>-<system>.zip`, packaged with the `.vsix`, and attached
 to the GitHub release. A `Run workflow` build without a tag publishes
 nothing — handy for testing a build change.
 
+## The Python-grade setup (Step 20 — download, one step, run)
+
+Everything a fresh user touches was made to work like Python's own
+setup:
+
+- **The REPL speaks Python's dialect.** The banner is
+  `JuRu <version> (easy like Python, secure like Rust) on <platform>`
+  plus a `Type "help", "exit" or "cancel"` line; the prompt is `juru>`,
+  the same name as the command. A terminal command pasted into the REPL
+  (`juru --version`, `pip`, `--version`, `dir`) gets a one-line nudge —
+  "this is the REPL, exit first" — instead of a "'juru' was not found"
+  error, while real code such as `juru = 5` still runs.
+- **Real icons everywhere.** `logo/juru_icon.ico` (16→256 px, from the
+  same SVG) rides inside `juru.exe` on Windows — Explorer, taskbar and
+  the `.jr` file icon all show the ruby. The extension ships
+  `images/juru.png` as its official icon.
+- **One-step setup.** The Windows zip carries `setup.bat`: it copies the
+  interpreter to `%LOCALAPPDATA%\Programs\JuRu` (Python's per-user
+  spot), adds it to the user PATH, and registers `.jr` files with the
+  icon and double-click run. `install.sh` does the same on
+  macOS/Linux. The extension then finds the interpreter with zero
+  configuration.
+
 ## The VS Code extension (Step 14 — prepare-only)
 
 `vscode/juru-vscode/` ships everything an editor needs, ready to package:
@@ -351,37 +374,37 @@ and every JSON file is valid. Publishing to the Marketplace is a later,
 separate step — `docs/vscode.md` has the two-minute load instructions.
 
 Since Step 19 the extension is a run button, not just colors: the ▶ in
-the editor title bar (and `JuRu: Run File` from the right-click menu or
-command palette) runs the open file in a real terminal, so `ask()` works.
-`JuRu: Open REPL` starts a live session. The interpreter is looked up via
-the `juru.interpreterPath` setting (default `juru` on the PATH), and a
-missing interpreter gets a friendly dialog with a link to the
-interpreter download — never a cryptic shell error.
+the editor title bar (and `JuRu: Run File` from the right-click menu,
+the file-tree menu, Ctrl+Alt+J or the command palette) runs the open
+file in a real terminal, so `ask()` works. `JuRu: Open REPL` starts a
+live session. Since Step 20 the interpreter is found by itself — plain
+`juru` on the PATH, or the one-step-setup location (`auto`, the setting
+default) — and a missing interpreter gets a friendly dialog with a link
+to the interpreter download, never a cryptic shell error.
 
 ## The REPL (Steps 5+8+16 — `python3 repl.py` or bare `juru`)
 
 ```
 $ python3 repl.py
-JuRu 1.5 REPL — full English, easy like Python, secure like Rust.
-type 'exit' or press Ctrl-D to leave
-type 'cancel' or press Ctrl-C to drop an open block
+JuRu 1.6 (easy like Python, secure like Rust) on linux
+Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
-jruru> 1 + 2
+juru> 1 + 2
 => 3
-jruru> d = {"name": "Aman", "age": 20}
-jruru> d["age"] + 2
+juru> d = {"name": "Aman", "age": 20}
+juru> d["age"] + 2
 => 22
-jruru> for x in [10, 20] {
-......>     say(x)
-......> }
+juru> for x in [10, 20] {
+....>     say(x)
+....> }
 10
 20
-jruru> name = "JuRu"
-jruru> naame
+juru> name = "JuRu"
+juru> naame
 JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
     naame
     ^
-jruru> exit
+juru> exit
 ```
 
 - one shared environment — names, lists, dicts and funcs survive line to line
@@ -391,7 +414,7 @@ jruru> exit
 - **bare `help` (or `?`) prints the whole toolbox** without needing
   parentheses — a REPL-only shortcut (Step 16)
 - **multi-line blocks** — a line that ends with an open brace/paren/bracket or
-  a trailing operator/keyword continues on the `......> ` prompt until the
+  a trailing operator/keyword continues on the `....> ` prompt until the
   block closes; completion is decided by the **real lexer**, so braces inside
   text (`say("}")`) can never fool it
 - an unclosed block at EOF (Ctrl-D) is a friendly error:
@@ -559,7 +582,7 @@ Notes:
 | 5 | Stdlib (builtins) + REPL + more examples | ✅ DONE — stdlib 25, REPL 10, programs 13, mega 14 |
 | 6 | Dicts, `for x in`, `in`/`not in`, slices, string + math stdlib | ✅ DONE — 46 tests |
 | 7 | Modules: `import`, namespaces, run-once, isolation, loop detection | ✅ DONE — 17 tests |
-| 8 | Did-you-mean + the multi-line REPL (`......> `, cancel) | ✅ DONE — 19 tests |
+| 8 | Did-you-mean + the multi-line REPL (`....> `, cancel) | ✅ DONE — 19 tests |
 | 9 | Stdlib wave 2: sorted, reverse, find, keys, values, count | ✅ DONE — 23 tests |
 | 10 | Templates: 5 starter programs + `--new`/`--templates` CLI | ✅ DONE — 24 tests |
 | 11 | The tutorial: docs/tutorial.md, executable and test-enforced | ✅ DONE — 11 tests |
@@ -571,10 +594,12 @@ Notes:
 | 17 | Python-style error display: the line + a caret under the exact column | ✅ DONE — 10 tests |
 | 18 | Standalone interpreter: PyInstaller spec → release zips, no Python needed | ✅ DONE — release workflow |
 | 19 | VS Code run button + REPL command + `juru.interpreterPath` | ✅ DONE — 3 tests |
-| — | Ultimate torture: steps 1–19 combined | ✅ DONE — 45 tests |
-| — | **Total: 622 tests green** | |
+| 20 | Distribution polish — Python-grade REPL, real icons, one-step setup | ✅ DONE — 5 tests |
+| — | Ultimate torture: steps 1–20 combined | ✅ DONE — 50 tests |
+| — | **Total: 627 tests green** | |
 
-After 19 the language and its distribution are complete. Still open, all
-optional and on demand: publishing the extension to the Marketplace, a
-docs website, and a stdlib wave 4 beyond `help`/`sleep` (only when a
-real use asks for it).
+After 20 the language, its distribution and its setup are complete, the
+way Python's is: download, one setup step, run. Still open, all optional
+and on demand: publishing the extension to the Marketplace, a docs
+website, and a stdlib wave 4 beyond `help`/`sleep` (only when a real use
+asks for it).

@@ -59,17 +59,19 @@ jobs:
         run: |
           set -e
           cd dist
-          cp ../packaging/INSTALL.txt .
+          cp ../packaging/INSTALL.txt ../packaging/setup.bat ../packaging/install.sh .
           export ASSET="JuRu-${VERSION#v}-${SYSTEM}.zip"
           python - <<'PY'
           import os
           import zipfile
 
           exe = "juru.exe" if os.name == "nt" else "juru"
+          extra = "setup.bat" if os.name == "nt" else "install.sh"
           asset = os.environ["ASSET"]
           with zipfile.ZipFile(asset, "w", zipfile.ZIP_DEFLATED) as z:
               z.write(exe)
               z.write("INSTALL.txt")
+              z.write(extra)
           print("wrote", asset)
           PY
 
@@ -127,7 +129,8 @@ jobs:
         run: |
           set -e
           ls -l assets
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "JuRu ${TAG#v}" --notes-file - <<'NOTES'
+          VERSION="${TAG#v}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "JuRu $VERSION" --notes-file - <<NOTES
           JuRu — the easy, secure programming language: full English, few
           keywords, friendly errors, and safety guards built in.
 
@@ -135,16 +138,19 @@ jobs:
 
           | File | For |
           |------|-----|
-          | `JuRu-<version>-windows-x64.zip` | Windows 10/11 — unzip, run `juru.exe` |
-          | `JuRu-<version>-linux-x64.zip` | Linux (64-bit) — unzip, run `./juru` |
-          | `JuRu-<version>-macos-arm64.zip` | Apple Silicon Macs — unzip, run `./juru` |
-          | `JuRu-vscode-<version>.vsix` | VS Code extension — `code --install-extension <file>` |
+          | JuRu-$VERSION-windows-x64.zip | Windows 10/11 — unzip, double-click setup.bat, done |
+          | JuRu-$VERSION-linux-x64.zip | Linux (64-bit) — unzip, sh install.sh |
+          | JuRu-$VERSION-macos-arm64.zip | Apple Silicon Macs — unzip, sh install.sh |
+          | JuRu-vscode-$VERSION.vsix | VS Code extension — code --install-extension <file> |
 
-          Each interpreter zip holds one binary and an INSTALL.txt with
-          three-step setup. No Python needed. Full guide:
+          Each interpreter zip installs itself: one script sets up the
+          PATH, the .jr file icon (Windows) and the interpreter. No
+          Python needed, no settings. Full guide:
           [docs/install.md](https://github.com/RaviHackjr/JuRu/blob/main/docs/install.md)
 
-          Prefer pip? `pip install juru` gives the same interpreter as a
+          What changed: [CHANGELOG.md](https://github.com/RaviHackjr/JuRu/blob/main/CHANGELOG.md)
+
+          Prefer pip? pip install juru gives the same interpreter as a
           package. Source code: the "Source code (zip)" links below.
           NOTES
           gh release upload "$TAG" assets/* --clobber

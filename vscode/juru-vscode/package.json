@@ -2,13 +2,14 @@
   "name": "juru-vscode",
   "displayName": "JuRu Language (official)",
   "description": "Syntax highlighting, snippets, a run button and a REPL for JuRu (.jr) — the easy, secure programming language.",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "publisher": "juru-lang",
   "license": "MIT",
   "engines": {
     "vscode": "^1.75.0"
   },
   "main": "./extension.js",
+  "icon": "images/juru.png",
   "categories": [
     "Programming Languages",
     "Snippets"
@@ -48,15 +49,28 @@
           "command": "juru.runFile",
           "when": "resourceLangId == juru"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "juru.runFile",
+          "when": "resourceExtname == .jr"
+        }
       ]
     },
+    "keybindings": [
+      {
+        "command": "juru.runFile",
+        "key": "ctrl+alt+j",
+        "when": "resourceLangId == juru"
+      }
+    ],
     "configuration": {
       "title": "JuRu",
       "properties": {
         "juru.interpreterPath": {
           "type": "string",
-          "default": "juru",
-          "markdownDescription": "Path to the JuRu interpreter (`juru` on macOS/Linux, `juru.exe` on Windows). Leave it as `juru` when the interpreter is on your PATH. Get it from the [JuRu releases page](https://github.com/RaviHackjr/JuRu/releases/latest)."
+          "default": "auto",
+          "markdownDescription": "Leave it as `auto` — the extension finds the interpreter by itself: plain `juru` on your PATH, or the one-step-setup location (`%LOCALAPPDATA%\\Programs\\JuRu` on Windows, `/usr/local/bin` or `~/.local/bin` elsewhere). Only set a full path if you keep the interpreter somewhere unusual. Get it from the [JuRu releases page](https://github.com/RaviHackjr/JuRu/releases/latest)."
         }
       }
     },

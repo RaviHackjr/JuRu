@@ -152,8 +152,8 @@ def t_sleep_arity_and_mirror():
 def t_no_args_opens_repl():
     proc = cli([], input_text="say(pow(2, 3))\nexit\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert proc.stdout.startswith("JuRu {} REPL".format(VERSION)), proc.stdout
-    assert "jruru> 8" in proc.stdout, proc.stdout
+    assert proc.stdout.startswith("JuRu {} (".format(VERSION)), proc.stdout
+    assert "juru> 8" in proc.stdout, proc.stdout
 
 
 def t_no_args_repl_env_persists():

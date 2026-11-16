@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 30 builtins · 5 templates · 15 examples · 619 tests green · version 1.5 (see version.py) · MIT`
+`19 keywords · 30 builtins · 5 templates · 15 examples · 627 tests green · version 1.6 (see version.py) · MIT`
 
 ---
 
@@ -48,35 +48,34 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.5 REPL — full English, easy like Python, secure like Rust.
-type 'exit' or press Ctrl-D to leave
-type 'cancel' or press Ctrl-C to drop an open block
+JuRu 1.6 (easy like Python, secure like Rust) on win32
+Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
-jruru> 1 + 2
+juru> 1 + 2
 => 3
-jruru> help("pow")                   ← built-in docs, like Python's help()
+juru> help("pow")                   ← built-in docs, like Python's help()
 pow(a, b)
 
 raise a to the power b — the exponent tool (no ** to memorize).
 ...
-jruru> d = {"name": "Aman", "age": 20}
-jruru> d["age"] + 2
+juru> d = {"name": "Aman", "age": 20}
+juru> d["age"] + 2
 => 22
-jruru> for x in [10, 20] {          ← blocks can span lines now
-......>     say(x)
-......> }
+juru> for x in [10, 20] {          ← blocks can span lines now
+....>     say(x)
+....> }
 10
 20
-jruru> sorted([3, 1, 2])
+juru> sorted([3, 1, 2])
 => [1, 2, 3]
-jruru> count(["go", "go", "stop"], "go")
+juru> count(["go", "go", "stop"], "go")
 => 2
-jruru> name = "JuRu"
-jruru> naame                         ← a typo? it helps you
+juru> name = "JuRu"
+juru> naame                         ← a typo? it helps you
 JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
     naame
     ^
-jruru> exit
+juru> exit
 ```
 
 ## The language in 30 seconds
@@ -267,11 +266,19 @@ repl        same pipeline, one line at a time, one shared environment
 
 **Option 1 — download the interpreter (no Python needed).** From the
 [releases page](https://github.com/RaviHackjr/JuRu/releases), grab the
-zip for your system (Windows / Linux / macOS). Inside is one binary and
-an INSTALL.txt — unzip, put it on your PATH, done:
+zip for your system and let its setup do the rest:
+
+- **Windows** — unzip, double-click **setup.bat**, open a new terminal.
+  It installs the interpreter to `%LOCALAPPDATA%\Programs\JuRu` (like
+  Python's per-user install), puts it on your PATH, and gives `.jr`
+  files the JuRu icon in Explorer. Done — no admin, no settings.
+- **macOS / Linux** — unzip, `sh install.sh` (it picks a bin folder and
+  tells you if one PATH line remains).
+
+Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.5
+juru --version              # JuRu 1.6
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -294,20 +301,22 @@ Full walkthrough with every platform detail:
 
 ## VS Code (official, ready to load)
 
-Syntax highlighting (all 19 keywords + 30 builtins), snippets, brackets and
-folding — the extension lives at `vscode/juru-vscode/` and its keyword list
-is test-enforced against the language. Load it in two minutes:
+Syntax highlighting (all 19 keywords + 30 builtins), snippets, brackets,
+folding, and the run button — the extension lives at
+`vscode/juru-vscode/`, finds the interpreter by itself (nothing to
+configure), and its keyword list is test-enforced against the language.
+Load it in two minutes:
 
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.5.0.vsix
+code --install-extension juru-vscode-1.6.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 622, all green
+## Tests — 627, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -329,7 +338,7 @@ python3 test_step17.py        # 10   (line + caret error display)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 45   (steps 1–19 combined, no mercy)
+python3 test_ultimate.py      # 50   (steps 1–20 combined, no mercy)
 ```
 
 ## Project structure
@@ -351,9 +360,10 @@ JuRu/
 ├── docs/syntax.md      # the A to Z cheat sheet
 ├── docs/install.md     # every way to install, per platform
 ├── docs/vscode.md      # load the extension in 2 minutes
-├── logo/juru_icon.svg  # the language icon (orange → red ruby + braces)
+├── logo/               # the icon set: juru_icon.svg (source),
+│                       #   juru_icon.ico (16→256 px, inside juru.exe)
 ├── examples/           # 15 verified demo programs
-├── test_*.py           # 20 test suites, 622 tests
+├── test_*.py           # 20 test suites, 627 tests
 └── LICENSE             # MIT
 ```
 

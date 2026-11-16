@@ -90,7 +90,7 @@ def t_package_imports_cleanly():
 def t_root_launchers_work():
     for script, args, want in (
         ("juru.py", ["--version"], "JuRu " + VERSION),
-        ("repl.py", [], "JuRu " + VERSION + " REPL"),
+        ("repl.py", [], "JuRu " + VERSION + " (easy like Python"),
         ("checker.py", ["src/juru/templates/starter.jr"], "OK"),
     ):
         proc = run([sys.executable, os.path.join(HERE, script)] + args,
@@ -105,8 +105,8 @@ def t_cli_repl_subcommand():
     proc = run([sys.executable, os.path.join(HERE, "juru.py"), "repl"],
                input="say(2 + 3)\nexit\n", cwd=HERE)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "JuRu " + VERSION + " REPL" in proc.stdout
-    assert "jruru> 5" in proc.stdout, proc.stdout
+    assert "JuRu " + VERSION + " (easy like Python" in proc.stdout
+    assert "juru> 5" in proc.stdout, proc.stdout
 
 
 # ------------------------------------------------------------------ the real wheel
@@ -181,7 +181,7 @@ def t_wheel_builds_installs_and_runs():
         # 6) the installed REPL answers
         proc = run([juru, "repl"], input="say(40 + 2)\nexit\n")
         assert proc.returncode == 0, proc.stdout + proc.stderr
-        assert "jruru> 42" in proc.stdout, proc.stdout
+        assert "juru> 42" in proc.stdout, proc.stdout
     finally:
         shutil.rmtree(work, ignore_errors=True)
 

@@ -11,7 +11,7 @@ publishing anything.
 `JuRu-vscode-<version>.vsix`), then:
 
 ```bash
-code --install-extension JuRu-vscode-1.5.0.vsix
+code --install-extension JuRu-vscode-1.6.0.vsix
 ```
 
 **Or build it from this repo:**
@@ -19,7 +19,7 @@ code --install-extension JuRu-vscode-1.5.0.vsix
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.5.0.vsix
+code --install-extension juru-vscode-1.6.0.vsix
 ```
 
 **Or from source:**
@@ -30,18 +30,31 @@ cp -r vscode/juru-vscode ~/.vscode/extensions/
 
 Open a `.jr` file → VS Code picks **JuRu** automatically.
 
-## Run your code — the play button
+## Run your code — four ways, zero configuration
 
-Open any `.jr` file and press the **▶ button** (top-right of the editor),
-or right-click → **JuRu: Run File**, or run **JuRu: Run File** from the
-command palette. The file runs in a real terminal, so `ask()` works and
-the REPL-style output scrolls normally.
+Open any `.jr` file, then run it however you like:
+
+1. the **▶ button** (top-right of the editor),
+2. **Ctrl+Alt+J**,
+3. right-click in the editor → **JuRu: Run File** (the file tree's
+   right-click menu has it too),
+4. **JuRu: Run File** from the command palette.
+
+The file runs in a real terminal, so `ask()` works and the output
+scrolls normally — the same feel as running `python file.py`.
+
+The interpreter is **found by itself**: plain `juru` on your PATH, or
+the exact places the one-step setup puts it (`%LOCALAPPDATA%\Programs\JuRu`
+from setup.bat on Windows, `/usr/local/bin` or `~/.local/bin` from
+install.sh elsewhere). You never set an interpreter, never pick a
+version, never hunt for a path — like a real installer, the setup did
+it already.
 
 - **JuRu: Open REPL** — a live JuRu session in the terminal.
-- **juru.interpreterPath** — where the extension looks for the
-  interpreter. The default, `juru`, expects it on your PATH; put the full
-  path there if you keep `juru.exe` somewhere else. When the interpreter
-  is missing, you get a dialog with a link to the
+- **juru.interpreterPath** — only for unusual setups: leave it as
+  `auto` (the default) and the extension finds the interpreter itself.
+  If the interpreter is genuinely missing, you get one friendly dialog
+  with a link to the
   [interpreter download](https://github.com/RaviHackjr/JuRu/releases/latest)
   instead of a cryptic shell error.
 

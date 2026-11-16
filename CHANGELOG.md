@@ -3,6 +3,40 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.6 — 2026-11-16
+
+### Changed
+- The REPL greets you the way Python's does:
+  `JuRu 1.6 (easy like Python, secure like Rust) on win32` plus a
+  `Type "help", "exit" or "cancel" for more information.` line. The
+  prompt is `juru>` — the same name as the command, so the old
+  `jruru>` confusion is gone for good.
+- A terminal command pasted into the REPL (`juru --version`, `pip`,
+  `--version`, `dir`, ...) now answers with one friendly line — this is
+  the REPL, exit first, then run it in your terminal (and for `pip`:
+  JuRu needs no pip, everything is built in) — instead of a
+  "'juru' was not found" error. Real JuRu code that uses those names
+  (`juru = 5`, `juru + 3`) still runs exactly as code.
+
+### Added
+- One-step setup, like a real installer: the Windows zip carries
+  `setup.bat`, which installs the interpreter to
+  `%LOCALAPPDATA%\Programs\JuRu` (Python's per-user spot), adds it to
+  your PATH, and gives `.jr` files the JuRu icon in Explorer with
+  double-click run. The macOS/Linux zips carry `install.sh`.
+- Real icons: `juru.exe` carries the JuRu ruby (Explorer, taskbar, the
+  `.jr` file icon), and the VS Code extension has its official icon
+  (`images/juru.png`).
+- The extension finds the interpreter by itself — PATH, then the
+  one-step-setup location (`%LOCALAPPDATA%\Programs\JuRu`,
+  `/usr/local/bin`, `~/.local/bin`). Nothing to configure, ever. The
+  run button also gained **Ctrl+Alt+J** and the file-tree right-click
+  menu, and `juru.interpreterPath` defaults to `auto`.
+
+### Details
+- 30 builtins, still 19 keywords.
+- 20 test suites, 627 tests.
+
 ## 1.5 — 2026-11-15
 
 ### Added

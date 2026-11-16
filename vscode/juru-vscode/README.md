@@ -15,9 +15,10 @@ Syntax highlighting, snippets, a run button and a REPL for **JuRu** (`.jr`)
 | Grammar | full `source.juru` TextMate grammar: 19 keywords, 30 builtins, comments, strings, numbers, operators |
 | Snippets | `if`, `elseif`, `for`, `forin`, `while`, `func`, `say`, `ask`, `import` |
 | Editing | auto-closing braces/brackets/quotes, comment toggle with `#`, bracket matching, fold by block |
-| Run | ▶ button, right-click → **JuRu: Run File**, command palette; runs in a real terminal so `ask()` works |
+| Run | ▶ button, **Ctrl+Alt+J**, right-click (editor + file tree) → **JuRu: Run File**, command palette; runs in a real terminal so `ask()` works |
 | REPL | **JuRu: Open REPL** — a live JuRu session in the terminal |
-| Setup | `juru.interpreterPath` setting; a missing interpreter gets a dialog with a link to the download |
+| Setup | finds the interpreter by itself (`auto`); a missing interpreter gets a dialog with a link to the download |
+| Icon | the official JuRu ruby (`images/juru.png`) |
 
 The grammar's keyword list is **test-enforced** to match the language's
 `KEYWORDS` exactly — highlighting can never drift from the language.
@@ -29,7 +30,7 @@ The grammar's keyword list is **test-enforced** to match the language's
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.5.0.vsix
+code --install-extension juru-vscode-1.6.0.vsix
 ```
 
 ### Option B — run from source
@@ -44,13 +45,18 @@ Either way, open any `.jr` file and pick **JuRu** as the language
 
 ## Running code
 
-Press the ▶ button in the editor's top-right corner (or
-**JuRu: Run File** from the right-click menu / command palette). The
-extension looks for the interpreter at the `juru.interpreterPath` setting
-(default `juru`, i.e. on your PATH — get the download from the
-[releases page](https://github.com/RaviHackjr/JuRu/releases/latest)). If
-it cannot find the interpreter, you get a friendly dialog with the
-download link and a shortcut to the setting.
+Four ways, whichever is closest to your hand: the ▶ button in the
+editor's top-right corner, **Ctrl+Alt+J**, **JuRu: Run File** from the
+right-click menu (the editor's, or the file tree's), or the command
+palette. The file runs in a real terminal, so `ask()` works.
+
+The interpreter is **found by itself**: plain `juru` on your PATH, or
+the exact place the one-step setup puts it (`%LOCALAPPDATA%\Programs\JuRu`
+from setup.bat, `/usr/local/bin` or `~/.local/bin` from install.sh).
+The `juru.interpreterPath` setting stays `auto` unless you keep the
+interpreter somewhere unusual. Get the interpreter from the
+[releases page](https://github.com/RaviHackjr/JuRu/releases/latest) —
+run its setup once, and the extension is ready.
 
 ## Files in this folder
 
@@ -58,6 +64,7 @@ download link and a shortcut to the setting.
 vscode/juru-vscode/
 ├── package.json                 the extension manifest
 ├── extension.js                 the run button + REPL commands
+├── images/juru.png              the official icon (256×256)
 ├── language-configuration.json  comments, brackets, folding rules
 ├── syntaxes/juru.tmLanguage.json  the TextMate grammar
 ├── snippets/juru.json           the snippets

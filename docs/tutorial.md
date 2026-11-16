@@ -743,26 +743,25 @@ never guess, never continue with a wrong value.
 Run `python3 repl.py` (or just `python3 juru.py` with no arguments — the
 same REPL, exactly like typing `python`). Every entry runs against a
 shared environment, so names survive from line to line. Blocks may span
-lines — the `......>` prompt keeps going until the block closes, and a
+lines — the `....>` prompt keeps going until the block closes, and a
 bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.5 REPL — full English, easy like Python, secure like Rust.
-type 'exit' or press Ctrl-D to leave
-type 'cancel' or press Ctrl-C to drop an open block
+JuRu 1.6 (easy like Python, secure like Rust) on linux
+Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
-jruru> for x in [10, 20] {
-......>     say(x)
-......> }
+juru> for x in [10, 20] {
+....>     say(x)
+....> }
 10
 20
-jruru> name = "JuRu"
-jruru> naame
+juru> name = "JuRu"
+juru> naame
 JuRu Error (line 1, col 1): 'naame' was not found — did you mean 'name'? (nothing with this name is ever assigned)
     naame
         ^
-jruru> exit
+juru> exit
 ```
 
 Like Python, the REPL has a built-in helper: `help()` lists the whole
@@ -770,6 +769,14 @@ toolbox, and `help("pow")` prints one tool's card — what it does, worked
 examples, and its guards. Games get `sleep(seconds)` to pause between
 rounds: `sleep(1)` waits one second (at most 30 at a time, and a program
 may sleep at most 120 seconds in total — runaway loops cannot hide).
+
+One more Python-grade touch: the REPL knows what it is. Type a terminal
+command at the prompt by mistake — `juru --version`, `pip`, `dir` — and
+it does not answer with a scary "'juru' was not found" error. It answers
+with one friendly line: this is the REPL, exit first, then run that
+command in your terminal (and for `pip`: JuRu needs no pip, the whole
+toolbox is already built in). Real JuRu code that uses those names —
+`juru = 5`, `juru + 3` — still runs exactly as code.
 
 ## 17. Where to go next
 

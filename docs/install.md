@@ -1,7 +1,7 @@
 # Install JuRu
 
-Three ways to get the interpreter. Pick one — the download needs no Python
-at all.
+Three ways to get the interpreter. Pick one — the download needs no
+Python at all, and its setup script does everything for you.
 
 ## 1. Download the interpreter (any OS)
 
@@ -14,22 +14,37 @@ pick the file for your system:
 | `JuRu-<version>-linux-x64.zip` | Linux, 64-bit |
 | `JuRu-<version>-macos-arm64.zip` | Macs with Apple Silicon |
 
-Unzip it. You get one file — `juru.exe` on Windows, `juru` elsewhere —
-and an INSTALL.txt with the same steps as below.
+Unzip it. Inside: the interpreter (`juru.exe` on Windows, `juru`
+elsewhere), the one-step setup script, and an INSTALL.txt with the same
+steps as below.
 
-### Make `juru` runnable everywhere
+### Windows — double-click setup.bat
 
-The interpreter is a single program. Either run it with its full path, or
-put its folder on your PATH:
+One step, exactly like a real installer (no admin rights):
 
-- **Windows** — move `juru.exe` to a folder such as `C:\juru`, add that
-  folder to PATH (Settings → search "environment variables" → edit the
-  user PATH), then open a new terminal.
-- **macOS / Linux** — `sudo mv juru /usr/local/bin/` (or move it into
-  `~/.local/bin` if that is on your PATH). `chmod +x juru` if needed.
-- **macOS first-run note** — the binary is not code-signed, so Gatekeeper
-  may ask once: right-click `juru` → Open, or allow it under System
-  Settings → Privacy & Security.
+1. Double-click **setup.bat** in the unzipped folder.
+2. Open a NEW terminal.
+3. `juru --version`
+
+setup.bat copies `juru.exe` to `%LOCALAPPDATA%\Programs\JuRu` (the same
+place Python's per-user install uses), adds it to your PATH, and gives
+`.jr` files the JuRu icon in Explorer — double-clicking a `.jr` file
+runs it, like `.py` files. If the `.jr` icon does not show at once,
+press F5 in Explorer.
+
+### macOS / Linux — sh install.sh
+
+```bash
+sh install.sh
+```
+
+It copies `juru` to `/usr/local/bin` (directly, or with sudo), falls
+back to `~/.local/bin` when that is not possible, and tells you if one
+PATH line remains. Reopen the terminal and run `juru --version`.
+
+macOS note: the binary is not code-signed, so the first run may ask for
+permission — right-click `juru` → Open, or allow it under System
+Settings → Privacy & Security. One-time only.
 
 ### Verify and write your first program
 
@@ -40,8 +55,8 @@ echo 'say("hello JuRu!")' > hello.jr
 juru hello.jr                  # hello JuRu!
 
 juru                           # bare command → the live REPL
-juru --new mygame guessing_game
-juru mygame.jr                 # a ready-made game to make yours
+juru --new mygame starter      # a ready-made program to make yours
+juru mygame.jr
 ```
 
 ## 2. pip install (needs Python 3.9+)
@@ -73,16 +88,18 @@ nothing to install, everything runs in place.
 The release binaries are built with PyInstaller from one spec file:
 
 ```bash
-python3 -m pip install pyinstaller
+python3 -m pip install pyinstaller .
 python3 -m PyInstaller juru.spec      # → dist/juru  (or dist/juru.exe)
 ```
 
-The templates for `--new` ride along automatically; `juru.spec` and
+The templates for `--new` ride along automatically, and the Windows exe
+carries the JuRu icon (`logo/juru_icon.ico`). `juru.spec` and
 `packaging/juru_entry.py` are the only build files. Pushing a `v*` tag
 builds the same binaries on GitHub's runners and attaches them to the
 release.
 
 ## Next step: VS Code
 
-Install the extension and press ▶ to run the open file —
-see [vscode.md](vscode.md).
+Install the extension and press ▶ to run the open file — the extension
+finds the interpreter by itself, so there is nothing to configure. See
+[vscode.md](vscode.md).

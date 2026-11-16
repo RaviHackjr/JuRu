@@ -217,7 +217,7 @@ def t_all_templates_mentioned():
 
 
 def t_version_mentioned():
-    assert "JuRu {} REPL".format(VERSION) in tutorial_text()
+    assert "JuRu {} (easy like Python".format(VERSION) in tutorial_text()
 
 
 # ------------------------------------------------------------------ the quickstart flow

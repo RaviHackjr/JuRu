@@ -292,8 +292,8 @@ def t_no_args_opens_repl():
     """No arguments opens the REPL — exactly like bare `python`."""
     proc = cli([], input_text="say(7 * 6)\nexit\n")
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "JuRu {} REPL".format(VERSION) in proc.stdout, proc.stdout
-    assert "jruru> 42" in proc.stdout, proc.stdout
+    assert "JuRu {} (easy like Python".format(VERSION) in proc.stdout, proc.stdout
+    assert "juru> 42" in proc.stdout, proc.stdout
 
 
 def t_templates_manifest_in_sync():

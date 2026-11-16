@@ -691,13 +691,13 @@ def t_repl_dict_import_torture():
     ])
     clean = []
     for ln in out.splitlines():
-        ln = ln.replace("......> ", "").replace("jruru> ", "")
-        if ln in ("jruru>", "......>"):
+        ln = ln.replace("....> ", "").replace("juru> ", "")
+        if ln in ("juru>", "....>"):
             ln = ""
         if ln:
             clean.append(ln)
     text = "\n".join(clean)
-    assert clean[0].startswith("JuRu 1.5 REPL"), out
+    assert clean[0].startswith("JuRu " + VERSION), out
     assert "=> {a: 1, b: 2}" in clean, text
     assert "42" in clean, text
     assert "=> true" in clean, text
@@ -867,7 +867,7 @@ def t_final_boss_batch1():
 
 # ================================================================ step 8+9: REPL
 def t_repl_multiline_session():
-    """A real session: blocks across lines, ......> prompts, echoes, recovery."""
+    """A real session: blocks across lines, ....> prompts, echoes, recovery."""
     out = run_repl([
         'for i from 1 to 4 {',
         '    if i == 2 {',
@@ -890,8 +890,8 @@ def t_repl_multiline_session():
     ])
     clean = []
     for ln in out.splitlines():
-        ln = ln.replace("......> ", "").replace("jruru> ", "")
-        if ln in ("jruru>", "......>"):
+        ln = ln.replace("....> ", "").replace("juru> ", "")
+        if ln in ("juru>", "....>"):
             ln = ""
         if ln:
             clean.append(ln)
@@ -903,7 +903,7 @@ def t_repl_multiline_session():
     assert "=> [a, b]" in clean, text     # keys(d) echoes; assignments do not
     assert "needs a list of only numbers or only text" in text, text
     assert "still alive" in clean, text
-    assert "......>" in out                 # the continuation prompt was shown
+    assert "....>" in out                 # the continuation prompt was shown
 
 
 def t_repl_new_builtins_live():
@@ -921,8 +921,8 @@ def t_repl_new_builtins_live():
     ])
     clean = []
     for ln in out.splitlines():
-        ln = ln.replace("......> ", "").replace("jruru> ", "")
-        if ln in ("jruru>", "......>"):
+        ln = ln.replace("....> ", "").replace("juru> ", "")
+        if ln in ("juru>", "....>"):
             ln = ""
         if ln:
             clean.append(ln)
@@ -937,7 +937,7 @@ def t_repl_new_builtins_live():
 
 # ================================================================ batch 2/3/4: version + language surface
 def t_batch4_version_bump():
-    assert VERSION == "1.5"
+    assert VERSION == "1.6"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 19          # batch 4 added zero keywords
@@ -1047,8 +1047,8 @@ def t_batch3_repl_subcommand():
         cwd=HERE, timeout=60,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "JuRu {} REPL".format(VERSION) in proc.stdout
-    assert "jruru> 42" in proc.stdout, proc.stdout
+    assert "JuRu {} (easy like Python".format(VERSION) in proc.stdout
+    assert "juru> 42" in proc.stdout, proc.stdout
 
 
 def t_batch3_calculator_float_session():
@@ -1134,7 +1134,7 @@ def t_batch4_bare_command_is_repl():
         input="help\nexit\n", capture_output=True, text=True, cwd=HERE, timeout=60,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert proc.stdout.startswith("JuRu {} REPL".format(VERSION)), proc.stdout
+    assert proc.stdout.startswith("JuRu {} (".format(VERSION)), proc.stdout
     assert "JuRu toolbox — 19 keywords + 30 builtins" in proc.stdout
 
 
@@ -1189,6 +1189,92 @@ def t_batch5_extension_runs_code():
     assert os.path.exists(os.path.join(HERE, "docs", "install.md"))
 
 
+# ================================================================ batch 6: the Python-grade setup — REPL parity, icons, one step
+def t_batch6_repl_matches_python():
+    """The banner and prompt read like Python's, and terminal wishes
+    (juru --version, pip, --version, dir) get a nudge, never an error."""
+    proc = subprocess.run(
+        [sys.executable, os.path.join(HERE, "juru.py")],
+        input="juru --version\npip\n--version\ndir\nexit\n",
+        capture_output=True, text=True, cwd=HERE, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    out = proc.stdout
+    lines = out.splitlines()
+    assert lines[0] == "JuRu {} (easy like Python, secure like Rust) on {}".format(
+        VERSION, sys.platform), lines[:2]
+    assert 'Type "help", "exit" or "cancel" for more information.' in out, out
+    assert "juru> " in out and "jruru" not in out, out          # one name only
+    assert "not the terminal" in out, out                       # the nudge
+    assert "JuRu needs no pip" in out, out                      # pip's own line
+    assert "'juru' was not found" not in out, out                # never again
+    assert "'pip' was not found" not in out, out
+    assert "'version' was not found" not in out, out
+
+
+def t_batch6_repl_keeps_real_code():
+    """`juru = 5` and `juru + 3` are JuRu code, not terminal wishes."""
+    proc = subprocess.run(
+        [sys.executable, os.path.join(HERE, "juru.py")],
+        input="juru = 5\njuru + 3\nexit\n",
+        capture_output=True, text=True, cwd=HERE, timeout=60,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "=> 8" in proc.stdout, proc.stdout
+    assert "not the terminal" not in proc.stdout, proc.stdout
+
+
+def t_batch6_icons_shipped():
+    """The interpreter and the extension carry the real JuRu icon."""
+    ico = open(os.path.join(HERE, "logo", "juru_icon.ico"), "rb").read()
+    assert ico[:4] == b"\x00\x00\x01\x00" and len(ico) > 10000   # a real .ico
+    png = open(os.path.join(HERE, "vscode", "juru-vscode", "images", "juru.png"),
+               "rb").read()
+    assert png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) > 5000
+    spec = open(os.path.join(HERE, "juru.spec"), encoding="utf-8").read()
+    assert "juru_icon.ico" in spec                              # the exe wears it
+    with open(os.path.join(HERE, "vscode", "juru-vscode", "package.json"),
+              encoding="utf-8") as f:
+        pkg = json.load(f)
+    assert pkg["icon"] == "images/juru.png"                     # the extension too
+
+
+def t_batch6_one_step_setup():
+    """setup.bat / install.sh install everything in one step, like a
+    real installer: PATH + .jr file icon + interpreter in place."""
+    bat = open(os.path.join(HERE, "packaging", "setup.bat"),
+               encoding="utf-8").read()
+    assert "LOCALAPPDATA" in bat and "reg add" in bat           # install + register
+    assert ".jr" in bat and "DefaultIcon" in bat                 # the file icon
+    assert "Path" in bat                                         # the PATH update
+    sh = open(os.path.join(HERE, "packaging", "install.sh"),
+              encoding="utf-8").read()
+    assert "/usr/local/bin" in sh and ".local/bin" in sh
+    wf = open(os.path.join(HERE, ".github", "workflows", "release.yml"),
+              encoding="utf-8").read()
+    assert "setup.bat" in wf and "install.sh" in wf              # they ship in the zips
+    install = open(os.path.join(HERE, "packaging", "INSTALL.txt"),
+                   encoding="utf-8").read()
+    assert "setup.bat" in install and "install.sh" in install
+
+
+def t_batch6_extension_zero_config():
+    """The extension finds the interpreter by itself — no settings."""
+    with open(os.path.join(HERE, "vscode", "juru-vscode", "package.json"),
+              encoding="utf-8") as f:
+        pkg = json.load(f)
+    prop = pkg["contributes"]["configuration"]["properties"]["juru.interpreterPath"]
+    assert prop["default"] == "auto"
+    assert any(kb["command"] == "juru.runFile" for kb in pkg["contributes"]["keybindings"])
+    assert any(m["command"] == "juru.runFile"
+               for m in pkg["contributes"]["menus"].get("explorer/context", []))
+    js = open(os.path.join(HERE, "vscode", "juru-vscode", "extension.js"),
+              encoding="utf-8").read()
+    assert "findInterpreter" in js
+    assert "Programs" in js                                      # setup.bat's location
+    assert "local/bin" in js                                     # install.sh's locations
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -1236,6 +1322,11 @@ ALL = [
     ("batch 5: frozen build files agree", t_batch5_frozen_build_files),
     ("batch 5: release pipeline builds 4 downloads", t_batch5_release_pipeline),
     ("batch 5: the extension runs code", t_batch5_extension_runs_code),
+    ("batch 6: the REPL reads like Python's", t_batch6_repl_matches_python),
+    ("batch 6: real JuRu code stays code", t_batch6_repl_keeps_real_code),
+    ("batch 6: the icons are real", t_batch6_icons_shipped),
+    ("batch 6: one-step setup files", t_batch6_one_step_setup),
+    ("batch 6: the extension needs zero config", t_batch6_extension_zero_config),
 ]
 
 if __name__ == "__main__":

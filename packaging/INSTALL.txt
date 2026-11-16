@@ -1,38 +1,56 @@
 JuRu — the easy, secure programming language
 =============================================
 
-This zip contains one file: the JuRu interpreter (`juru` on macOS and
-Linux, `juru.exe` on Windows). It needs no Python and no other install —
-download, run, done.
+This zip is the whole install: one interpreter and a one-step setup.
+Nothing else is needed — no Python, no admin rights, no settings.
 
-Quick start
------------
-  juru --version                 should print the JuRu version
+Windows (the Python way)
+------------------------
+  1. Double-click setup.bat        (right here in this folder)
+  2. Open a NEW terminal
+  3. juru --version
+
+setup.bat copies juru.exe to %LOCALAPPDATA%\Programs\JuRu (the same
+place Python's own per-user install uses), adds it to your PATH, and
+gives .jr files the JuRu icon in Explorer — double-clicking a .jr file
+runs it. If the .jr icon does not show at once, press F5 in Explorer.
+
+macOS / Linux
+-------------
+  sh install.sh
+
+It copies juru to /usr/local/bin (or ~/.local/bin when that is not
+possible) and tells you if a single PATH line is still needed.
+
+Try it now
+----------
+  juru --version                 the JuRu version — the install worked
   juru hello.jr                  run a program (any file ending in .jr)
   juru                           bare command opens the live REPL
-  juru --new mygame guessing_game
-                                 start from a ready-made template
+  juru --new mygame starter      start from a ready-made template
 
-Try it now (write a file, run it)
----------------------------------
   Windows (PowerShell):  Set-Content hello.jr 'say("hello JuRu!")'
   macOS / Linux:         echo 'say("hello JuRu!")' > hello.jr
 
   juru hello.jr               →  hello JuRu!
 
-Put it on your PATH (so plain `juru` works anywhere)
-----------------------------------------------------
-Windows:  Move juru.exe to a folder you like (say C:\juru), then add
-          that folder to PATH (Settings → search "environment variables",
-          or in PowerShell: setx PATH "$env:PATH;C:\juru") and open a NEW
-          terminal.
-
-macOS:    sudo mv juru /usr/local/bin/      (then: chmod +x juru if needed)
-Linux:    sudo mv juru /usr/local/bin/      (or ~/.local/bin if it is on PATH)
+Manual install (only if you prefer no scripts)
+----------------------------------------------
+  Windows:  move juru.exe anywhere you like and add that folder to PATH
+            (Settings → search "environment variables"), then open a NEW
+            terminal.
+  macOS / Linux:  sudo mv juru /usr/local/bin/      (or ~/.local/bin)
+                  chmod +x juru if needed.
 
 macOS note: the binary is not code-signed, so the first run may ask for
 permission — right-click juru → Open, or allow it in System Settings →
 Privacy & Security. One-time only.
+
+In VS Code
+----------
+Install the extension (JuRu-vscode-<version>.vsix from the release
+page). It finds the interpreter by itself — press the ▶ button and the
+open file runs. Ctrl+Alt+J works too.
 
 Learn it
 --------

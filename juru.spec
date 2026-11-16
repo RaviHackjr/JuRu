@@ -31,6 +31,10 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
+# The JuRu icon rides inside juru.exe on Windows — it shows in Explorer,
+# the taskbar and the .jr file association. Other systems ignore it.
+ICON = os.path.join(SPECDIR, "logo", "juru_icon.ico") if os.name == "nt" else None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -49,4 +53,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=ICON,
 )

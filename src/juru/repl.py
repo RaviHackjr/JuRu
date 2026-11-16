@@ -15,7 +15,12 @@ environment, so names and funcs survive from line to line.
 - made a mistake in an open block? type 'cancel' (or press Ctrl-C)
 - mistakes print a friendly error and the session goes on
 - type exit (or press Ctrl-D) to leave
+- a terminal command typed here by mistake (juru --version, pip, dir...)
+  gets a one-line nudge — what this is, and where to run it — never a
+  "'juru' was not found" error
 """
+
+import sys
 
 from .lexer import JuRuGalti, Lexer, KEYWORD, OPERATOR, NEWLINE, EOF
 from .parser import parse_source, ExprSt, Call
@@ -25,12 +30,14 @@ from .version import VERSION
 from .helpdb import overview
 from .errfmt import render
 
-BANNER = ("JuRu {} REPL — full English, easy like Python, secure like Rust.\n"
-          "type 'exit' or press Ctrl-D to leave\n"
-          "type 'cancel' or press Ctrl-C to drop an open block\n"
-          "type help() to see the whole toolbox").format(VERSION)
-PROMPT = "jruru> "
-CONT_PROMPT = "......> "
+# The banner reads like Python's: version + build note + platform on the
+# first line, then the "Type ..." hint line, then the JuRu one-liner.
+# sys.platform says win32 / linux / darwin — the same words Python uses.
+BANNER = ("JuRu {} (easy like Python, secure like Rust) on {}\n"
+          "Type \"help\", \"exit\" or \"cancel\" for more information.\n"
+          "type help() to see the whole toolbox").format(VERSION, sys.platform)
+PROMPT = "juru> "
+CONT_PROMPT = "....> "
 
 # a line (or block so far) that ends with one of these wants MORE input
 CONTINUE_OPS = {"+", "-", "*", "/", "%", ",", "=",
@@ -77,6 +84,39 @@ def looks_incomplete(src):
     return False
 
 
+# Terminal commands people paste into the REPL by mistake. They get a
+# nudge in one line — never a "'juru' was not found" error. Names that a
+# real JuRu program could use (juru = 5, juru + 3) still work as code.
+TERMINAL_ALWAYS = {"pip", "pip3", "dir", "cls", "ls", "cd", "cat", "echo"}
+TERMINAL_FIRST = TERMINAL_ALWAYS | {"juru", "jruru", "python", "python3"}
+
+
+def is_terminal_wish(text):
+    """True when a line is a terminal command, not JuRu code."""
+    if text.startswith("--"):
+        return True                     # --version, --new, --help...
+    first = text.split(" ", 1)[0]
+    if first not in TERMINAL_FIRST:
+        return False
+    rest = text[len(first):].lstrip()
+    if not rest:
+        return first in TERMINAL_ALWAYS  # bare `pip`, `dir`...
+    if rest[0] in "=+*/%<>!:" or rest[0] == "(":
+        return False                     # `juru = 5`, `juru(x)`, `juru + 3`
+    if rest[0] == "-" and rest[1:2] == " ":
+        return False                     # `juru - 3` is subtraction
+    return True                          # `juru --version`, `juru hello.jr`
+
+
+def terminal_reply(text):
+    """The one-line nudge for a terminal command typed in the REPL."""
+    if text.split(" ", 1)[0] in ("pip", "pip3"):
+        return ("JuRu needs no pip — the whole toolbox is already built in "
+                "(type help() to see it)")
+    return ("this is the JuRu REPL, not the terminal — type exit first, "
+            "then run \"{}\" in your terminal").format(text)
+
+
 def run_line(interp, env, text):
     """One REPL entry -> (env, echo-or-None). Raises JuRuGalti on mistakes."""
     tree = parse_source(text)
@@ -121,6 +161,9 @@ def main():
                 print(overview())          # bare help, no parens needed
                 continue
             if not text:
+                continue
+            if is_terminal_wish(text):     # a terminal command pasted here
+                print(terminal_reply(text))
                 continue
         if looks_incomplete(text):
             pending = text

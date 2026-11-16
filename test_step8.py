@@ -2,7 +2,7 @@
 
 Two upgrades, one promise: the language should feel like it is HELPING you.
 - a typo gets the closest real name back: did you mean 'name'?
-- the REPL accepts blocks across lines (with a ......> continuation prompt)
+- the REPL accepts blocks across lines (with a ....> continuation prompt)
 """
 import os
 import subprocess
@@ -45,8 +45,8 @@ def run_repl(lines):
 def strip_prompts(out):
     cleaned = []
     for ln in out.splitlines():
-        ln = ln.replace("......> ", "").replace("jruru> ", "")
-        if ln in ("jruru>", "......>"):
+        ln = ln.replace("....> ", "").replace("juru> ", "")
+        if ln in ("juru>", "....>"):
             ln = ""
         if ln:
             cleaned.append(ln)

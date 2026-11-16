@@ -6,6 +6,9 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+from juru.version import VERSION  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = []
 
@@ -34,11 +37,11 @@ def run_repl(lines):
 
 
 def lines_after_prompts(out):
-    """Strip the prompts from each line: 'jruru> jruru> X' -> 'X'."""
+    """Strip the prompts from each line: 'juru> juru> X' -> 'X'."""
     cleaned = []
     for ln in out.splitlines():
-        ln = ln.replace("......> ", "").replace("jruru> ", "")
-        if ln in ("jruru>", "......>"):
+        ln = ln.replace("....> ", "").replace("juru> ", "")
+        if ln in ("juru>", "....>"):
             ln = ""
         if ln:
             cleaned.append(ln)
@@ -47,8 +50,8 @@ def lines_after_prompts(out):
 
 def t_banner_and_prompt():
     out = run_repl(["exit"])
-    assert "JuRu 1.5 REPL" in out, out
-    assert out.count("jruru> ") >= 1, out
+    assert "JuRu " + VERSION + " (easy like Python" in out, out
+    assert out.count("juru> ") >= 1, out
 
 
 def t_echo_arithmetic():
