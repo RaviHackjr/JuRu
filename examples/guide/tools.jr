@@ -1,0 +1,15 @@
+# tools.jr — the helper module used by the import lesson (13_import.jr)
+#
+# The module name comes from the file name: tools.jr -> tools.
+# A module can hold funcs AND plain values, and it runs exactly
+# once, no matter how many files import it.
+
+func double(n) {
+    return n * 2
+}
+
+func greet(name) {
+    return "hello " + name + "!"
+}
+
+magic = 42

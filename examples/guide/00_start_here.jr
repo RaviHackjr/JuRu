@@ -1,0 +1,38 @@
+# ============================================================
+# JuRu — start here
+#
+# This folder (examples/guide/) teaches the whole language in
+# 14 small, runnable lessons — one keyword at a time.
+#
+# Run this file:
+#     python3 juru.py examples/guide/00_start_here.jr
+# ...then move on to 01_say.jr, 02_if_else.jr, and so on.
+#
+# This first lesson is not about one keyword yet — it is about
+# the two ideas every program is built from:
+#   1. a value gets a name   (a variable)
+#   2. the computer shows it (say)
+# ============================================================
+
+# 1. A variable: a name that holds a value.
+#    No type to write, no ceremony — just name = value.
+name = "Ada"
+age = 12
+
+# 2. Text joins text with +.
+say("Hello, " + name + "!")
+
+# 3. Text joins a number with + too — JuRu converts it for you.
+say("You are " + age + " years old.")
+
+# 4. Math just works: whole numbers, decimals, the usual rules.
+say(2 + 3)
+say(10 / 4)
+
+# 5. A variable can change later — it is just a name.
+age = age + 1
+say("Next year: " + age)
+
+# That is the whole ramp. Every lesson from here teaches one
+# keyword of the language — 19 keywords in total, that is the
+# complete list, and the guide covers every single one.

@@ -35,7 +35,7 @@ def check(name, fn):
 
 def run_program(name):
     """examples/<name> -> checker -> interpreter -> captured stdout."""
-    path = os.path.join(HERE, "examples", name)
+    path = os.path.join(HERE, "examples", "test", name)
     with open(path, encoding="utf-8") as f:
         src = f.read()
     tree = check_source(src)  # must pass step 3
@@ -190,7 +190,7 @@ def t_game_arena():
 # ------------------------------------------------------------------ the real CLI
 def run_cli(name):
     proc = subprocess.run(
-        [sys.executable, "juru.py", os.path.join("examples", name)],
+        [sys.executable, "juru.py", os.path.join("examples", "test", name)],
         capture_output=True, text=True, cwd=HERE,
     )
     return proc

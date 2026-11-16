@@ -74,10 +74,10 @@ import io  # noqa: E402  (used by run_in; kept here for clarity)
 
 # ------------------------------------------------------------------ basics
 def t_import_demo_exact():
-    path = os.path.join(HERE, "examples", "import_demo.jr")
+    path = os.path.join(HERE, "examples", "test", "import_demo.jr")
     with open(path, encoding="utf-8") as f:
         src = f.read()
-    assert run_in(os.path.join(HERE, "examples"), src) == (
+    assert run_in(os.path.join(HERE, "examples", "test"), src) == (
         "hello JuRu!\n"
         "42\n"
         "magic number: 42\n"
@@ -204,7 +204,7 @@ def t_subdir_import():
 # ------------------------------------------------------------------ the real CLI
 def t_cli_import_demo():
     proc = subprocess.run(
-        [sys.executable, "juru.py", os.path.join("examples", "import_demo.jr")],
+        [sys.executable, "juru.py", os.path.join("examples", "test", "import_demo.jr")],
         capture_output=True, text=True, cwd=HERE,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr

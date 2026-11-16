@@ -200,11 +200,12 @@ def t_all_builtins_mentioned():
 
 def t_all_examples_mentioned():
     text = tutorial_text()
-    names = sorted(os.listdir(os.path.join(HERE, "examples")))
-    for name in names:
-        if not name.endswith(".jr"):
-            continue
-        assert name in text, "example missing from the tutorial: " + name
+    for folder in ("test", "guide"):
+        names = sorted(os.listdir(os.path.join(HERE, "examples", folder)))
+        for name in names:
+            if not name.endswith(".jr"):
+                continue
+            assert name in text, "example missing from the tutorial: " + name
 
 
 def t_all_templates_mentioned():

@@ -1,0 +1,37 @@
+# ============================================================
+# Lesson 02 — if / else
+#
+# Keywords of this lesson: if, else  (and "else if", which is
+# both of them at once)
+#
+# Run it:
+#     python3 juru.py examples/guide/02_if_else.jr
+#
+# if lets the program decide. The block in { } runs only when
+# the condition is true; else picks up everything the if left
+# behind.
+# ============================================================
+
+score = 72
+
+if score >= 90 {
+    say("grade A")
+} else if score >= 75 {
+    say("grade B")
+} else {
+    say("keep practicing")
+}
+
+# The condition is just a comparison — bigger, equal, different:
+password = "open sesame"
+
+if password == "open sesame" {
+    say("welcome in")
+}
+
+if password != "1234" {
+    say("that was never the password")
+}
+
+# Only ONE branch of an if/else chain ever runs. Change score
+# to 95 and rerun this file to watch the first branch win.

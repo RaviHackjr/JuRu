@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 30 builtins · 5 templates · 15 examples · 629 tests green · version 1.7 (see version.py) · MIT`
+`19 keywords · 30 builtins · 5 templates · 14 guide lessons + 15 demos · 633 tests green · version 1.8 (see version.py) · MIT`
 
 ---
 
@@ -23,8 +23,14 @@
 ## Quickstart
 
 ```bash
-# 1) run a program
-python3 juru.py examples/demo.jr
+# 1) learn the language — the beginner guide, one keyword per lesson
+python3 juru.py examples/guide/00_start_here.jr
+# hello, Ada!
+# You are 12 years old.
+# ...
+
+# 1b) or run a ready demo
+python3 juru.py examples/test/demo.jr
 # hello JuRu!
 # Level 3
 # 8
@@ -48,7 +54,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.7 (easy like Python, secure like Rust) on win32
+JuRu 1.8 (easy like Python, secure like Rust) on win32
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> 1 + 2
@@ -218,25 +224,51 @@ python3 juru.py --templates                # list them all
 every refusal is a friendly, one-line explanation. The new tutorial
 ([docs/tutorial.md](docs/tutorial.md)) walks you from zero to this table.
 
+## Learn — the beginner guide (`examples/guide/`)
+
+14 small, runnable lessons teach **every keyword** of the language,
+one per lesson — plus a full walkthrough in
+[examples/README.md](examples/README.md). Start here, change a line,
+run again:
+
+| Lesson | Teaches | File |
+|--------|---------|------|
+| Start here | variables, running | [guide/00_start_here.jr](examples/guide/00_start_here.jr) |
+| 01 | `say` | [guide/01_say.jr](examples/guide/01_say.jr) |
+| 02 | `if`, `else` | [guide/02_if_else.jr](examples/guide/02_if_else.jr) |
+| 03 | `while` | [guide/03_while.jr](examples/guide/03_while.jr) |
+| 04 | `for`, `from`, `to` | [guide/04_counting.jr](examples/guide/04_counting.jr) |
+| 05 | `for x in` (lists) | [guide/05_for_in.jr](examples/guide/05_for_in.jr) |
+| 06 | `break` | [guide/06_break.jr](examples/guide/06_break.jr) |
+| 07 | `continue` | [guide/07_continue.jr](examples/guide/07_continue.jr) |
+| 08 | `func` | [guide/08_func.jr](examples/guide/08_func.jr) |
+| 09 | `return` | [guide/09_return.jr](examples/guide/09_return.jr) |
+| 10 | `true`, `false`, `null` | [guide/10_booleans.jr](examples/guide/10_booleans.jr) |
+| 11 | `and`, `or`, `not` | [guide/11_logic.jr](examples/guide/11_logic.jr) |
+| 12 | `in`, `not in` | [guide/12_membership.jr](examples/guide/12_membership.jr) |
+| 13 | `import` | [guide/13_import.jr](examples/guide/13_import.jr) + [guide/tools.jr](examples/guide/tools.jr) |
+
 ## Examples (every output exactly verified by tests)
+
+The 15 complete demo programs live in `examples/test/`:
 
 | File | Shows |
 |------|-------|
-| `examples/demo.jr` | hello, text+number join, int/float math |
-| `examples/patterns.jr` | square, triangle, pyramid star patterns |
-| `examples/table.jr` | the 7 times table |
-| `examples/funcs_demo.jr` | factorial 1–7, fibonacci 1–10 (recursion) |
-| `examples/lists_demo.jr` | lists, item assignment, sum |
-| `examples/game_demo.jr` | boss battle game (while + break) |
-| `examples/advanced_demo.jr` | FizzBuzz, primes, bubble sort, 2D grid, palindrome |
-| `examples/number_lab.jr` | primes, perfect numbers, digit reversal, gcd/lcm |
-| `examples/algo_lab.jr` | selection sort, binary search, dedupe, RLE |
-| `examples/game_lab.jr` | tic-tac-toe with winner check + the arena fight |
-| `examples/stdlib_demo.jr` | the builtin toolbox in action |
-| `examples/mega_demo.jr` | school report: grades, ranking, topper, histogram |
-| `examples/dicts_demo.jr` | word counting with dicts + `for x in` |
-| `examples/helpers.jr` | a tiny module (import me from another file) |
-| `examples/import_demo.jr` | modules: namespace, run-once caching |
+| [test/demo.jr](examples/test/demo.jr) | hello, text+number join, int/float math |
+| [test/patterns.jr](examples/test/patterns.jr) | square, triangle, pyramid star patterns |
+| [test/table.jr](examples/test/table.jr) | the 7 times table |
+| [test/funcs_demo.jr](examples/test/funcs_demo.jr) | factorial 1–7, fibonacci 1–10 (recursion) |
+| [test/lists_demo.jr](examples/test/lists_demo.jr) | lists, item assignment, sum |
+| [test/game_demo.jr](examples/test/game_demo.jr) | boss battle game (while + break) |
+| [test/advanced_demo.jr](examples/test/advanced_demo.jr) | FizzBuzz, primes, bubble sort, 2D grid, palindrome |
+| [test/number_lab.jr](examples/test/number_lab.jr) | primes, perfect numbers, digit reversal, gcd/lcm |
+| [test/algo_lab.jr](examples/test/algo_lab.jr) | selection sort, binary search, dedupe, RLE |
+| [test/game_lab.jr](examples/test/game_lab.jr) | tic-tac-toe with winner check + the arena fight |
+| [test/stdlib_demo.jr](examples/test/stdlib_demo.jr) | the builtin toolbox in action |
+| [test/mega_demo.jr](examples/test/mega_demo.jr) | school report: grades, ranking, topper, histogram |
+| [test/dicts_demo.jr](examples/test/dicts_demo.jr) | word counting with dicts + `for x in` |
+| [test/helpers.jr](examples/test/helpers.jr) | a tiny module (import me from another file) |
+| [test/import_demo.jr](examples/test/import_demo.jr) | modules: namespace, run-once caching |
 
 ## How it works (the pipeline, all connected)
 
@@ -278,7 +310,7 @@ zip for your system and let its setup do the rest:
 Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.7
+juru --version              # JuRu 1.8
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -310,13 +342,13 @@ Load it in two minutes:
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.7.0.vsix
+code --install-extension juru-vscode-1.8.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 629, all green
+## Tests — 633, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -338,7 +370,7 @@ python3 test_step17.py        # 10   (line + caret error display)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 52   (steps 1–20 combined, no mercy)
+python3 test_ultimate.py      # 56   (steps 1–20 combined, no mercy)
 ```
 
 ## Project structure
@@ -362,8 +394,9 @@ JuRu/
 ├── docs/vscode.md      # load the extension in 2 minutes
 ├── logo/               # the icon set: juru_icon.svg (source),
 │                       #   juru_icon.ico (16→256 px, inside juru.exe)
-├── examples/           # 15 verified demo programs
-├── test_*.py           # 20 test suites, 629 tests
+├── examples/           # guide/ = 14 beginner lessons (all 19 keywords),
+│                       #   test/ = 15 verified demo programs
+├── test_*.py           # 20 test suites, 633 tests
 └── LICENSE             # MIT
 ```
 

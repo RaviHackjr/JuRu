@@ -1,0 +1,30 @@
+# ============================================================
+# Lesson 04 — for, from, to
+#
+# Keywords of this lesson: for, from, to
+#
+# Run it:
+#     python3 juru.py examples/guide/04_counting.jr
+#
+# for ... from ... to ... counts for you. Both ends are part
+# of the count: from 1 to 5 runs 1, 2, 3, 4, 5.
+# ============================================================
+
+for day from 1 to 5 {
+    say("day " + day)
+}
+
+# The range can start anywhere — and includes the last number:
+for hour from 9 to 12 {
+    say(hour + " o'clock")
+}
+
+# The counting variable is a real variable — use it in math:
+total = 0
+for n from 1 to 10 {
+    total = total + n
+}
+say("1+2+...+10 = " + total)
+
+# Counting down? Stepping? For now: from/to always counts up
+# by one. Lesson 06 and 07 show how to skip and stop early.

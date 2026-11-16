@@ -1,0 +1,40 @@
+# ============================================================
+# Lesson 10 — true, false, null
+#
+# Keywords of this lesson: true, false, null
+#
+# Run it:
+#     python3 juru.py examples/guide/10_booleans.jr
+#
+# true and false are the two answers to every yes/no question.
+# null means "nothing yet" — an empty box you will fill later.
+# ============================================================
+
+happy = true
+rainy = false
+say(happy)
+say(rainy)
+
+# null: a placeholder for a value you do not have yet.
+treasure = null
+say(treasure)
+treasure = "gold"
+say(treasure)
+
+# type() tells you what you are holding:
+say(type(true))
+say(type(null))
+say(type(3.5))
+
+# Comparisons produce true/false — that is what if eats:
+say(5 > 3)
+say(5 == 4)
+say(5 != 4)
+
+# and an empty box is falsy enough to check later:
+found = null
+if found == null {
+    say("still searching...")
+}
+found = "the map"
+say(found)

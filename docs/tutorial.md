@@ -600,7 +600,7 @@ true
 Put funcs in a `.jr` file, import it, use its names:
 
 ```jr
-import "examples/helpers.jr"
+import "examples/test/helpers.jr"
 say(helpers.double(21))
 say(helpers.magic)
 ```
@@ -748,7 +748,7 @@ bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.7 (easy like Python, secure like Rust) on linux
+JuRu 1.8 (easy like Python, secure like Rust) on linux
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> for x in [10, 20] {
@@ -780,8 +780,22 @@ toolbox is already built in). Real JuRu code that uses those names —
 
 ## 17. Where to go next
 
-The `examples/` folder holds fifteen complete programs, every output
-verified by the test suite:
+Two folders full of runnable JuRu live under `examples/`, every output
+verified by the test suite.
+
+**The beginner guide** — `examples/guide/` teaches all 19 keywords in
+14 small lessons, one keyword at a time. Start at `00_start_here.jr`
+and read `examples/README.md` alongside it:
+
+```text
+00_start_here.jr  01_say.jr       02_if_else.jr     03_while.jr
+04_counting.jr    05_for_in.jr    06_break.jr       07_continue.jr
+08_func.jr        09_return.jr    10_booleans.jr    11_logic.jr
+12_membership.jr  13_import.jr    tools.jr
+```
+
+**The demo programs** — `examples/test/` holds fifteen complete
+programs, every output verified by the test suite:
 
 ```text
 demo.jr          patterns.jr      table.jr         funcs_demo.jr

@@ -1,0 +1,30 @@
+# ============================================================
+# Lesson 03 — while
+#
+# Keyword of this lesson: while
+#
+# Run it:
+#     python3 juru.py examples/guide/03_while.jr
+#
+# while repeats a block as long as its condition stays true.
+# Something inside the block must move the condition toward
+# false — that is what makes the loop end.
+# ============================================================
+
+# A countdown: fuel falls by 1 every round, so it hits 0.
+fuel = 5
+while fuel > 0 {
+    say("T-minus " + fuel)
+    fuel = fuel - 1
+}
+say("Lift off!")
+
+# The condition does not have to be about counting:
+pocket = 1
+while pocket < 100 {
+    pocket = pocket * 2
+}
+say("pocket money: " + pocket)
+
+# Read it out loud, like Python people do:
+#   "while fuel is greater than 0, say T-minus fuel and burn one."

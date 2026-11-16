@@ -1,0 +1,37 @@
+# ============================================================
+# Lesson 08 — func
+#
+# Keyword of this lesson: func
+#
+# Run it:
+#     python3 juru.py examples/guide/08_func.jr
+#
+# func gives a piece of code a NAME. Write it once, call it as
+# many times as you like, with different values each time.
+# ============================================================
+
+# Define once:
+func cheer(team) {
+    say("Go " + team + "!")
+}
+
+# Call as often as you want:
+cheer("Red")
+cheer("Blue")
+cheer("Gold")
+
+# A func can take several arguments, separated by commas:
+func rhyme(animal, sound) {
+    say("The " + animal + " says " + sound)
+}
+rhyme("cow", "moo")
+rhyme("cat", "meow")
+
+# A func with no arguments is fine too:
+func hello() {
+    say("hello!")
+}
+hello()
+
+# A func that only prints is nice for show; the next lesson
+# teaches return — funcs that hand a VALUE back.

@@ -548,7 +548,7 @@ def t_empty_blocks_stacked():
 def t_demo_file_alignment():
     """demo.jr parses into exactly this tree."""
     here = os.path.dirname(os.path.abspath(__file__))
-    src = open(os.path.join(here, "examples", "demo.jr"), encoding="utf-8").read()
+    src = open(os.path.join(here, "examples", "test", "demo.jr"), encoding="utf-8").read()
     expected = ("(program (assign name (text JuRu)) (assign level (num 3)) "
                 "(say (+ (+ (text hello ) (name name)) (text !))) "
                 "(say (+ (text Level ) (name level))) "
@@ -560,7 +560,7 @@ def t_demo_file_alignment():
 
 def t_funcs_demo_alignment():
     here = os.path.dirname(os.path.abspath(__file__))
-    src = open(os.path.join(here, "examples", "funcs_demo.jr"), encoding="utf-8").read()
+    src = open(os.path.join(here, "examples", "test", "funcs_demo.jr"), encoding="utf-8").read()
     expected = ("(program "
                 "(func factorial (params n) (then (if (<= (name n) (num 1)) "
                 "(then (return (num 1)))) (return (* (name n) (call factorial "

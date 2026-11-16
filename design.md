@@ -57,9 +57,9 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–20 combined, no mercy | **52 pass** |
-| `examples/` | 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **629 tests green** |
+| `test_ultimate.py` | steps 1–21 combined, no mercy | **56 pass** |
+| `examples/` | guide: 14 lessons covering all 19 keywords · test: 15 demo `.jr` files, every output exactly verified | inside suites |
+| **Total** | | **633 tests green** |
 
 Run everything yourself:
 ```
@@ -551,25 +551,29 @@ Notes:
 - `a.b(...)` is a member **call**: parsed as `Call(name=b, callee=Member(a, b))`.
 - `d.name` (member read) is sugar for `d["name"]`.
 
-## Demo files (every output exactly verified by tests)
+## The examples folders (every output exactly verified by tests)
+
+`examples/guide/` is the beginner guide: 14 runnable lessons, one
+keyword each, covering all 19 keywords, with a full walkthrough in
+`examples/README.md`. `examples/test/` holds the 15 demo programs:
 
 | File | Shows |
 |------|-------|
-| `examples/demo.jr` | hello, text+number join, int/float math |
-| `examples/patterns.jr` | square, triangle, pyramid star patterns |
-| `examples/table.jr` | the 7 times table |
-| `examples/funcs_demo.jr` | factorial 1–7, fibonacci 1–10 (recursion) |
-| `examples/lists_demo.jr` | lists, item assignment, sum |
-| `examples/game_demo.jr` | boss battle game (while + break) |
-| `examples/advanced_demo.jr` | FizzBuzz, primes, bubble sort, 2D grid, palindrome, countdown |
-| `examples/number_lab.jr` | primes, perfect numbers, digit reversal, gcd/lcm |
-| `examples/algo_lab.jr` | selection sort, binary search, dedupe, RLE, longest word |
-| `examples/game_lab.jr` | tic-tac-toe with winner check + the arena fight |
-| `examples/stdlib_demo.jr` | the builtin toolbox in action |
-| `examples/mega_demo.jr` | school report: grades, bubble sort, topper, histogram |
-| `examples/dicts_demo.jr` | word counting with dicts + `for x in` |
-| `examples/helpers.jr` | a tiny module (import me from another file) |
-| `examples/import_demo.jr` | modules: namespace, run-once caching |
+| `examples/test/demo.jr` | hello, text+number join, int/float math |
+| `examples/test/patterns.jr` | square, triangle, pyramid star patterns |
+| `examples/test/table.jr` | the 7 times table |
+| `examples/test/funcs_demo.jr` | factorial 1–7, fibonacci 1–10 (recursion) |
+| `examples/test/lists_demo.jr` | lists, item assignment, sum |
+| `examples/test/game_demo.jr` | boss battle game (while + break) |
+| `examples/test/advanced_demo.jr` | FizzBuzz, primes, bubble sort, 2D grid, palindrome, countdown |
+| `examples/test/number_lab.jr` | primes, perfect numbers, digit reversal, gcd/lcm |
+| `examples/test/algo_lab.jr` | selection sort, binary search, dedupe, RLE, longest word |
+| `examples/test/game_lab.jr` | tic-tac-toe with winner check + the arena fight |
+| `examples/test/stdlib_demo.jr` | the builtin toolbox in action |
+| `examples/test/mega_demo.jr` | school report: grades, bubble sort, topper, histogram |
+| `examples/test/dicts_demo.jr` | word counting with dicts + `for x in` |
+| `examples/test/helpers.jr` | a tiny module (import me from another file) |
+| `examples/test/import_demo.jr` | modules: namespace, run-once caching |
 
 ## Roadmap
 
@@ -595,11 +599,13 @@ Notes:
 | 18 | Standalone interpreter: PyInstaller spec → release zips, no Python needed | ✅ DONE — release workflow |
 | 19 | VS Code run button + REPL command + `juru.interpreterPath` | ✅ DONE — 3 tests |
 | 20 | Distribution polish — Python-grade REPL, real icons, one-step setup | ✅ DONE — 5 tests |
-| — | Ultimate torture: steps 1–20 combined | ✅ DONE — 52 tests |
-| — | **Total: 629 tests green** | |
+| 21 | A beginner guide: one runnable lesson per keyword, all linked | ✅ DONE — 4 tests |
+| — | Ultimate torture: steps 1–21 combined | ✅ DONE — 56 tests |
+| — | **Total: 633 tests green** | |
 
-After 20 the language, its distribution and its setup are complete, the
-way Python's is: download, one setup step, run. Still open, all optional
-and on demand: publishing the extension to the Marketplace, a docs
-website, and a stdlib wave 4 beyond `help`/`sleep` (only when a real use
-asks for it).
+After 21 the language, its distribution, its setup and its on-ramp are
+complete, the way Python's is: download, one setup step, run — and a
+guide that teaches every keyword. Still open, all optional and on
+demand: publishing the extension to the Marketplace, a docs website,
+and a stdlib wave 4 beyond `help`/`sleep` (only when a real use asks
+for it).

@@ -1,0 +1,35 @@
+# ============================================================
+# Lesson 07 — continue
+#
+# Keyword of this lesson: continue
+#
+# Run it:
+#     python3 juru.py examples/guide/07_continue.jr
+#
+# continue skips the REST of this round only — the loop itself
+# goes on to the next item. break stops the whole loop;
+# continue just says "not this one, next!"
+# ============================================================
+
+# Print only the odd numbers, skipping evens with continue:
+for n from 1 to 8 {
+    if n % 2 == 0 {
+        continue
+    }
+    say("odd number: " + n)
+}
+
+# Two skips, one loop — anything not food is skipped:
+bites = ["apple", "candle", "banana", "shoe", "cherry"]
+for item in bites {
+    if item == "candle" {
+        continue
+    }
+    if item == "shoe" {
+        continue
+    }
+    say("ate the " + item)
+}
+
+# break and continue are a team: break leaves the loop,
+# continue leaves one round.

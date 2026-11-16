@@ -1,0 +1,31 @@
+# ============================================================
+# Lesson 01 — say
+#
+# Keyword of this lesson: say
+#
+# Run it:
+#     python3 juru.py examples/guide/01_say.jr
+#
+# say makes the computer show something to you. It is the
+# simplest keyword in the language, and the one you will use
+# the most.
+# ============================================================
+
+# Text goes out exactly as written:
+say("JuRu talks to you")
+
+# Numbers go out too — whole and decimal:
+say(42)
+say(3.5)
+
+# The part inside say(...) is computed first, then printed:
+say(2 + 2)
+say(2 + 2 * 10)
+
+# Pieces join with +. Text + number is converted for you:
+say("the answer is " + 42)
+say("a" + "b" + "c")
+
+# And of course say works with variables:
+name = "Ada"
+say("Hello, " + name + "!")

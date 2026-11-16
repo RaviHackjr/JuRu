@@ -1,0 +1,27 @@
+# ============================================================
+# Lesson 13 — import
+#
+# Keyword of this lesson: import
+#
+# Run it:
+#     python3 juru.py examples/guide/13_import.jr
+#
+# import runs ANOTHER .jr file (once!) and hands you its names
+# through the module. The module name is the file name:
+#     tools.jr  ->  tools
+# This lesson imports tools.jr, which lives right here next to
+# it — imports always look next to the file that imports them.
+# ============================================================
+
+import "tools.jr"
+
+say(tools.greet("Ada"))
+say(tools.double(21))
+say("magic number: " + tools.magic)
+
+# Importing the same file again is free — it does not run twice:
+import "tools.jr"
+say(tools.double(50))
+
+# That is keyword number 19. You have now seen every keyword
+# JuRu has: 19 words, and this folder showed all of them.

@@ -157,7 +157,7 @@ def t_final_boss_program():
     """THE combined program: module + dict + for-in + slices + strings +
     while + break + in/not-in + funcs → exact story output."""
     src = (
-        'import "examples/helpers.jr"\n'
+        'import "examples/test/helpers.jr"\n'
         '\n'
         'report = {}\n'
         'words = split(trim("  fire ice fire bolt fire ice  "), " ")\n'
@@ -548,12 +548,12 @@ def t_module_chain_runs_once():
 
 
 def t_module_readonly_and_errors():
-    src = 'import "examples/helpers.jr"\nsay(helpers)\n'
+    src = 'import "examples/test/helpers.jr"\nsay(helpers)\n'
     assert run(src, base_dir=HERE) == "<module helpers>\n"
-    expect_galti('import "examples/helpers.jr"\nsay(helpers.nope)',
+    expect_galti('import "examples/test/helpers.jr"\nsay(helpers.nope)',
                  "'helpers' has no 'nope' — the module has: double, greet, magic",
                  base_dir=HERE)
-    expect_check_galti('import "examples/helpers.jr"\nhelpers.magic = 5',
+    expect_check_galti('import "examples/test/helpers.jr"\nhelpers.magic = 5',
                        "'data.key = value' does not work")
 
 
@@ -654,13 +654,13 @@ def t_mirror_rule_full_24():
 
 
 def t_all_15_examples_via_cli():
-    names = sorted(os.listdir(os.path.join(HERE, "examples")))
+    names = sorted(os.listdir(os.path.join(HERE, "examples", "test")))
     assert len(names) == 15, "expected 15 examples, got: " + str(names)
     for name in names:
         if not name.endswith(".jr"):
             continue
         proc = subprocess.run(
-            [sys.executable, "juru.py", os.path.join("examples", name)],
+            [sys.executable, "juru.py", os.path.join("examples", "test", name)],
             capture_output=True, text=True, cwd=HERE, timeout=60,
         )
         assert proc.returncode == 0, "{} failed:\n{}{}".format(
@@ -668,17 +668,19 @@ def t_all_15_examples_via_cli():
 
 
 def t_checker_approves_all_examples():
-    for name in sorted(os.listdir(os.path.join(HERE, "examples"))):
-        if not name.endswith(".jr"):
-            continue
-        with open(os.path.join(HERE, "examples", name), encoding="utf-8") as f:
-            src = f.read()
-        check_source(src)               # raises on any semantic mistake
+    for folder in ("test", "guide"):
+        for name in sorted(os.listdir(os.path.join(HERE, "examples", folder))):
+            if not name.endswith(".jr"):
+                continue
+            with open(os.path.join(HERE, "examples", folder, name),
+                      encoding="utf-8") as f:
+                src = f.read()
+            check_source(src)           # raises on any semantic mistake
 
 
 def t_repl_dict_import_torture():
     out = run_repl([
-        'import "examples/helpers.jr"',
+        'import "examples/test/helpers.jr"',
         'd = {"a": 1}',
         'd["b"] = 2',
         'd',
@@ -753,7 +755,7 @@ def t_did_you_mean_gauntlet():
     else:
         raise AssertionError("runtime missed the dict-key typo")
     try:
-        run('import "examples/helpers.jr"\nsay(helpers.duble(2))')
+        run('import "examples/test/helpers.jr"\nsay(helpers.duble(2))')
     except JuRuGalti as err:
         assert "did you mean 'double'?" in err.message, err.message
     else:
@@ -837,7 +839,7 @@ def t_final_boss_batch1():
     """The FINAL BOSS of batch 1: steps 1–9 in one program — a leaderboard
     of player scores with dicts, modules, sorting, counting and a while."""
     src = (
-        'import "examples/helpers.jr"\n'
+        'import "examples/test/helpers.jr"\n'
         'scores = {"ada": 88, "bo": 95, "cy": 61, "dee": 88}\n'
         'names = sorted(keys(scores))\n'
         'best = ""\n'
@@ -938,7 +940,7 @@ def t_repl_new_builtins_live():
 
 # ================================================================ batch 2/3/4: version + language surface
 def t_batch4_version_bump():
-    assert VERSION == "1.7"
+    assert VERSION == "1.8"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 19          # batch 4 added zero keywords
@@ -1319,6 +1321,95 @@ def t_batch7_repo_tidy():
     assert top == expected, (top, "unexpected or missing top-level files")
 
 
+# ================================================================ batch 8: the beginner guide — every keyword, one lesson each
+GUIDE = os.path.join(HERE, "examples", "guide")
+
+LESSON_KEYWORDS = {
+    "00_start_here.jr": ["say"],
+    "01_say.jr": ["say"],
+    "02_if_else.jr": ["if", "else"],
+    "03_while.jr": ["while"],
+    "04_counting.jr": ["for", "from", "to"],
+    "05_for_in.jr": ["for", "in"],
+    "06_break.jr": ["break"],
+    "07_continue.jr": ["continue"],
+    "08_func.jr": ["func"],
+    "09_return.jr": ["return"],
+    "10_booleans.jr": ["true", "false", "null"],
+    "11_logic.jr": ["and", "or", "not"],
+    "12_membership.jr": ["in", "not"],
+    "13_import.jr": ["import"],
+}
+
+
+def lesson_code(name):
+    """The lesson's code with comment lines removed — comments teach,
+    but they do not count as keyword usage."""
+    src = open(os.path.join(GUIDE, name), encoding="utf-8").read()
+    return "\n".join(line.split("#")[0] for line in src.splitlines())
+
+
+def t_batch8_guide_exists():
+    """The guide folder holds the ramp, 14 numbered lessons and the
+    module for lesson 13 — 15 files, properly named."""
+    names = sorted(os.listdir(GUIDE))
+    expected = sorted(list(LESSON_KEYWORDS) + ["tools.jr"])
+    assert names == expected, (names, "unexpected or missing guide files")
+    readme = open(os.path.join(HERE, "examples", "README.md"),
+                  encoding="utf-8").read()
+    assert "Beginner Guide" in readme
+    # the old demos moved into examples/test/ — nothing lost
+    testdir = sorted(os.listdir(os.path.join(HERE, "examples", "test")))
+    assert len([n for n in testdir if n.endswith(".jr")]) == 15
+    assert "demo.jr" in testdir and "helpers.jr" in testdir
+
+
+def t_batch8_every_keyword_taught():
+    """Every one of the 19 keywords is genuinely used in the lesson
+    that teaches it — in real code, not in comments."""
+    from juru.lexer import KEYWORDS
+    covered = set()
+    for name, kws in LESSON_KEYWORDS.items():
+        code = lesson_code(name)
+        for kw in kws:
+            assert re.search(r"\b{}\b".format(kw), code), \
+                "{} never uses its own keyword {}".format(name, kw)
+            covered.add(kw)
+    assert covered == set(KEYWORDS), sorted(set(KEYWORDS) - covered)
+    # lessons are deterministic: no randomness, no questions to the user
+    for name in LESSON_KEYWORDS:
+        code = lesson_code(name)
+        assert "random(" not in code and "ask(" not in code, name
+
+
+def t_batch8_lessons_run():
+    """Every lesson file runs through the real CLI: exit 0, output,
+    no traceback. tools.jr (a module) prints nothing by design."""
+    for name in sorted(LESSON_KEYWORDS) + ["tools.jr"]:
+        proc = subprocess.run(
+            [sys.executable, "juru.py", os.path.join("examples", "guide", name)],
+            cwd=HERE, capture_output=True, text=True, timeout=120,
+        )
+        assert proc.returncode == 0, (name, proc.stderr)
+        assert "Traceback" not in proc.stderr, (name, proc.stderr)
+        if name != "tools.jr":
+            assert proc.stdout.strip(), name + " printed nothing"
+
+
+def t_batch8_guide_doc_links():
+    """The guide doc walks every lesson, and both READMEs link them."""
+    doc = open(os.path.join(HERE, "examples", "README.md"),
+               encoding="utf-8").read()
+    for name in LESSON_KEYWORDS:
+        assert name in doc, name + " missing from the guide doc"
+        assert "guide/" + name in doc, name + " not linked in the guide doc"
+    assert "test/demo.jr" in doc          # demos linked too
+    readme = open(os.path.join(HERE, "README.md"), encoding="utf-8").read()
+    assert "examples/guide/00_start_here.jr" in readme
+    assert "examples/README.md" in readme
+    assert "examples/test/demo.jr" in readme
+
+
 # ================================================================ runner
 ALL = [
     ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
@@ -1345,7 +1436,7 @@ ALL = [
     ("step 9 pipeline: top words ranked", t_top_words_pipeline),
     ("step 9 guard wall (8 wrong values)", t_step9_guard_wall),
     ("step 9 purity: nothing mutates", t_step9_purity_never_mutates),
-    ("all 15 examples via the real CLI", t_all_15_examples_via_cli),
+    ("all 15 demo programs via the real CLI", t_all_15_examples_via_cli),
     ("checker approves all 15 examples", t_checker_approves_all_examples),
     ("REPL torture: dicts + import + recovery", t_repl_dict_import_torture),
     ("REPL multi-line session (blocks + recovery)", t_repl_multiline_session),
@@ -1373,6 +1464,10 @@ ALL = [
     ("batch 6: the extension needs zero config", t_batch6_extension_zero_config),
     ("batch 7: the .jr icon lives in VS Code's explorer", t_batch7_language_icon),
     ("batch 7: the repo stays tidy on GitHub", t_batch7_repo_tidy),
+    ("batch 8: the guide folder is complete", t_batch8_guide_exists),
+    ("batch 8: every keyword has its lesson", t_batch8_every_keyword_taught),
+    ("batch 8: every lesson runs", t_batch8_lessons_run),
+    ("batch 8: the guide doc links everything", t_batch8_guide_doc_links),
 ]
 
 if __name__ == "__main__":

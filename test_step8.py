@@ -135,7 +135,7 @@ def t_dict_key_no_match_unchanged():
 def t_module_member_suggestion():
     try:
         Interpreter().run(check_source(
-            'import "examples/helpers.jr"\nsay(helpers.greett("x"))'))
+            'import "examples/test/helpers.jr"\nsay(helpers.greett("x"))'))
     except JuRuGalti as err:
         assert err.message == (
             "'helpers' has no 'greett' — did you mean 'greet'? "

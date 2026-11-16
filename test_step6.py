@@ -407,7 +407,7 @@ def t_reserved_step6_builtins():
 
 # ------------------------------------------------------------------ demos
 def t_dicts_demo_exact():
-    path = os.path.join(HERE, "examples", "dicts_demo.jr")
+    path = os.path.join(HERE, "examples", "test", "dicts_demo.jr")
     with open(path, encoding="utf-8") as f:
         assert run(f.read()) == (
             "the -> 4\n"

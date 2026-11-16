@@ -1,0 +1,42 @@
+# ============================================================
+# Lesson 11 — and, or, not
+#
+# Keywords of this lesson: and, or, not
+#
+# Run it:
+#     python3 juru.py examples/guide/11_logic.jr
+#
+# Real decisions combine several questions:
+#   and  — both sides must be true
+#   or   — at least one side is true
+#   not  — flips the answer
+# ============================================================
+
+age = 20
+ticket = true
+
+# and — BOTH must hold:
+if age >= 18 and ticket {
+    say("you can enter")
+}
+
+# or — one is enough:
+day = "sunday"
+if day == "saturday" or day == "sunday" {
+    say("weekend!")
+}
+
+# not — flip it:
+raining = false
+if not raining {
+    say("no umbrella needed")
+}
+
+# The three of them make values too:
+say(true and false)
+say(true or false)
+say(not true)
+
+# The truth table, complete — only these four rows exist:
+say(true and true)
+say(false or true)

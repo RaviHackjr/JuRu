@@ -1,0 +1,39 @@
+# ============================================================
+# Lesson 09 — return
+#
+# Keyword of this lesson: return
+#
+# Run it:
+#     python3 juru.py examples/guide/09_return.jr
+#
+# return sends a value back to whoever called the func. The
+# call itself becomes that value, so you can print it, store
+# it, or use it inside a bigger expression.
+# ============================================================
+
+func triple(n) {
+    return n * 3
+}
+
+say(triple(7))
+
+# The returned value is a normal value — it can go anywhere:
+answer = triple(5) + 1
+say("answer: " + answer)
+
+# return can send back any value, even true/false:
+func is_adult(age) {
+    return age >= 18
+}
+say(is_adult(20))
+say(is_adult(9))
+
+# return ends the func immediately — a "guard" line first:
+func safe_divide(a, b) {
+    if b == 0 {
+        return 0
+    }
+    return a / b
+}
+say(safe_divide(10, 2))
+say(safe_divide(10, 0))

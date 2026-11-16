@@ -145,7 +145,7 @@ def t_ok_all_keywords_program():
 
 def t_ok_all_demo_files():
     for name in DEMOS:
-        with open(os.path.join(HERE, "examples", name), encoding="utf-8") as f:
+        with open(os.path.join(HERE, "examples", "test", name), encoding="utf-8") as f:
             ok(f.read())
 
 

@@ -175,7 +175,7 @@ def t_type_names_all_values():
 
 def t_type_funcs_and_modules():
     assert run("func f() {\n    return 1\n}\nsay(type(f))") == "func\n"
-    src = "import \"examples/helpers.jr\"\nsay(type(helpers))"
+    src = "import \"examples/test/helpers.jr\"\nsay(type(helpers))"
     assert run(src) == "module\n"
 
 

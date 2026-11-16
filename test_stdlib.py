@@ -137,7 +137,7 @@ def t_min_max():
 
 
 def t_demo_exact():
-    path = os.path.join(HERE, "examples", "stdlib_demo.jr")
+    path = os.path.join(HERE, "examples", "test", "stdlib_demo.jr")
     with open(path, encoding="utf-8") as f:
         src = f.read()
     assert run(src) == (

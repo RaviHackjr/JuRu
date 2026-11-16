@@ -75,7 +75,7 @@ five `--new` templates.
 ```bash
 git clone https://github.com/RaviHackjr/JuRu.git
 cd JuRu
-python3 juru.py examples/demo.jr
+python3 juru.py examples/test/demo.jr
 python3 repl.py
 python3 test_ultimate.py       # the full test suite
 ```

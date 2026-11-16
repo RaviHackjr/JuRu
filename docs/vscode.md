@@ -11,7 +11,7 @@ publishing anything.
 `JuRu-vscode-<version>.vsix`), then:
 
 ```bash
-code --install-extension JuRu-vscode-1.7.0.vsix
+code --install-extension JuRu-vscode-1.8.0.vsix
 ```
 
 **Or build it from this repo:**
@@ -19,7 +19,7 @@ code --install-extension JuRu-vscode-1.7.0.vsix
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.7.0.vsix
+code --install-extension juru-vscode-1.8.0.vsix
 ```
 
 **Or from source:**

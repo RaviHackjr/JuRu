@@ -52,7 +52,7 @@ def run_capture(src):
 
 
 def example_files():
-    folder = os.path.join(HERE, "examples")
+    folder = os.path.join(HERE, "examples", "test")
     return sorted(f for f in os.listdir(folder) if f.endswith(".jr"))
 
 
@@ -118,13 +118,13 @@ MEGA_EXPECTED = (
 
 
 def t_mega_checker():
-    path = os.path.join(HERE, "examples", "mega_demo.jr")
+    path = os.path.join(HERE, "examples", "test", "mega_demo.jr")
     with open(path, encoding="utf-8") as f:
         check_source(f.read())
 
 
 def t_mega_demo_exact():
-    path = os.path.join(HERE, "examples", "mega_demo.jr")
+    path = os.path.join(HERE, "examples", "test", "mega_demo.jr")
     with open(path, encoding="utf-8") as f:
         out = run_capture(f.read())
     assert out == MEGA_EXPECTED, "\n--- got ---\n" + out + "\n--- want ---\n" + MEGA_EXPECTED
@@ -241,7 +241,7 @@ def t_all_examples_cli():
     assert len(files) >= 11, "expected 11+ examples, got: " + str(files)
     for name in files:
         proc = subprocess.run(
-            [sys.executable, "juru.py", os.path.join("examples", name)],
+            [sys.executable, "juru.py", os.path.join("examples", "test", name)],
             capture_output=True, text=True, cwd=HERE,
         )
         assert proc.returncode == 0, "{} failed: {}".format(name, proc.stdout)
@@ -250,7 +250,7 @@ def t_all_examples_cli():
 def t_checker_on_all_examples():
     from juru.checker import check_file
     for name in example_files():
-        check_file(os.path.join(HERE, "examples", name))  # must not raise
+        check_file(os.path.join(HERE, "examples", "test", name))  # must not raise
 
 
 # ------------------------------------------------------------------ error layers

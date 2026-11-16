@@ -1,0 +1,40 @@
+# ============================================================
+# Lesson 12 — in (membership) and not
+#
+# Keywords of this lesson: in, not
+#
+# Run it:
+#     python3 juru.py examples/guide/12_membership.jr
+#
+# The same word "in" answers "is it inside?":
+#   list  — is this value one of the items?
+#   dict  — is this text one of the keys?
+#   text  — is this piece part of the text?
+# ...and "not in" asks the opposite. (You already met "in"
+# inside for loops in lesson 05 — same word, two jobs.)
+# ============================================================
+
+colors = ["red", "green", "blue"]
+
+if "green" in colors {
+    say("green is in the list")
+}
+
+if "pink" not in colors {
+    say("pink is missing")
+}
+
+# For a dict, "in" checks the KEYS:
+ages = {"ada": 12, "alan": 13}
+if "ada" in ages {
+    say("ada's age: " + ages["ada"])
+}
+
+# For text, "in" checks a piece of the text:
+if "ell" in "hello" {
+    say("hello contains ell")
+}
+
+if "z" not in "hello" {
+    say("hello has no z")
+}

@@ -3,6 +3,28 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.8 — 2026-11-16
+
+### Added
+- A **beginner guide** under `examples/guide/`: 14 small, runnable
+  lessons — one keyword per lesson — covering all **19 keywords** of
+  the language, plus a ramp (`00_start_here.jr`) and the `tools.jr`
+  module the import lesson uses. Deterministic by design: no
+  randomness, no questions, same output every run.
+- `examples/README.md` — the guide itself: how to run a lesson, a
+  teaching walkthrough with the exact output of every lesson, and
+  links to everything.
+- The main README links every lesson and every demo directly.
+
+### Changed
+- The 15 demo programs moved from `examples/` to `examples/test/` —
+  the guide lives beside them in `examples/guide/`. Every reference
+  (docs, tests, help cards) follows the move.
+
+### Details
+- 30 builtins, still 19 keywords.
+- 20 test suites, 633 tests.
+
 ## 1.7 — 2026-11-16
 
 ### Added

@@ -1,0 +1,30 @@
+# ============================================================
+# Lesson 05 — for ... in (walk through a list)
+#
+# Keywords of this lesson: for, in
+#
+# Run it:
+#     python3 juru.py examples/guide/05_for_in.jr
+#
+# Counting numbers is one thing; walking through a LIST is the
+# other half of for. "for x in items" gives you one item per
+# round, no index bookkeeping at all.
+# ============================================================
+
+fruits = ["apple", "banana", "cherry"]
+
+for fruit in fruits {
+    say("I like " + fruit)
+}
+
+# Lists of numbers work the same way:
+scores = [9, 7, 10]
+total = 0
+for s in scores {
+    total = total + s
+}
+say("total: " + total)
+
+# You never lost the old tools — len counts, [i] picks one:
+say("first fruit: " + fruits[0])
+say("we have " + len(fruits) + " fruits")

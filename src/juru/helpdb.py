@@ -408,7 +408,7 @@ KEYWORD_CARDS = {
     "import": ("import \"file.jr\"",
                "run another JuRu file and use its names through the module.\n"
                "helpers.jr becomes `helpers`.",
-               ["import \"examples/helpers.jr\"",
+               ["import \"examples/test/helpers.jr\"",
                 "say(helpers.double(21))  # 42",
                 "say(helpers.magic)       # 42"],
                ["modules run exactly once, are checked before running,",

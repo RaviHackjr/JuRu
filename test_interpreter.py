@@ -37,7 +37,7 @@ def run(src):
 
 
 def run_file(name):
-    with open(os.path.join(HERE, "examples", name), encoding="utf-8") as f:
+    with open(os.path.join(HERE, "examples", "test", name), encoding="utf-8") as f:
         return run(f.read())
 
 
@@ -749,7 +749,7 @@ def t_runner_needs_jr():
 
 
 def t_runner_runs_file():
-    out = subprocess.run([sys.executable, "juru.py", "examples/demo.jr"],
+    out = subprocess.run([sys.executable, "juru.py", "examples/test/demo.jr"],
                          cwd=HERE, capture_output=True, text=True)
     assert out.returncode == 0, out
     assert out.stdout.startswith("hello JuRu!\n")

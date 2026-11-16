@@ -30,7 +30,7 @@ The grammar's keyword list is **test-enforced** to match the language's
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.7.0.vsix
+code --install-extension juru-vscode-1.8.0.vsix
 ```
 
 ### Option B — run from source

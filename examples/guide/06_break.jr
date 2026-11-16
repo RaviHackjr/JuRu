@@ -1,0 +1,36 @@
+# ============================================================
+# Lesson 06 — break
+#
+# Keyword of this lesson: break
+#
+# Run it:
+#     python3 juru.py examples/guide/06_break.jr
+#
+# break means: stop the loop RIGHT NOW, jump out, carry on
+# after the loop's closing brace. Perfect for "search until
+# you find it, then stop looking".
+# ============================================================
+
+# Find the first great score — no point looking at the rest:
+scores = [6, 7, 9, 5, 10]
+for s in scores {
+    if s >= 9 {
+        say("found a great score: " + s)
+        break
+    }
+}
+
+# break works in while loops too. This little "lock" spins a
+# while true loop and only break can end it:
+tries = 0
+code = 42
+while true {
+    tries = tries + 1
+    if tries * 7 == code {
+        break
+    }
+}
+say("code cracked after " + tries + " tries")
+
+# The lines after the loop run exactly once, after the jump:
+say("search over")
