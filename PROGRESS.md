@@ -7,17 +7,19 @@
 
 ---
 
-## Current state (updated 2026-11-16)
+## Current state (updated 2026-11-18)
 
-- **Version:** 1.9 — latest release **v1.9** (not draft), commit `6b83535` on `main`.
-- **Tests:** 21 suites, **704 green** (`test_step22` 71, `test_ultimate` 56).
-- **Keywords:** 19. **Builtins:** 47 (registry: `src/juru/stdlib.py`). **Templates:** 5.
-- **CI:** both workflows (`tests`, `release`) green on the latest push; release
+- **Version:** 1.10 — latest release **v1.10** (not draft), commit `48f2f61` on `main`.
+- **Tests:** 22 suites, **760 green** (`test_step23` 56, `test_step22` 71, `test_ultimate` 56).
+- **Keywords:** 21 (try, rescue). **Builtins:** 48 (fail; registry: `src/juru/stdlib.py`). **Templates:** 5.
+- **CI:** both workflows (`tests`, `release`) green on the v1.10 push; release
   assets verified by download + actually running the shipped Linux binary
-  (`ok 42`, `help()` overview line, starter template, wave features all pass)
-  and inspecting the vsix (1.9.0).
-- **Status:** Step 1 (collections & ergonomics wave 1) shipped as v1.9;
-  **awaiting "START STEP 2"** (try / rescue).
+  (caught value/rescue/fail smoke, `2 4 6` loop, `help()` overview line
+  "21 keywords + 48 builtins", 3-deep `called from` stack display, `JuRu 1.10`
+  banner) and inspecting the vsix (1.10.0; grammar has try/rescue + fail,
+  10th snippet present).
+- **Status:** Step 2 (try / rescue — errors you can catch) shipped as v1.10;
+  **awaiting "START STEP 3"** (text & formatting).
 
 ## Completed before the roadmap (batches 1–8 — do not rebuild)
 
@@ -35,7 +37,7 @@
 |------|-------|--------|---------|--------|-------------|-------|
 | — | Audit + roadmap | ✅ DONE (2026-11-16) | 1.8 | (this commit) | 633/20 | ROADMAP.md + PROGRESS.md created; repo-tidy test updated for the two new files; NO language changes |
 | 1 | Collections & ergonomics wave 1 | ✅ DONE (2026-11-16) — v1.9 | 1.9 | `6b83535` | 704/21 | Aug-assign (`+= -= *= /= %=` on names, list items, dict values; old value read before RHS, RHS once), negative indexing (reads/writes/remove_at; legal range in the error), slice steps (Python rule; zero step refused), **17 new builtins** (insert, remove_at, clear, extend, unique, delete, items, merge, index_of, starts_with, ends_with, ord, chr, set_of, union, intersect, difference), sets (list-backed, first-seen order, ONE equality rule; `{}` stays a dict), min/max variadic, `\uXXXX` escapes, `src/juru/stdlib.py` = the one registry (mirror rule now structural). New suite `test_step22` (71). **Deliberate break, documented in CHANGELOG:** `items` is now reserved (starter renames its var to `bag`; printed text unchanged). **Preserved quirk:** `xs[0:1] = [9]` still means `xs[0] = [9]` (v1.8 behavior, test-pinned). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
-| 2 | try / rescue | ⬜ PENDING | | | | |
+| 2 | try / rescue | ✅ DONE (2026-11-18) — v1.10 | 1.10 | `48f2f61` | 760/22 | **Exactly 2 new keywords** (19 → 21): `try { ... } rescue as e { ... }` and `rescue { ... }` (binding optional; rescue may sit on its own line). The caught error is a value with `e.message` (exact original friendly text), `e.line`, `e.col`, `e.kind` — kind is one of **11 fixed, documented kinds** (name, type, value, arity, math, index, key, loop, input, file, fail) via `lexer.kind_for` (ordered fragment rules, default `"type"`; an explicit kind always wins, so `fail("index 9 is out of range …")` stays kind `fail`). **New builtin `fail(message)`** (48 builtins): arity `(1,1)` + non-text guard, checker and runtime print the same friendly messages, registered in helpdb (cards, `errors` group, aliases raise/throw→fail, catch/except→rescue). Semantics: only `JuRuGalti` crosses a try boundary (host bugs + `break`/`continue`/`return` signals pass through, test-pinned); the try body runs in the SAME env (clean assignments survive) while the rescue gets its own child env (`e` and rescue locals never leak; checker conservative, flow-insensitive); nested trys pick the nearest rescue (errors raised inside an inner rescue reach the outer one); func errors reach the rescue that wraps the call; arguments evaluate in the caller; module errors keep kind + stack + `source_file`. **Call stacks:** every runtime error records its JuRu call stack at the innermost user-func boundary — tuple is outermost-first, display adds `called from name (line n)` lines innermost-first after the caret; display-only, so `str(err)` is unchanged and uncaught top-level output stays byte-identical (test_step17 + CLI byte-pins green); builtins never get frames; recursion records outermost→deepest call sites. Parser: friendly errors (bare rescue, missing rescue points at the try's closing `}`, `rescue as` without a name), dump forms for both shapes; checker validates rescue blocks (binding usable, reserved names refused); REPL `looks_incomplete` counts try/rescue KEYWORD tokens (text like `say("try harder")` safe). Docs: syntax.md section 16 (forms + field + kind tables + rules), tutorial 13.1 (4 executable pinned blocks), guide lesson `14_try.jr` (15 lessons), README/design/CHANGELOG synced (counts corrected to 760/22), vscode grammar 21+48 + 10th snippet, version 1.10 / package.json 1.10.0. New suite `test_step23.py` (56 tests). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
 | 3 | Text & formatting | ⬜ PENDING | | | | |
 | 4 | Files & JSON | ⬜ PENDING | | | | |
 | 5 | Math, time & constants | ⬜ PENDING | | | | |
