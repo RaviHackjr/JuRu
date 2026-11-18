@@ -595,7 +595,7 @@ def t_lexer_error_passthrough():
     expect_galti('x = "abc', 'missing closing "')
 
 
-def t_all_19_keywords_program():
+def t_all_21_keywords_program():
     src = ('func mix(a) {\n'
            '  if a and not false or null == null {\n'
            '    for i from 0 to 2 {\n'
@@ -614,7 +614,7 @@ def t_all_19_keywords_program():
            'say(mix(true))\n')
     t = parse_source(src)
     assert isinstance(t, Program)
-    assert len(KEYWORDS) == 19
+    assert len(KEYWORDS) == 21
     assert t.stmts[0].name == "mix"
     assert t.stmts[1].args[0].name == "mix"
 
@@ -681,7 +681,7 @@ TESTS = [
     t_err_and_first, t_err_call_nonname,
     t_demo_file_alignment, t_funcs_demo_alignment,
     t_token_stream_fully_consumed, t_lexer_error_passthrough,
-    t_all_19_keywords_program, t_hinglish_names_ok,
+    t_all_21_keywords_program, t_hinglish_names_ok,
     t_node_positions, t_error_positions,
     t_deep_nested_expr, t_mixed_bool_math, t_long_add_chain,
     t_return_in_if_in_func, t_while_in_for_in_if, t_deep_parens_50,

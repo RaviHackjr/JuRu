@@ -520,7 +520,7 @@ global
 
 ## 11. The toolbox
 
-All the tools live in one flat set of 47 builtins. Text tools:
+All the tools live in one flat set of 48 builtins. Text tools:
 
 ```jr
 say(upper("juru"))
@@ -726,7 +726,67 @@ say(sqrt(-1))
 JuRu Error (line 1, col 9): sqrt(-1) — a negative number has no square root
 ```
 
-And the 47 builtins can never be shadowed by accident:
+### 13.1 Catching errors: try / rescue
+
+Sometimes a failure is *expected* — text that may not be a number, a
+key that may be missing. `try { ... }` runs risky code; the moment a
+JuRu error happens, JuRu jumps to the `rescue` instead of stopping the
+program. Write `rescue as e` to name the error, or plain `rescue` if
+you do not need it:
+
+```jr
+try {
+    n = int("not a number")
+} rescue as e {
+    say("caught: " + e.message)
+}
+say("still running")
+```
+
+```
+caught: int('not a number') — 'not a number' is not a whole number
+still running
+```
+
+A caught error is a value with four parts — `e.message` (the exact
+friendly text), `e.kind` (a short category word), and the `e.line` /
+`e.col` where it happened:
+
+```jr
+try {
+    nums = [1, 2, 3]
+    say(nums[99])
+} rescue as e {
+    say(e.kind + " at line " + e.line + ", col " + e.col)
+    say(e.message)
+}
+```
+
+```
+index at line 3, col 14
+index 99 is out of range — this list has 3 items (0 to 2)
+```
+
+`fail(message)` raises your own error — the nearest rescue catches it,
+and its kind is `"fail"`:
+
+```jr
+try {
+    fail("door stuck")
+} rescue as e {
+    say(e.kind + ": " + e.message)
+}
+```
+
+```
+fail: door stuck
+```
+
+An error outside any `try` is still the normal, loud, friendly error —
+the rescue only protects its own `try`. There is no `finally` in JuRu:
+if you always need a line to run, write it after the try/rescue.
+
+And the 48 builtins can never be shadowed by accident:
 
 ```jr
 count = 5
@@ -818,7 +878,7 @@ bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.9 (easy like Python, secure like Rust) on linux
+JuRu 1.10 (easy like Python, secure like Rust) on linux
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> for x in [10, 20] {
@@ -853,15 +913,15 @@ toolbox is already built in). Real JuRu code that uses those names —
 Two folders full of runnable JuRu live under `examples/`, every output
 verified by the test suite.
 
-**The beginner guide** — `examples/guide/` teaches all 19 keywords in
-14 small lessons, one keyword at a time. Start at `00_start_here.jr`
+**The beginner guide** — `examples/guide/` teaches all 21 keywords in
+15 small lessons, one keyword at a time. Start at `00_start_here.jr`
 and read `examples/README.md` alongside it:
 
 ```text
 00_start_here.jr  01_say.jr       02_if_else.jr     03_while.jr
 04_counting.jr    05_for_in.jr    06_break.jr       07_continue.jr
 08_func.jr        09_return.jr    10_booleans.jr    11_logic.jr
-12_membership.jr  13_import.jr    tools.jr
+12_membership.jr  13_import.jr    14_try.jr         tools.jr
 ```
 
 **The demo programs** — `examples/test/` holds fifteen complete

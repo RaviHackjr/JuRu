@@ -6,7 +6,7 @@
 > **Start from a template:** `python3 juru.py --new myprogram`
 >
 > The idea behind JuRu: code should feel like a **conversation in plain English**.
-> Only 19 keywords — and they cover everything.
+> Only 21 keywords — and they cover everything.
 
 ---
 
@@ -316,7 +316,7 @@ And like every collection, they refuse wrong tools in words:
 `union([1], [2])` → `union() needs two sets — got: list and list
 (build one with set_of([...]))`.
 
-## 15. Builtins — the 47-tool toolbox
+## 15. Builtins — the 48-tool toolbox
 
 The classics:
 ```
@@ -442,11 +442,80 @@ Guards that talk like a human:
 - `keys([1])` → `keys() needs a dict — got: [1]`
 - `count(5, 1)` → `count() needs a list first — got: 5`
 
-All 47 are **reserved** — no variable or func can take their name, and both
+All 48 are **reserved** — no variable or func can take their name, and both
 the checker and the interpreter print the same argument-count message:
 `push(list, item) takes exactly 2 arguments`.
 
-## 16. Modules — code from another file
+One builtin raises errors on purpose: `fail(message)` raises your own JuRu
+error with kind `"fail"` — the nearest `try/rescue` catches it (section 16).
+
+## 16. Errors you can catch — `try` / `rescue` (Step 23, v1.10)
+
+Programs meet failure. Instead of dying, you can catch it:
+
+```
+try {
+    text = ask("a number: ")
+    n = int(text)
+} rescue as e {
+    say("could not read a number: " + e.message)
+}
+```
+
+The `as e` is optional — plain `rescue { ... }` handles the error without
+naming it. The rescue runs ONLY when the try raised a JuRu error; if
+nothing went wrong, it never runs. Code after the try/rescue always runs.
+
+**The caught error is a value with four parts:**
+
+| field | what it holds |
+|-------|---------------|
+| `e.message` | the exact friendly error text you would have seen |
+| `e.kind` | one short word — the category (see the table below) |
+| `e.line` | the line where the error happened |
+| `e.col` | the column where it happened |
+
+**`e.kind` is always one of 11 fixed, documented words:**
+
+| kind | raised when |
+|------|-------------|
+| `name` | a name was not found — variable, func, module member |
+| `type` | a value had the wrong type for the operation (the default) |
+| `value` | right type, bad value — empty, negative, unconvertible, out of range values |
+| `arity` | wrong number of arguments |
+| `math` | impossible arithmetic — divide by zero, `sqrt(-1)`, `pow` guards |
+| `index` | list/text indexing or slicing went wrong |
+| `key` | dict access went wrong — missing key, bad key |
+| `loop` | a runaway loop or runaway recursion was stopped |
+| `input` | `ask()` could not read an answer |
+| `file` | a file or module could not be read |
+| `fail` | raised by `fail()` — your own error |
+
+Raise your own error with `fail(message)`:
+
+```
+try {
+    if age < 0 {
+        fail("age cannot be negative")
+    }
+    say("age ok")
+} rescue as e {
+    say(e.kind + ": " + e.message)     # fail: age cannot be negative
+}
+```
+
+**Rules worth knowing:**
+- only JuRu's own errors are catchable — internal bugs and loop signals
+  (`break`, `continue`, `return`) pass straight through
+- errors raised inside funcs reach the rescue that wraps the call
+- a runtime error that crossed func calls remembers its JuRu call stack —
+  shown as display-only `called from name (line n)` lines after the caret
+  (top-level errors keep their exact old shape)
+- the try's assignments survive a clean run; the rescue gets its own
+  scope, so `e` (and rescue locals) never leak out
+- there is no `finally`/`always` in JuRu — write cleanup after the block
+
+## 17. Modules — code from another file
 
 ```
 # helpers.jr
@@ -476,13 +545,13 @@ The rules:
 - imports resolve next to **your file**, so `python3 juru.py src/main.jr`
   finds `src/helpers.jr`
 
-## 17. Comments
+## 18. Comments
 
 ```
 # from # to the end of the line — the machine ignores it
 ```
 
-## 18. Golden rules
+## 19. Golden rules
 
 1. One statement per line (no semicolons)
 2. Blocks are `{ }` — no indentation headaches
@@ -495,7 +564,7 @@ The rules:
 7. Names: letters, digits, `_` (unicode letters work too — Devanagari incl.)
 8. Dicts: write `d["key"] = value`, read with `d["key"]` or `d.key`
 
-## 19. Errors that talk like a human
+## 20. Errors that talk like a human
 
 Every error says exactly where and what:
 ```
@@ -504,6 +573,17 @@ JuRu Error (line 5, col 9): index 7 is out of range — this list has 3 items (0
 JuRu Error (line 2, col 1): 'break' only works inside a loop (for / while)
 JuRu Error (line 4, col 14): key 'z' was not found — this dict has: a, b
 JuRu Error (line 1, col 1): import loop: a.jr -> b.jr -> a.jr — a file cannot import itself, even through other files
+```
+
+When the error crossed a func call, the display adds the JuRu call stack —
+display-only `called from` lines after the caret (the message line itself
+never changes, and top-level errors look exactly like they always did):
+```
+JuRu Error (line 2, col 11): cannot divide by zero (x / 0)
+    say(1 / 0)
+          ^
+called from inner (line 5)
+called from outer (line 7)
 ```
 
 A typo gets the closest real name back (in the checker, at runtime, in dict
@@ -528,25 +608,25 @@ work, so it never complains about a program that would run fine.
 Modules get the same treatment: their source is checked **before** they run.
 Tip: `python3 checker.py file.jr` checks a file without running it.
 
-## 20. Security by design 🛡️
+## 21. Security by design 🛡️
 
 - No `eval` — code is never built from strings
 - `null` exists but the null-pointer bug class is blocked by design
 - Every list index **bounds-checked** (no memory-safe escape hatches)
 - **Runaway protection** — a loop over 10,000,000 steps stops itself
 - Short-circuit logic — wrong order still never crashes
-- Reserved builtins — the 47-tool toolbox can never be overwritten
+- Reserved builtins — the 48-tool toolbox can never be overwritten
 - Dict keys are guarded; missing keys are errors, not `null`
 - Modules are isolated and checked; import loops are detected
 - Friendly type checks at runtime, with line/col on every error
 
-## 21. The 19 keywords + 47 builtins
+## 22. The 21 keywords + 48 builtins
 
 ```
 say  if  else  while  for  from  to  in
 break  continue  func  return
 true  false  null  and  or  not
-import
+import  try  rescue
 ```
 ```
 ask( )   len( )    int( )     float( )   upper( )   lower( )   str( )
@@ -558,5 +638,5 @@ pow( )  type( )  help( )  sleep( )
 insert( )  remove_at( )  clear( )  extend( )  unique( )
 delete( )  items( )  merge( )
 index_of( )  starts_with( )  ends_with( )  ord( )  chr( )
-set_of( )  union( )  intersect( )  difference( )
+set_of( )  union( )  intersect( )  difference( )  fail( )
 ```

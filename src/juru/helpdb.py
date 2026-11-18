@@ -59,13 +59,16 @@ GROUPS = (
         ("delete(dict, key)", "remove a key and its value, in place"),
         ("items(dict)", "the dict as [key, value] pairs"),
         ("merge(a, b)", "a NEW dict — b wins on shared keys"),
-        ("type(x)", "one word: int, float, text, bool, null, list, dict, set, func, module"),
+        ("type(x)", "one word: int, float, text, bool, null, list, dict, set, func, module, error"),
     )),
     ("sets", (
         ("set_of(list)", "build a set: no duplicates, order kept"),
         ("union(a, b)", "everything from both sets"),
         ("intersect(a, b)", "only what is in both sets"),
         ("difference(a, b)", "what is in a but not in b"),
+    )),
+    ("errors", (
+        ("fail(message)", "raise your own error — try/rescue can catch it"),
     )),
 )
 
@@ -81,6 +84,7 @@ KEYWORD_LINES = (
     ("and / or / not", "combine conditions"),
     ("x in list", "membership — also x not in list, keys in dicts, values in sets"),
     ("import \"file.jr\"", "code from another file"),
+    ("try / rescue", "catch errors: try { ... } rescue as e { ... }"),
 )
 
 USAGE_LINE = 'call help("name") with any keyword or builtin to see its card.'
@@ -301,7 +305,7 @@ BUILTIN_CARDS = {
                 "values() needs a dict"]),
     "type": ("type(x)",
              "one word for what x is: int, float, text, bool, null, list,\n"
-             "dict, set, func or module. Never fails, never crashes.",
+             "dict, set, func, module or error. Never fails, never crashes.",
              ['type(5)      # int',
               'type("hi")   # text',
               'type([1])    # list',
@@ -452,6 +456,18 @@ BUILTIN_CARDS = {
                     "say(difference(a, b))  # {1, 2}"],
                    ["difference(a, b) takes exactly 2 arguments",
                     "difference() needs two sets — got: list and list (build one with set_of([...]))"]),
+    "fail": ("fail(message)",
+             "raise your own JuRu error — the nearest rescue catches it.\n"
+             "The message is used exactly as you wrote it; the error's kind\n"
+             "is \"fail\". Without a try/rescue, the program stops with the\n"
+             "normal friendly error.",
+             ["try {",
+              "    if age < 0 { fail(\"age cannot be negative\") }",
+              "} rescue as e {",
+              "    say(e.kind + \": \" + e.message)   # fail: age cannot be negative",
+              "}"],
+             ["fail(message) takes exactly 1 argument",
+              "fail() needs a message in quotes — got: int"]),
 }
 
 KEYWORD_CARDS = {
@@ -581,6 +597,30 @@ KEYWORD_CARDS = {
                 "say(helpers.magic)       # 42"],
                ["modules run exactly once, are checked before running,",
                 "and see nothing from the file that imports them"]),
+    "try": ("try { ... } rescue as e { ... }",
+            "run risky code; the moment it raises a JuRu error, jump to the\n"
+            "rescue. 'as e' is optional — without it the error is handled,\n"
+            "just not named. Inside the rescue, e has message, line, col and kind.",
+            ["try {",
+             "    n = int(ask(\"a number: \"))",
+             "} rescue as e {",
+             "    say(\"that was not a number: \" + e.message)",
+             "}",
+             "say(\"still running\")   # the rescue does not stop the program"],
+            ["a 'try' needs its 'rescue' — write 'try { ... } rescue { ... }'",
+             "or 'try { ... } rescue as e { ... }'",
+             "assignments inside the try survive — the rescue gets its own scope"]),
+    "rescue": ("} rescue as e { ... }   or   } rescue { ... }",
+               "the partner of try: it runs only when the try raised an error.\n"
+               "With 'as e' the caught error is a value: e.message (the exact\n"
+               "friendly text), e.line, e.col, and e.kind (a stable category).",
+               ["try {",
+                "    say([1, 2, 3][9])",
+                "} rescue as e {",
+                "    say(e.kind + \": \" + e.message)  # index: index 9 is out of range ...",
+                "}"],
+               ["'rescue' needs a matching 'try' before it — write 'try { ... } rescue { ... }'",
+                "e is visible only inside the rescue — a new scope, like a func body"]),
 }
 
 # names people might type — help should find them anyway
@@ -599,6 +639,10 @@ ALIASES = {
     "remove": "remove_at",
     "last": "pop",
     "square root": "sqrt",
+    "raise": "fail",
+    "throw": "fail",
+    "catch": "rescue",
+    "except": "rescue",
 }
 
 

@@ -23,5 +23,5 @@ say("magic number: " + tools.magic)
 import "tools.jr"
 say(tools.double(50))
 
-# That is keyword number 19. You have now seen every keyword
-# JuRu has: 19 words, and this folder showed all of them.
+# That is keyword number 19. One lesson left — the two newest
+# words in the language (lesson 14 finishes the set: 21 words).

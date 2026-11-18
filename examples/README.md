@@ -1,7 +1,7 @@
 # The JuRu Beginner Guide
 
-Welcome! This guide teaches you the **whole language** in 14 small,
-runnable lessons — one keyword at a time. JuRu has exactly **19
+Welcome! This guide teaches you the **whole language** in 15 small,
+runnable lessons — one keyword at a time. JuRu has exactly **21
 keywords**, and every single one of them gets its own lesson here.
 Read one lesson, run its file, change a line, run it again. That is
 the whole method.
@@ -55,11 +55,12 @@ closing brace — and read the friendly error. Errors are teachers too.
 | 11 | [11_logic.jr](guide/11_logic.jr) | `and`, `or`, `not` | combine questions into one decision |
 | 12 | [12_membership.jr](guide/12_membership.jr) | `in`, `not in` | is it inside? (lists, dicts, text) |
 | 13 | [13_import.jr](guide/13_import.jr) | `import` | use code from another file |
+| 14 | [14_try.jr](guide/14_try.jr) | `try`, `rescue` | catch errors so the show goes on |
 | — | [tools.jr](guide/tools.jr) | — | the little module lesson 13 imports |
 
-That is the complete language: 19 keywords, 14 lessons, no hidden
-extras. (JuRu also has 30 builtins — ready-made tools like `len`,
-`split`, `sorted` — and the REPL's `help()` lists them all.)
+That is the complete language: 21 keywords, 15 lessons, no hidden
+extras. (JuRu also has 48 builtins — ready-made tools like `len`,
+`split`, `sorted`, `fail` — and the REPL's `help()` lists them all.)
 
 ---
 
@@ -319,8 +320,34 @@ magic number: 42
 100
 ```
 
-That was keyword number 19 — **you have now seen every keyword JuRu
-has.** 🎉
+That was keyword number 19. One lesson left — the two newest words
+in the language.
+
+---
+
+## Lesson 14 — try / rescue
+
+**File:** [guide/14_try.jr](guide/14_try.jr) — keywords: `try`, `rescue`
+
+Real programs meet failure: text that is not a number, a list index
+past the end, a missing dict key. `try { ... }` runs risky code; the
+moment a JuRu error happens, JuRu jumps to the `rescue` instead of
+stopping the program. The caught error is a value: `e.message`,
+`e.kind`, `e.line`, `e.col`. `fail(message)` raises your own error —
+the nearest rescue catches it.
+
+```text
+caught: int('not a number') — 'not a number' is not a whole number
+the program is still alive
+kind:   index
+detail: index 99 is out of range — this list has 3 items (0 to 2)
+no bob here — moving on
+12
+fail: age cannot be negative
+```
+
+That was keyword number 20 and 21 — **you have now seen every keyword
+JuRu has.** 🎉
 
 ---
 

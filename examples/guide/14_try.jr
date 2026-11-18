@@ -1,0 +1,63 @@
+# ============================================================
+# Lesson 14 — try / rescue (errors you can catch)
+#
+# Keywords of this lesson: try, rescue
+#
+# Run it:
+#     python3 juru.py examples/guide/14_try.jr
+#
+# Real programs meet failure: text that is not a number, a list
+# index past the end, a dict key that is missing. try { ... }
+# runs risky code; the moment a JuRu error happens, JuRu jumps
+# to the rescue instead of stopping the program. A caught error
+# does not end anything — the code after the try keeps running.
+# ============================================================
+
+# The rescue catches the error and the show goes on:
+try {
+    n = int("not a number")
+} rescue as e {
+    say("caught: " + e.message)
+}
+say("the program is still alive")
+
+# The caught error is a value with four parts:
+#   e.message — the same friendly text you would have seen
+#   e.kind    — one short word for the category (math, index, ...)
+#   e.line    — the line where the error happened
+#   e.col     — the column where it happened
+try {
+    nums = [1, 2, 3]
+    say(nums[99])
+} rescue as e {
+    say("kind:   " + e.kind)
+    say("detail: " + e.message)
+}
+
+# You do not have to name the error — plain rescue works too:
+try {
+    ages = {"ada": 13}
+    say(ages["bob"])
+} rescue {
+    say("no bob here — moving on")
+}
+
+# fail(message) raises YOUR OWN error, and the nearest rescue
+# catches it. Its kind is "fail".
+func check_age(age) {
+    if age < 0 {
+        fail("age cannot be negative")
+    }
+    return age
+}
+
+try {
+    say(check_age(12))
+    say(check_age(-3))
+} rescue as e {
+    say(e.kind + ": " + e.message)
+}
+
+# That is keyword number 20 and 21. You have now seen every
+# keyword JuRu has: 21 words, and this folder showed all of
+# them.

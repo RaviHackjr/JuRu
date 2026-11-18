@@ -28,7 +28,7 @@ import difflib
 
 from .lexer import JuRuGalti
 from .parser import (
-    Node, Name, Assign, Call, For, FuncDef, Import, Member,
+    Node, Name, Assign, Call, For, FuncDef, Import, Member, TrySt,
     parse_source,
 )
 from .stdlib import BUILTINS, BUILTIN_ARITY, BUILTIN_HINT, check_arity
@@ -90,6 +90,9 @@ class Checker:
                 self.funcs.setdefault(n.name, []).append(len(n.params))
             elif isinstance(n, For):
                 self.assigned.add(n.var)
+            elif isinstance(n, TrySt):
+                if n.err_name:                 # `rescue as e` assigns e (inside the rescue)
+                    self.assigned.add(n.err_name)
             elif isinstance(n, Import):
                 self.assigned.add(n.module)
 
@@ -107,6 +110,11 @@ class Checker:
                         "'{}' is reserved (builtin) — pick another name".format(n.name))
             elif isinstance(n, FuncDef):
                 self._check_funcdef(n)
+            elif isinstance(n, TrySt):
+                if n.err_name in BUILTINS:
+                    raise JuRuGalti(
+                        n.line, n.col,
+                        "'{}' is reserved (builtin) — pick another name".format(n.err_name))
             elif isinstance(n, Import):
                 if n.module in BUILTINS:
                     raise JuRuGalti(

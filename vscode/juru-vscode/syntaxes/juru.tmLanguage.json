@@ -55,12 +55,12 @@
       "name": "constant.numeric.juru"
     },
     "keywords": {
-      "comment": "The 19 keywords — must match juru.lexer KEYWORDS exactly (a test enforces it).",
-      "match": "\\b(and|break|continue|else|false|for|from|func|if|import|in|not|null|or|return|say|to|true|while)\\b",
+      "comment": "The 21 keywords — must match juru.lexer KEYWORDS exactly (a test enforces it).",
+      "match": "\\b(and|break|continue|else|false|for|from|func|if|import|in|not|null|or|rescue|return|say|to|true|try|while)\\b",
       "name": "keyword.control.juru"
     },    "builtin": {
-      "comment": "The 30 builtins — the flat toolbox.",
-      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type|help|sleep|insert|remove_at|clear|extend|unique|delete|items|merge|index_of|starts_with|ends_with|ord|chr|set_of|union|intersect|difference)\\b",
+      "comment": "The 48 builtins — the flat toolbox.",
+      "match": "\\b(ask|len|int|float|upper|lower|str|push|pop|sum|min|max|split|join|trim|replace|abs|round|random|sqrt|sorted|reverse|find|keys|values|count|pow|type|help|sleep|insert|remove_at|clear|extend|unique|delete|items|merge|index_of|starts_with|ends_with|ord|chr|set_of|union|intersect|difference|fail)\\b",
       "name": "support.function.builtin.juru"
     },
     "constant": {

@@ -148,10 +148,10 @@ def t_unicode_names():
         (NAME, "नाम"), (OPERATOR, "="), (NUMBER, "5"), EOF_T()]
 
 
-def t_all_19_keywords():
+def t_all_21_keywords():
     words = ("say if else while for from to in break continue func return "
-             "true false null and or not import").split()
-    assert len(words) == 19
+             "true false null and or not import try rescue").split()
+    assert len(words) == 21
     assert set(words) == KEYWORDS
     for w in words:
         assert pairs(w) == [(KEYWORD, w), EOF_T()]
@@ -369,7 +369,7 @@ TESTS = [
     t_text_bad_escape, t_text_no_newline, t_text_hash_inside,
     t_backslash_at_end,
     t_names, t_keyword_like_names, t_unicode_names,
-    t_all_19_keywords, t_old_hinglish_now_names,
+    t_all_21_keywords, t_old_hinglish_now_names,
     t_single_ops, t_double_ops, t_assign_vs_compare,
     t_bang_alone, t_ampersand, t_pipe, t_semicolon, t_colon_token,
     t_single_quote, t_at_sign,

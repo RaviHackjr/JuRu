@@ -258,7 +258,7 @@ def t_reserved_step9_builtins():
 
 def t_no_new_keywords():
     """Step 9 added tools, not keywords — the language stays small."""
-    assert len(KEYWORDS) == 19
+    assert len(KEYWORDS) == 21   # try/rescue arrived later — Step 23 (v1.10)
     assert "sorted" not in KEYWORDS
 
 

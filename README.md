@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`19 keywords · 47 builtins · 5 templates · 14 guide lessons + 15 demos · 704 tests green · version 1.9 (see version.py) · MIT`
+`21 keywords · 48 builtins · 5 templates · 15 guide lessons + 15 demos · 760 tests green · version 1.10 (see version.py) · MIT`
 
 ---
 
@@ -54,7 +54,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.9 (easy like Python, secure like Rust) on win32
+JuRu 1.10 (easy like Python, secure like Rust) on win32
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> 1 + 2
@@ -157,18 +157,19 @@ JuRu Error (line 2, col 10): index 7 is out of range — this list has 3 items (
              ^
 ```
 
-## Keywords (19)
+## Keywords (21)
 
 ```
 say   if    else    while   for    from    to      in
 break continue func    return  true   false   null
 and   or    not     import
+defend with try / rescue
 ```
 
 `else if` is two words. Blocks are `{ }` — no indentation headaches.
 One statement per line; comments start with `#`.
 
-## Builtins (47 — all reserved names)
+## Builtins (48 — all reserved names)
 
 | Builtin | Does |
 |---------|------|
@@ -214,16 +215,17 @@ One statement per line; comments start with `#`.
 | `union(a, b)` | a NEW set with everything from both |
 | `intersect(a, b)` | a NEW set with only what is in both |
 | `difference(a, b)` | a NEW set with what is in `a` but not in `b` |
+| `fail(message)` | raise your own catchable error (kind `"fail"`) — the nearest `try/rescue` catches it |
 | `pow(a, b)` | exponents without `**` (`pow(2, 10)` → `1024`); impossible math is refused in words |
-| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `set`, `func`, `module` |
+| `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `set`, `func`, `module`, `error` |
 | `help(name)` | built-in docs — `help()` lists the whole toolbox, `help("pow")` prints one card |
 | `sleep(seconds)` | pause the program (`sleep(1)` waits one second) — at most 30 s per call, 120 s per run |
 
 `push`, `pop`, `insert`, `remove_at`, `clear`, `extend` and `delete` change
 the list/dict in place — `sorted`, `reverse`, `unique` and `merge` hand you
-a fresh one and leave the original alone. Every wave so far (`float`, `pow`,
-`pop`, `type`, then `help`, `sleep`, then the collection tools above) added
-**zero** new keywords: the language stays 19 keywords big. And
+a fresh one and leave the original alone. Every collection wave added
+**zero** new keywords; Step 23 added exactly two (`try`, `rescue`) plus one
+builtin (`fail`) — the language stays deliberately small: 21 keywords. And
 `help("anything")` never lies — a test suite runs every card's examples and
 checks its guard lines against the real error messages.
 
@@ -251,7 +253,7 @@ every refusal is a friendly, one-line explanation. The new tutorial
 
 ## Learn — the beginner guide (`examples/guide/`)
 
-14 small, runnable lessons teach **every keyword** of the language,
+15 small, runnable lessons teach **every keyword** of the language,
 one per lesson — plus a full walkthrough in
 [examples/README.md](examples/README.md). Start here, change a line,
 run again:
@@ -272,6 +274,7 @@ run again:
 | 11 | `and`, `or`, `not` | [guide/11_logic.jr](examples/guide/11_logic.jr) |
 | 12 | `in`, `not in` | [guide/12_membership.jr](examples/guide/12_membership.jr) |
 | 13 | `import` | [guide/13_import.jr](examples/guide/13_import.jr) + [guide/tools.jr](examples/guide/tools.jr) |
+| 14 | `try`, `rescue` | [guide/14_try.jr](examples/guide/14_try.jr) |
 
 ## Examples (every output exactly verified by tests)
 
@@ -335,7 +338,7 @@ zip for your system and let its setup do the rest:
 Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.9
+juru --version              # JuRu 1.10
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -358,7 +361,7 @@ Full walkthrough with every platform detail:
 
 ## VS Code (official, ready to load)
 
-Syntax highlighting (all 19 keywords + 47 builtins), snippets, brackets,
+Syntax highlighting (all 21 keywords + 48 builtins), snippets, brackets,
 folding, and the run button — the extension lives at
 `vscode/juru-vscode/`, finds the interpreter by itself (nothing to
 configure), and its keyword list is test-enforced against the language.
@@ -367,13 +370,13 @@ Load it in two minutes:
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.9.0.vsix
+code --install-extension juru-vscode-1.10.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 704, all green
+## Tests — 760, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -393,10 +396,11 @@ python3 test_step15.py        # 15   (help(): truthful cards, aliases, unknowns)
 python3 test_step16.py        # 13   (sleep() guards + the bare-`juru` REPL)
 python3 test_step17.py        # 10   (line + caret error display)
 python3 test_step22.py        # 71   (collections & ergonomics wave 1)
+python3 test_step23.py        # 56   (try/rescue: catchable errors, kinds, stacks)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
-python3 test_ultimate.py      # 56   (steps 1–22 combined, no mercy)
+python3 test_ultimate.py      # 56   (steps 1–23 combined, no mercy)
 ```
 
 ## Project structure
@@ -420,9 +424,9 @@ JuRu/
 ├── docs/vscode.md      # load the extension in 2 minutes
 ├── logo/               # the icon set: juru_icon.svg (source),
 │                       #   juru_icon.ico (16→256 px, inside juru.exe)
-├── examples/           # guide/ = 14 beginner lessons (all 19 keywords),
+├── examples/           # guide/ = 15 beginner lessons (all 21 keywords),
 │                       #   test/ = 15 verified demo programs
-├── test_*.py           # 21 test suites, 704 tests
+├── test_*.py           # 22 test suites, 760 tests
 └── LICENSE             # MIT
 ```
 

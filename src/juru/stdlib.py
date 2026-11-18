@@ -25,7 +25,9 @@ BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop"
             "insert", "remove_at", "clear", "extend", "unique",
             "delete", "items", "merge",
             "index_of", "starts_with", "ends_with", "ord", "chr",
-            "set_of", "union", "intersect", "difference")
+            "set_of", "union", "intersect", "difference",
+            # Step 23 — errors you can catch: try / rescue + fail
+            "fail")
 
 # (min_args, max_args) for every builtin — checked before a single line
 # runs. max None = "one or more" (a variadic builtin, like min/max).
@@ -77,6 +79,7 @@ BUILTIN_ARITY = {
     "union": (2, 2),
     "intersect": (2, 2),
     "difference": (2, 2),
+    "fail": (1, 1),
 }
 
 # The exact message both layers print for a wrong argument count —
@@ -129,6 +132,7 @@ BUILTIN_HINT = {
     "union": "union(a, b) takes exactly 2 arguments",
     "intersect": "intersect(a, b) takes exactly 2 arguments",
     "difference": "difference(a, b) takes exactly 2 arguments",
+    "fail": "fail(message) takes exactly 1 argument",
 }
 
 

@@ -3,6 +3,38 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.10 — 2026-11-18
+
+Step 23 — **errors you can catch**. JuRu's friendly errors become
+catchable without losing the friendliness: the message you would have
+seen is exactly what the rescue gets.
+
+- **2 new keywords: `try`, `rescue`** — 19 → 21. `try { ... }` runs
+  risky code; `rescue as e { ... }` (or plain `rescue { ... }`) handles
+  a raised JuRu error and the program keeps running.
+- **The caught error is a value** with four fields: `e.message` (the
+  exact friendly text), `e.line`, `e.col`, and `e.kind` — one of 11
+  fixed, documented kinds: `name`, `type`, `value`, `arity`, `math`,
+  `index`, `key`, `loop`, `input`, `file`, `fail`.
+- **New builtin `fail(message)`** — raises your own error (kind
+  `"fail"`), catchable by the nearest rescue, registered in the stdlib
+  and help like every builtin (48 builtins now).
+- **JuRu call stacks** — a runtime error that crossed a func call
+  records its JuRu call stack; the CLI/REPL display adds `called from
+  name (line n)` lines after the caret (innermost first, display-only).
+  The message line never changes, so every existing error output stays
+  byte-identical.
+- **Scoping** — the try body runs in the enclosing scope (clean
+  assignments survive); the rescue gets its own scope, so `e` and
+  rescue locals never leak. Only `JuRuGalti` is catchable — host bugs
+  and loop signals (`break`/`continue`/`return`) pass through.
+- Errors raised inside funcs reach the rescue that wraps the call;
+  nested `try` blocks pick the nearest rescue; module errors keep
+  their kind and stack.
+- Docs everywhere: `docs/syntax.md` section 16 (+ the kind table),
+  tutorial chapter 13.1, guide lesson `14_try.jr`, help cards for
+  `try`/`rescue`/`fail`, VS Code grammar/snippets updated.
+
 ## 1.9 — 2026-11-16
 
 Step 22 — **collections & ergonomics wave 1**. Lists, dicts, text and

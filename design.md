@@ -59,9 +59,9 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
-| `test_ultimate.py` | steps 1–22 combined, no mercy | **56 pass** |
-| `examples/` | guide: 14 lessons covering all 19 keywords · test: 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **704 tests green** |
+| `test_ultimate.py` | steps 1–23 combined, no mercy | **56 pass** |
+| `examples/` | guide: 15 lessons covering all 21 keywords · test: 15 demo `.jr` files, every output exactly verified | inside suites |
+| **Total** | | **760 tests green** |
 
 Run everything yourself:
 ```
@@ -82,7 +82,7 @@ python3 test_tutorial.py
 python3 test_ultimate.py
 ```
 
-## Keywords (19 — plain English)
+## Keywords (21 — plain English)
 
 | JuRu | Python | JuRu | Python |
 |------|--------|------|--------|
@@ -97,7 +97,8 @@ python3 test_ultimate.py
 | | | `and` | and |
 | | | `or` | or |
 | | | `not` | not |
-| `import` | import | | |
+| `import` | import | `try` | try |
+| | | `rescue` | except (catches errors) |
 
 `else if` is written as two words — no separate `elif` keyword needed.
 Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
@@ -105,7 +106,7 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 `split(text, sep)`, `join(list, sep)`, `trim(text)`, `replace(text, old, new)`,
 `abs(x)`, `round(x)`, `random(low, high)`, `sqrt(x)`,
 `sorted(list)`, `reverse(list)`, `find(list, item)`, `keys(dict)`,
-`values(dict)`, `count(list, item)`.
+`values(dict)`, `count(list, item)`, `fail(message)`.
 
 ## Operators
 
@@ -182,7 +183,7 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 - **Runaway protection**: any loop over 10,000,000 steps stops itself.
 - **Recursion limit**: `RecursionError` becomes a friendly JuRu error.
 
-## The stdlib (Steps 5+6+9+12+15+16+22 — 47 reserved builtins)
+## The stdlib (Steps 5+6+9+12+15+16+22+23 — 48 reserved builtins)
 
 The registry lives in ONE table (`src/juru/stdlib.py`): the name, its
 `(min, max)` arity (max `None` = one or more) and the exact wrong-count
@@ -239,7 +240,8 @@ drift apart.
 | `help(name)` | built-in docs: no args → the whole toolbox; `"name"` → one card | at most 1 arg; non-string name refused; unknown names answer in words (never crash) |
 | `sleep(seconds)` | pause the program (games love this) | exactly 1 arg; number only; no negatives; at most 30 s per call; at most 120 s per run |
 
-Step 22's seventeen tools add **zero keywords**. Sets are list-backed
+Step 22's seventeen tools add **zero keywords**; Step 23 adds exactly two
+(`try`, `rescue`) plus the `fail()` builtin. Sets are list-backed
 (first-seen order, ONE equality rule) and are born only from
 `set_of([...])` — `{ }` stays a dict; sets refuse `+` and indexing in
 words, an empty set is false, and `sorted(set)` hands back a plain list.
@@ -252,11 +254,13 @@ as `==`: `1` finds `1.0`, `true` matches nothing numeric. `pow` guards
 every impossible case **before** evaluating: Python would answer
 `(-2) ** 0.5` with a complex number — JuRu answers in words instead.
 `sleep` carries its own budget so a runaway loop cannot hide inside it,
-and `help` is a knowledge base of 66 cards that a test suite keeps
-truthful (every example runs, every guard line matches the real message).
+`fail(message)` raises a user's own catchable error (kind `"fail"`, message
+used verbatim), and `help` is a knowledge base of 69 cards that a test
+suite keeps truthful (every example runs, every guard line matches the
+real message).
 
 Two layers guard every builtin and both print the **exact same message**
-(mirror rule, test-enforced for all 47): the checker rejects a wrong arity
+(mirror rule, test-enforced for all 48): the checker rejects a wrong arity
 before a single line runs; the interpreter rejects wrong value types while
 running.
 
@@ -323,7 +327,7 @@ documentation: the test suite parses every ` ```jr ` block and enforces that
 - a block with no output block prints **nothing** (undocumented output
   would be a lie)
 - `ask()` blocks are checker-only (interactive) and never claim output
-- the tutorial mentions all 19 keywords, all 47 builtins, every example
+- the tutorial mentions all 21 keywords, all 48 builtins, every example
   file and every template — docs cannot silently drift from the language
 
 ## Packaging (Step 13 — `pip install juru`)
@@ -402,7 +406,7 @@ setup:
 `vscode/juru-vscode/` ships everything an editor needs, ready to package:
 
 - `package.json` — declares the `juru` language (`.jr`), the grammar and the snippets
-- `syntaxes/juru.tmLanguage.json` — colors the 19 keywords, all 47 builtins,
+- `syntaxes/juru.tmLanguage.json` — colors the 21 keywords, all 48 builtins,
   comments, strings, numbers and operators
 - `snippets/juru.json` — `if`, `elseif`, `for`, `forin`, `while`, `func`,
   `say`, `ask`, `import`
@@ -464,7 +468,7 @@ juru> exit
   starts fresh; vital when input is piped and Ctrl-C is absent
 - the checker runs on every entry against the live environment (typos,
   reserved names, arity — caught before the line runs)
-- dicts, `for x in`, `in`, slices, modules and all 47 builtins work in the REPL
+- dicts, `for x in`, `in`, slices, modules and all 48 builtins work in the REPL
 - a mistake prints the friendly error with the line + caret (Step 17) and the
   session **continues**
 - leave with `exit`, `quit`, or Ctrl-D
@@ -481,7 +485,7 @@ The checker runs AFTER parsing and BEFORE running. It catches:
    and missing module members; a hopeless typo stays plain (no wrong guess),
    and the old-Hinglish hint always wins: `'bolo' was not found (the old
    'bolo' is now 'say')`.
-2. **Reserved names** — assigning to / defining any of the 47 builtins.
+2. **Reserved names** — assigning to / defining any of the 48 builtins.
 3. **Duplicate parameters** — `func f(a, a)` is rejected.
 4. **Wrong argument counts** — for builtins always; for user funcs whenever
    the definition is unambiguous (exactly one `func` with that name).
@@ -507,7 +511,7 @@ Standalone use: `python3 checker.py file.jr` → `OK — no semantic errors ✅`
 - **Dict keys guarded** — text/int only; missing keys error with the real key list.
 - **Runaway loop protection** — 10M+ iterations stops the loop.
 - **Short-circuit logic** — `false and 1/0` never divides.
-- **Reserved builtins** — the 47 builtins (`ask` … `difference`) cannot be shadowed,
+- **Reserved builtins** — the 48 builtins (`ask` … `fail`) cannot be shadowed,
   not even as a module name (`import "len.jr"` is refused).
 - **Modules are sandboxed** — isolated env, checked source, loop detection,
   one run per file, no leaking names.
@@ -543,6 +547,18 @@ The rendering rules (all test-enforced in `errfmt.py` + `test_step17.py`):
   blank, `render()` falls back to the plain message — it can never show a
   WRONG line, and nothing ever leaks a Python traceback
 
+Since Step 23, a runtime error that crossed a JuRu func call also records
+its **JuRu call stack** at the innermost call boundary — `(func name, call
+line)` pairs, user funcs only (builtins and modules do not get frames).
+The display adds `called from name (line n)` lines after the caret,
+innermost first. The stack is display-only: `str(err)` is unchanged, so
+every existing message snapshot keeps holding, and top-level errors (no
+stack at all) keep their exact old shape. Every runtime error also
+carries a stable **kind** (11 documented words: `name`, `type`, `value`,
+`arity`, `math`, `index`, `key`, `loop`, `input`, `file`, `fail`) — that
+is what a `rescue as e` exposes as `e.kind`. Only `JuRuGalti` is ever
+catchable by a rescue; host exceptions and loop signals pass through.
+
 Old Hinglish names (`bolo`, `agar`, ...) are ordinary names now — they parse
 and run; calling the old `bolo(...)` even gets a hint:
 `'bolo' was not found (the old 'bolo' is now 'say')`.
@@ -551,8 +567,8 @@ and run; calling the old `bolo(...)` even gets a hint:
 
 ```
 program   → statement* EOF
-statement → if | while | for | func | return | say | import | break | continue
-          | assign | setindex | expression
+statement → if | while | for | func | return | say | import | try
+          | break | continue | assign | setindex | expression
 assign    → NAME '=' expr
 setindex  → postfix '[' expr ']' '=' expr            # a[0] = 5, d["k"] = 1
 if        → 'if' expr block ('else' (if | block))?   # else if chains
@@ -564,6 +580,7 @@ import    → 'import' TEXT                            # "utils.jr" — parsed, 
 return    → 'return' expr?          (only inside func)
 break     → (only inside loop)       continue → (only inside loop)
 say       → 'say' '(' args ')'
+try       → 'try' block 'rescue' ('as' NAME)? block   # both rescue forms
 block     → '{' statement* '}'
 expr      → or → and → compare → add → mul → unary → postfix → atom
 or        → and ('or' and)*
@@ -594,8 +611,8 @@ Notes:
 
 ## The examples folders (every output exactly verified by tests)
 
-`examples/guide/` is the beginner guide: 14 runnable lessons, one
-keyword each, covering all 19 keywords, with a full walkthrough in
+`examples/guide/` is the beginner guide: 15 runnable lessons, one
+keyword set each, covering all 21 keywords, with a full walkthrough in
 `examples/README.md`. `examples/test/` holds the 15 demo programs:
 
 | File | Shows |
@@ -642,10 +659,11 @@ keyword each, covering all 19 keywords, with a full walkthrough in
 | 20 | Distribution polish — Python-grade REPL, real icons, one-step setup | ✅ DONE — 5 tests |
 | 21 | A beginner guide: one runnable lesson per keyword, all linked | ✅ DONE — 4 tests |
 | 22 | Collections & ergonomics wave 1: aug-assign, negative indexing, slice steps, 17 collection builtins, sets, the stdlib registry | ✅ DONE — 71 tests |
-| — | Ultimate torture: steps 1–22 combined | ✅ DONE — 56 tests |
-| — | **Total: 704 tests green** | |
+| 23 | Errors you can catch: `try`/`rescue`, the `fail()` builtin, 11 documented error kinds, JuRu call stacks in error displays | ✅ DONE — 56 tests |
+| — | Ultimate torture: steps 1–23 combined | ✅ DONE — 56 tests |
+| — | **Total: 760 tests green** | |
 
-After 21 the language, its distribution, its setup and its on-ramp are
+After 23 the language, its distribution, its setup and its on-ramp are
 complete, the way Python's is: download, one setup step, run — and a
 guide that teaches every keyword. Still open, all optional and on
 demand: publishing the extension to the Marketplace, a docs website,

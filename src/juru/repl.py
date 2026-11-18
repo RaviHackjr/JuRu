@@ -58,6 +58,7 @@ def looks_incomplete(src):
     except JuRuGalti:
         return True               # half-typed text (an unclosed " for example)
     braces = parens = brackets = 0
+    tries = rescues = 0
     for t in toks:
         if t.type == OPERATOR:
             if t.value == "{":
@@ -72,8 +73,15 @@ def looks_incomplete(src):
                 brackets += 1
             elif t.value == "]":
                 brackets -= 1
+        elif t.type == KEYWORD:
+            if t.value == "try":
+                tries += 1
+            elif t.value == "rescue":
+                rescues += 1
     if braces > 0 or parens > 0 or brackets > 0:
         return True
+    if tries > rescues:
+        return True               # every try is still owed its rescue
     meaningful = [t for t in toks if t.type not in (NEWLINE, EOF)]
     if not meaningful:
         return False

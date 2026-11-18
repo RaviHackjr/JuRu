@@ -22,7 +22,7 @@ OPERATOR = "OPERATOR"  # + = == { ...
 NEWLINE = "NEWLINE"    # statement ends
 EOF = "EOF"            # code ends
 
-# JuRu keywords — 19 total! (Python has 35+)
+# JuRu keywords — 21 total! (Python has 35+)
 # Idea: code = a conversation in plain English.
 KEYWORDS = {
     "say",       # output — like print
@@ -34,6 +34,7 @@ KEYWORDS = {
     "true", "false", "null",
     "and", "or", "not",
     "import",    # modules — Step 7
+    "try", "rescue",   # catchable errors — Step 23 (v1.10)
 }
 
 SINGLE_OPS = set("+-*/%=<>(){}[],:.")
@@ -45,13 +46,103 @@ ASCII_DIGITS = set("0123456789")
 SPACES = (" ", "\t", "\r")
 
 
-class JuRuGalti(Exception):
-    """A JuRu error — human language, with the exact place (line/col)."""
+# ---------------------------------------------------------------- errors
+# The FIXED, documented list of error kinds (Step 23). Every runtime
+# error a rescue can catch carries exactly one of these — never an
+# internal Python exception name. Documented in design.md and
+# docs/syntax.md; pinned by test_step23.
+ERROR_KINDS = (
+    "name",    # a name was not found (variable, func, module member)
+    "type",    # a value had the wrong type (or shape) for the operation
+    "value",   # right type, bad value: empty, negative, out of range, unconvertible
+    "arity",   # wrong number of arguments (builtin or func)
+    "math",    # impossible arithmetic: divide by zero, sqrt(-1), pow guards
+    "index",   # list/text indexing and slicing went wrong
+    "key",     # dict access went wrong (missing key, bad key)
+    "loop",    # a runaway loop or runaway recursion was stopped
+    "input",   # ask() could not read an answer
+    "file",    # a file or module could not be read
+    "fail",    # raised by fail() — the user's own error
+)
 
-    def __init__(self, line, col, message):
+# (rule, kind) — the FIRST rule whose fragment appears in the message
+# wins. Ordered specific → general; anything unmatched is "type".
+_KIND_RULES = (
+    ("ran over 10,000,000 times", "loop"),
+    ("recursion went too deep", "loop"),
+    ("ask() could not read", "input"),
+    ("cannot import", "file"),
+    ("import loop", "file"),
+    ("the file '", "file"),
+    ("key ", "key"),
+    ("a dict key", "key"),
+    ("is out of range", "index"),
+    ("the index ", "index"),
+    ("the slice ", "index"),
+    ("slices work on", "index"),
+    ("support indexing", "index"),
+    ("cannot divide by zero", "math"),
+    ("cannot use '%' with zero", "math"),
+    ("square root", "math"),
+    ("in pow(", "math"),
+    ("too big to show", "math"),
+    ("seconds at a time", "value"),        # sleep's one-call budget
+    ("has slept more than", "value"),      # sleep's total budget
+    ("cannot go back in time", "value"),
+    ("is not a number", "value"),
+    ("is not a whole number", "value"),
+    ("cannot be converted to", "value"),
+    ("this list is empty", "value"),
+    ("nothing to compare", "value"),
+    ("cannot be empty", "value"),
+    ("must be between", "value"),
+    ("are reserved; this character cannot be shown", "value"),
+    ("low cannot be bigger than high", "value"),
+    ("would be too big", "value"),
+    ("needs exactly one character", "value"),
+    ("takes exactly", "arity"),
+    ("takes at most", "arity"),
+    ("takes one or more", "arity"),
+    ("you gave", "arity"),                 # func 'x' expects N arguments, you gave M
+    ("was not found", "name"),
+    ("is reserved (builtin)", "name"),
+    ("the module", "name"),                # 'mod' has no 'member' — the module has: ...
+)
+
+_DEFAULT_KIND = "type"
+
+
+def kind_for(message, explicit=None):
+    """The stable kind for an error message.
+
+    An explicit kind (passed by fail()) always wins — the user's own
+    message must never be re-classified by accident.
+    """
+    if explicit is not None:
+        return explicit
+    for fragment, kind in _KIND_RULES:
+        if fragment in message:
+            return kind
+    return _DEFAULT_KIND
+
+
+class JuRuGalti(Exception):
+    """A JuRu error — human language, with the exact place (line/col).
+
+    Runtime errors carry two extras (both set automatically):
+      kind   — one of ERROR_KINDS, stable and documented; this is what
+               `rescue as e` exposes as e.kind
+      stack  — the JuRu call stack (tuple of (func name, call line)),
+               recorded at the innermost func-call boundary; display
+               only — shown by errfmt as "called from ..." lines
+    """
+
+    def __init__(self, line, col, message, kind=None):
         self.line = line
         self.col = col
         self.message = message
+        self.kind = kind_for(message, explicit=kind)
+        self.stack = None        # a tuple of (func name, call line), or None
         self.source_file = None   # set when the error came from an imported module
         super().__init__("JuRu Error (line {}, col {}): {}".format(line, col, message))
 

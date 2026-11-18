@@ -213,7 +213,7 @@ def t_input_pipeline_int_and_float():
 
 def t_checker_and_interpreter_agree():
     """Every builtin in the checker has an arity and a hint (and vice versa)."""
-    assert len(BUILTINS) == 47
+    assert len(BUILTINS) == 48     # 47 + fail (Step 23)
     assert set(BUILTIN_ARITY) == set(BUILTINS)
     assert set(BUILTIN_HINT) == set(BUILTINS)
 
@@ -229,7 +229,7 @@ def t_all_reserved_again():
 
 
 def t_no_new_keywords():
-    assert len(KEYWORDS) == 19
+    assert len(KEYWORDS) == 21     # 19 + try/rescue (Step 23, v1.10)
 
 
 def t_purity_pop_mutates_only_in_place():

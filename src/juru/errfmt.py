@@ -10,16 +10,25 @@ Rules:
   - the message line itself NEVER changes (str(err) stays byte-identical)
   - the context lines are display only: the CLI, the REPL and any host
     that has the source text use render(); everything else keeps str(err)
+  - a runtime error that crossed a JuRu func call also carries its
+    recorded call stack — shown as "called from func (line N)" lines
+    after the caret (innermost first). Top-level errors have no stack,
+    so their output stays byte-identical to older versions
   - if the source is unavailable or the line is out of range, render()
-    falls back to the plain message — it can never show a WRONG line
+    falls back to the plain message (plus any stack) — it can never
+    show a WRONG line
 """
 
 INDENT = "    "
 
 
 def render(err, src=None):
-    """str(err) plus the offending line and a caret, when possible."""
+    """str(err) plus the offending line, a caret, and any call stack."""
     text = str(err)
+    stack = getattr(err, "stack", None) or ()
+    stack_text = "".join(
+        "\ncalled from {} (line {})".format(name, line)
+        for name, line in reversed(stack))
     source = src
     path = getattr(err, "source_file", None)
     if path:                                  # the error came from a module
@@ -27,16 +36,16 @@ def render(err, src=None):
             with open(path, encoding="utf-8") as f:
                 source = f.read()
         except OSError:
-            return text
+            return text + stack_text
     if not source:
-        return text
+        return text + stack_text
     lines = source.splitlines()
     if not (1 <= err.line <= len(lines)):
-        return text
+        return text + stack_text
     raw = lines[err.line - 1]
     stripped = raw.strip()
     if not stripped:
-        return text
+        return text + stack_text
     indent = len(raw) - len(raw.lstrip())
     caret = max(err.col - 1 - indent, 0)      # col is 1-based over the raw line
-    return "{}\n{}{}\n{}{}^".format(text, INDENT, stripped, INDENT, " " * caret)
+    return "{}\n{}{}\n{}{}^".format(text, INDENT, stripped, INDENT, " " * caret) + stack_text

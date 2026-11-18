@@ -26,7 +26,7 @@ from .lexer import JuRuGalti
 from .parser import (
     Program, Num, Text, Bool, Null, Name, ListLit, DictLit, BinOp, UnaryOp,
     Call, Index, Member, Assign, SetIndex, ExprSt, Say, If, While, For,
-    FuncDef, Return, Import, Break, Continue,
+    FuncDef, Return, Import, Break, Continue, TrySt,
     parse_source,
 )
 from .checker import check_source, did_you_mean
@@ -82,6 +82,27 @@ class SetV:
         return len(self.items)
 
 
+class ErrV:
+    """A JuRu error value — the caught error, usable inside rescue.
+
+    Built from the raised JuRuGalti; exposes exactly four fields
+    (e.message, e.line, e.col, e.kind). The recorded call stack stays
+    display-only — it is shown by errfmt's "called from" lines and is
+    never part of the value.
+    """
+
+    __slots__ = ("message", "line", "col", "kind")
+
+    def __init__(self, err):
+        self.message = err.message
+        self.line = err.line
+        self.col = err.col
+        self.kind = getattr(err, "kind", None) or "type"
+
+    def __repr__(self):
+        return "<error {}: {}>".format(self.kind, self.message)
+
+
 def _same_value(a, b):
     """The ONE equality rule for the whole language: ==, find, count,
     unique and sets all share it. true != 1 (different categories),
@@ -94,6 +115,9 @@ def _same_value(a, b):
         if len(a.items) != len(b.items):
             return False
         return all(any(_same_value(x, y) for y in b.items) for x in a.items)
+    if isinstance(a, ErrV) and isinstance(b, ErrV):
+        return (a.message == b.message and a.kind == b.kind
+                and a.line == b.line and a.col == b.col)
     if type(a) is not type(b):
         return False
     return a == b
@@ -137,6 +161,8 @@ def _typename(v):
         return "dict"
     if isinstance(v, SetV):
         return "set"
+    if isinstance(v, ErrV):
+        return "error"
     if isinstance(v, FuncValue):
         return "func"
     if isinstance(v, ModuleValue):
@@ -179,6 +205,8 @@ def display(v):
         if not v.items:
             return "set()"
         return "{" + ", ".join(display(x) for x in v.items) + "}"
+    if isinstance(v, ErrV):
+        return "<error {}: {}>".format(v.kind, v.message)
     if isinstance(v, str):
         return v
     if isinstance(v, FuncValue):
@@ -195,6 +223,7 @@ class Interpreter:
     def __init__(self):
         self._modules = {}    # absolute path → ModuleValue (each file runs once)
         self._loading = []    # (path, base dir) stack — import loops die here
+        self._call_stack = []  # (func name, call line) — recorded for errors
         self.sleep_total = 0.0
         self._builtin_call = self._make_builtin_call()
 
@@ -257,6 +286,19 @@ class Interpreter:
                 self._exec_block(st.then, env)
             elif st.orelse:
                 self._exec_block(st.orelse, env)
+            return
+
+        if isinstance(st, TrySt):
+            # only JuRu's own errors are catchable — a rescue never
+            # swallows a bug inside JuRu itself or a signal (break,
+            # continue, return) that is not an error at all
+            try:
+                self._exec_block(st.body, env)
+            except JuRuGalti as err:
+                renv = Env(env)            # the rescue gets its own scope
+                if st.err_name:
+                    renv.vars[st.err_name] = ErrV(err)
+                self._exec_block(st.rescue, renv)
             return
 
         if isinstance(st, While):
@@ -406,7 +448,9 @@ class Interpreter:
             tree = check_source(src)              # modules are checked too — no unchecked code runs
         except JuRuGalti as err:
             galti = JuRuGalti(err.line, err.col,
-                              "in '{}': {}".format(st.path, err.message))
+                              "in '{}': {}".format(st.path, err.message),
+                              kind=err.kind)
+            galti.stack = err.stack
             galti.source_file = path
             raise galti
         menv = Env()                              # a module sees nothing of the importer
@@ -415,7 +459,9 @@ class Interpreter:
             self._exec_block(tree.stmts, menv)
         except JuRuGalti as err:
             galti = JuRuGalti(err.line, err.col,
-                              "in '{}': {}".format(st.path, err.message))
+                              "in '{}': {}".format(st.path, err.message),
+                              kind=err.kind)
+            galti.stack = err.stack
             galti.source_file = path
             raise galti
         finally:
@@ -442,6 +488,11 @@ class Interpreter:
             if e.name in seq:
                 return seq[e.name]
             self._missing_key(e.name, seq, e)
+        if isinstance(seq, ErrV):
+            if e.name in ("message", "line", "col", "kind"):
+                return getattr(seq, e.name)
+            raise JuRuGalti(e.line, e.col,
+                            "an error value has message, line, col and kind — not '{}'".format(e.name))
         if isinstance(seq, ModuleValue):
             if e.name in seq.env.vars:
                 return seq.env.vars[e.name]
@@ -679,13 +730,22 @@ class Interpreter:
         cenv = Env(func.env)
         for p, a in zip(func.params, e.args):
             cenv.vars[p] = self.eval(a, env)
+        self._call_stack.append((func.name, e.line))
         try:
             self._exec_block(func.body, cenv)
         except ReturnSignal as r:
             return r.value
+        except JuRuGalti as err:
+            # the innermost call boundary records the stack ONCE — later
+            # frames (and try/rescue) keep the original, never overwrite
+            if getattr(err, "stack", None) is None:
+                err.stack = tuple(self._call_stack)
+            raise
         except RecursionError:
             raise JuRuGalti(e.line, e.col,
                             "recursion went too deep — it never stops")
+        finally:
+            self._call_stack.pop()
         return None
 
     # ---------- builtins (the registry lives in stdlib.py) ----------
@@ -1043,6 +1103,21 @@ class Interpreter:
         self.sleep_total += v
         return None
 
+    # ---------- Step 23: errors you can catch ----------
+    def _bi_fail(self, e, env):
+        """fail(message) — raise your own JuRu error (kind 'fail').
+
+        The message is used VERBATIM; the error is born at the fail()
+        call's line/col and is caught by the nearest rescue like any
+        other JuRu error.
+        """
+        msg = self.eval(e.args[0], env)
+        if not isinstance(msg, str):
+            raise JuRuGalti(e.line, e.col,
+                            "fail() needs a message in quotes — got: {}".format(
+                                _typename(msg)))
+        raise JuRuGalti(e.line, e.col, msg, kind="fail")
+
     # ---------- Step 22: collections & ergonomics ----------
     def _bi_insert(self, e, env):
         lst = self.eval(e.args[0], env)
@@ -1278,6 +1353,7 @@ class Interpreter:
             "union": self._bi_union,
             "intersect": self._bi_intersect,
             "difference": self._bi_difference,
+            "fail": self._bi_fail,
         }
 
 

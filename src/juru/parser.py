@@ -62,6 +62,7 @@ class While(Node):    _fields = ("cond", "body")            # while
 class For(Node):      _fields = ("var", "start", "end", "body", "iter")  # for i from 1 to 10 / for x in items
 class FuncDef(Node):  _fields = ("name", "params", "body")  # func f(a) { ... }
 class Return(Node):   _fields = ("value",)                  # return [expr]
+class TrySt(Node):    _fields = ("body", "err_name", "rescue")  # try { ... } rescue [as e] { ... }
 class Import(Node):   _fields = ("path", "module")          # import "utils.jr"
 class Break(Node):    _fields = ()                          # break
 class Continue(Node): _fields = ()                          # continue
@@ -139,6 +140,12 @@ def dump(node):
         return "(if {} (then{}){})".format(dump(node.cond), _join(node.then), orelse)
     if isinstance(node, While):
         return "(while {} (then{}))".format(dump(node.cond), _join(node.body))
+    if isinstance(node, TrySt):
+        if node.err_name:                                 # rescue as e { ... }
+            rescue = " (rescue {} (then{}))".format(node.err_name, _join(node.rescue))
+        else:                                             # rescue { ... }
+            rescue = " (rescue (then{}))".format(_join(node.rescue))
+        return "(try (then{}){})".format(_join(node.body), rescue)
     if isinstance(node, For):
         if node.iter is not None:                         # for x in items
             return "(for-in {} {} (then{}))".format(
@@ -292,6 +299,8 @@ class Parser:
             kw = t.value
             if kw == "if":
                 return self.if_stmt()
+            if kw == "try":
+                return self.try_stmt()
             if kw == "while":
                 return self.while_stmt()
             if kw == "for":
@@ -315,6 +324,9 @@ class Parser:
                 return self.expr_stmt()      # a value-statement: 'true', 'not x'...
             if kw == "else":
                 raise JuRuGalti(t.line, t.col, "'else' needs a matching 'if' before it (else if ... or else { ...)")
+            if kw == "rescue":
+                raise JuRuGalti(t.line, t.col,
+                                "'rescue' needs a matching 'try' before it — write 'try { ... } rescue { ... }'")
             if kw in ("and", "or"):
                 raise JuRuGalti(t.line, t.col, "'{}' joins two things — write the things first".format(kw))
             if kw in ("from", "to"):
@@ -397,6 +409,34 @@ class Parser:
             self.i = save   # no 'else' — give the newline back (next statement can run)
         self._after_stmt(kw)
         return If(kw.line, kw.col, cond, then, orelse)
+
+    def try_stmt(self):
+        """try { ... } rescue as e { ... }   or   try { ... } rescue { ... }
+
+        The rescue must follow the try's block directly (newlines may
+        sit between them); 'as e' is optional — without it the error is
+        handled but not named. There is no always/finally in JuRu.
+        """
+        kw = self.next()                                  # try
+        body = self.block()
+        save = self.i
+        self.skip_nl()                                    # } \n rescue { ... } is fine
+        if not self.at(KEYWORD, "rescue"):
+            close = self.toks[save - 1]                   # the try block's closing }
+            self.i = save                                 # point the error after the block
+            raise JuRuGalti(close.line, close.col,
+                            "a 'try' needs its 'rescue' — write "
+                            "'try { ... } rescue { ... }' or 'try { ... } rescue as e { ... }'")
+        self.next()                                       # rescue
+        err_name = None
+        if self.at(NAME, "as"):
+            self.next()                                   # as
+            name = self.expect_name(
+                "'rescue as e' needs a name — like 'rescue as e { ... }'")
+            err_name = name.value
+        rescue = self.block()
+        self._after_stmt(kw)
+        return TrySt(kw.line, kw.col, body, err_name, rescue)
 
     def while_stmt(self):
         kw = self.next()

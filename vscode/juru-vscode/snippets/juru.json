@@ -68,5 +68,16 @@
     "prefix": "import",
     "body": "import \"${1:helpers}.jr\"",
     "description": "code from another file"
+  },
+  "try rescue": {
+    "prefix": "try",
+    "body": [
+      "try {",
+      "\t$2",
+      "} rescue as ${3:e} {",
+      "\tsay(\"could not: \" + ${3:e}.message)$0",
+      "}"
+    ],
+    "description": "run risky code and catch the error"
   }
 }

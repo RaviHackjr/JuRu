@@ -11,7 +11,7 @@ publishing anything.
 `JuRu-vscode-<version>.vsix`), then:
 
 ```bash
-code --install-extension JuRu-vscode-1.9.0.vsix
+code --install-extension JuRu-vscode-1.10.0.vsix
 ```
 
 **Or build it from this repo:**
@@ -19,7 +19,7 @@ code --install-extension JuRu-vscode-1.9.0.vsix
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.9.0.vsix
+code --install-extension juru-vscode-1.10.0.vsix
 ```
 
 **Or from source:**
@@ -72,11 +72,11 @@ extension instead? It runs JuRu with one line in your settings:
 
 ## What you get
 
-- **Colors** — 19 keywords, all 47 builtins, comments (`#`), text, numbers,
+- **Colors** — 21 keywords, all 48 builtins, comments (`#`), text, numbers,
   operators; the keyword list is test-enforced against `KEYWORDS`, so
   highlighting and language can never disagree.
 - **Snippets** — type `if`, `for`, `forin`, `while`, `func`, `say`, `ask`,
-  `import` and press Tab.
+  `import`, `try` and press Tab.
 - **Editing** — auto-closing `{ } [ ] ( ) " "`, comment toggle with `#`,
   folding by block.
 

@@ -96,8 +96,8 @@ def scratch(files):
 
 
 # ================================================================ 1+6+7 combined
-def t_all_19_keywords_one_program():
-    """All 19 keywords + dict + for-in + in/not-in + import in ONE program."""
+def t_all_21_keywords_one_program():
+    """All 21 keywords + dict + for-in + in/not-in + import in ONE program."""
     module_src = (
         "func boost(n) {\n"                         # func, return
         "    if n < 0 {\n"
@@ -139,15 +139,22 @@ def t_all_19_keywords_one_program():
         '}\n'
         'total = helpers.boost(21) + n + score\n'
         'words = split("x,y", ",")\n'
+        'try {\n'                                    # try
+        '    if total < 0 {\n'
+        '        fail("negative total")\n'
+        '    }\n'
+        '} rescue as e {\n'                          # rescue
+        '    total = total + 0\n'
+        '}\n'
         'if "y" in words and "z" not in words {\n'  # in, not in
         '    total = total + len(words)\n'
         '}\n'
         'say(total)\n'
         'say(total > 0 and not (total < 0) or false)\n'
     )
-    for kw in KEYWORDS:                             # every one of the 19
+    for kw in KEYWORDS:                             # every one of the 21
         assert re.search(r"\b" + kw + r"\b", src + module_src), "missing: " + kw
-    assert len(KEYWORDS) == 19
+    assert len(KEYWORDS) == 21
     out = run(src, base_dir=d)
     assert out == "not one\n66\ntrue\n", out
     shutil.rmtree(d)
@@ -620,7 +627,7 @@ def t_checker_before_runtime():
 
 # ================================================================ security audit
 def t_reserved_audit():
-    assert len(BUILTINS) == 47
+    assert len(BUILTINS) == 48
     wave1 = {"split", "join", "trim", "replace", "abs", "round", "random", "sqrt"}
     wave2 = {"sorted", "reverse", "find", "keys", "values", "count"}
     wave3 = {"float", "pow", "pop", "type"}
@@ -634,13 +641,14 @@ def t_reserved_audit():
     assert wave3 <= set(BUILTINS)
     assert wave4 <= set(BUILTINS)
     assert wave22 <= set(BUILTINS)
+    assert {"fail"} <= set(BUILTINS)    # Step 23: user-raised errors
     for name in BUILTINS:
         expect_check_galti("{} = 1".format(name),
                            "'{}' is reserved (builtin) — pick another name".format(name))
         expect_check_galti(
             "func {}(a) {{\n    return a\n}}".format(name),
             "'{}' is reserved (builtin) — pick another name".format(name))
-    assert len(KEYWORDS) == 19          # steps 8–22 added zero keywords
+    assert len(KEYWORDS) == 21          # Step 23 (v1.10) added try + rescue
     assert {"in", "import"} <= set(KEYWORDS)
 
 
@@ -948,11 +956,11 @@ def t_repl_new_builtins_live():
 
 # ================================================================ batch 2/3/4: version + language surface
 def t_batch4_version_bump():
-    assert VERSION == "1.9"
+    assert VERSION == "1.10"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
-    assert len(KEYWORDS) == 19          # Step 22 added zero keywords
-    assert len(BUILTINS) == 47          # 24 + wave3 (4) + wave4 (help, sleep) + Step 22 (17)
+    assert len(KEYWORDS) == 21          # Step 23 added try + rescue
+    assert len(BUILTINS) == 48          # ... + Step 22 (17) + fail (Step 23)
 
 
 def t_templates_end_to_end():
@@ -1099,7 +1107,7 @@ def t_batch3_package_and_editor():
 # ================================================================ batch 4: help + sleep + bare REPL + caret errors
 def t_batch4_help_and_sleep_live():
     assert run("help(\"pow\")").startswith("pow(a, b)")
-    assert run("help()").startswith("JuRu toolbox — 19 keywords + 47 builtins")
+    assert run("help()").startswith("JuRu toolbox — 21 keywords + 48 builtins")
     assert run('say(type(sleep(0)))') == "null\n"
     expect_galti("say(sleep(-1))", "cannot go back in time")
     expect_galti("say(sleep(99))", "at most 30 seconds at a time")
@@ -1146,7 +1154,7 @@ def t_batch4_bare_command_is_repl():
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout.startswith("JuRu {} (".format(VERSION)), proc.stdout
-    assert "JuRu toolbox — 19 keywords + 47 builtins" in proc.stdout
+    assert "JuRu toolbox — 21 keywords + 48 builtins" in proc.stdout
 
 
 # ================================================================ batch 5: the standalone interpreter + the run button
@@ -1325,8 +1333,8 @@ def t_batch7_repo_tidy():
         "ROADMAP.md", "src", "vscode",
     ] + ["test_%s.py" % s for s in ("checker", "interpreter", "lexer", "mega",
          "packaging", "parser", "programs", "repl", "stdlib", "step12",
-         "step15", "step16", "step17", "step22", "step6", "step7", "step8",
-         "step9", "templates", "tutorial", "ultimate")])
+         "step15", "step16", "step17", "step22", "step23", "step6", "step7",
+         "step8", "step9", "templates", "tutorial", "ultimate")])
     assert top == expected, (top, "unexpected or missing top-level files")
 
 
@@ -1348,6 +1356,7 @@ LESSON_KEYWORDS = {
     "11_logic.jr": ["and", "or", "not"],
     "12_membership.jr": ["in", "not"],
     "13_import.jr": ["import"],
+    "14_try.jr": ["try", "rescue"],
 }
 
 
@@ -1359,8 +1368,8 @@ def lesson_code(name):
 
 
 def t_batch8_guide_exists():
-    """The guide folder holds the ramp, 14 numbered lessons and the
-    module for lesson 13 — 15 files, properly named."""
+    """The guide folder holds the ramp, 15 numbered lessons and the
+    module for lesson 13 — 16 files, properly named."""
     names = sorted(os.listdir(GUIDE))
     expected = sorted(list(LESSON_KEYWORDS) + ["tools.jr"])
     assert names == expected, (names, "unexpected or missing guide files")
@@ -1374,7 +1383,7 @@ def t_batch8_guide_exists():
 
 
 def t_batch8_every_keyword_taught():
-    """Every one of the 19 keywords is genuinely used in the lesson
+    """Every one of the 21 keywords is genuinely used in the lesson
     that teaches it — in real code, not in comments."""
     from juru.lexer import KEYWORDS
     covered = set()
@@ -1421,7 +1430,7 @@ def t_batch8_guide_doc_links():
 
 # ================================================================ runner
 ALL = [
-    ("ALL 19 keywords + dict + import in one program", t_all_19_keywords_one_program),
+    ("ALL 21 keywords + dict + import in one program", t_all_21_keywords_one_program),
     ("FINAL BOSS: combined steps 1–7 program", t_final_boss_program),
     ("batch-1 boss: steps 1–9 leaderboard program", t_final_boss_batch1),
     ("word frequency (dict torture)", t_word_frequency_torture),
@@ -1438,8 +1447,8 @@ ALL = [
     ("module readonly + member errors", t_module_readonly_and_errors),
     ("error gauntlet (steps 4–7 messages)", t_error_gauntlet),
     ("checker kills before runtime", t_checker_before_runtime),
-    ("reserved audit: all 47 builtins", t_reserved_audit),
-    ("mirror rule: all 47 builtins", t_mirror_rule_full),
+    ("reserved audit: all 48 builtins", t_reserved_audit),
+    ("mirror rule: all 48 builtins", t_mirror_rule_full),
     ("did-you-mean gauntlet (every surface)", t_did_you_mean_gauntlet),
     ("typo storm over 40 near-identical funcs", t_typo_top_of_recursion_hell),
     ("step 9 pipeline: top words ranked", t_top_words_pipeline),
