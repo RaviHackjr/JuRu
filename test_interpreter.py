@@ -699,7 +699,8 @@ def t_patterns_jr():
 
 
 def t_table_jr():
-    expected = "".join("7 x {} = {}\n".format(i, 7 * i) for i in range(1, 11))
+    # aligned columns: pad_left(str(i), 2) and pad_left(str(7*i), 3) in JuRu
+    expected = "".join("7 x {:>2} = {:>3}\n".format(i, 7 * i) for i in range(1, 11))
     assert run_file("table.jr") == expected
 
 

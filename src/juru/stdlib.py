@@ -27,7 +27,10 @@ BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop"
             "index_of", "starts_with", "ends_with", "ord", "chr",
             "set_of", "union", "intersect", "difference",
             # Step 23 — errors you can catch: try / rescue + fail
-            "fail")
+            "fail",
+            # Step 24 — text & formatting wave
+            "format", "pad_left", "pad_right", "center",
+            "split_lines", "join_lines")
 
 # (min_args, max_args) for every builtin — checked before a single line
 # runs. max None = "one or more" (a variadic builtin, like min/max).
@@ -80,6 +83,12 @@ BUILTIN_ARITY = {
     "intersect": (2, 2),
     "difference": (2, 2),
     "fail": (1, 1),
+    "format": (1, None),
+    "pad_left": (2, 2),
+    "pad_right": (2, 2),
+    "center": (2, 2),
+    "split_lines": (1, 1),
+    "join_lines": (1, 1),
 }
 
 # The exact message both layers print for a wrong argument count —
@@ -133,6 +142,13 @@ BUILTIN_HINT = {
     "intersect": "intersect(a, b) takes exactly 2 arguments",
     "difference": "difference(a, b) takes exactly 2 arguments",
     "fail": "fail(message) takes exactly 1 argument",
+    "format": "format(text, values...) takes one or more arguments — "
+              "like format(\"x={0}\", x)",
+    "pad_left": "pad_left(text, width) takes exactly 2 arguments",
+    "pad_right": "pad_right(text, width) takes exactly 2 arguments",
+    "center": "center(text, width) takes exactly 2 arguments",
+    "split_lines": "split_lines(text) takes exactly 1 argument",
+    "join_lines": "join_lines(lines) takes exactly 1 argument",
 }
 
 

@@ -100,6 +100,14 @@ _KIND_RULES = (
     ("low cannot be bigger than high", "value"),
     ("would be too big", "value"),
     ("needs exactly one character", "value"),
+    ("cannot mix automatic", "value"),     # format(): {} and {0} together
+    ("found a lone", "value"),             # format(): an unmatched { or }
+    ("is not a valid slot", "value"),      # format(): {x}, { 0 }, {-1}, …
+    ("more values than slots", "value"),   # format(): unused extra values
+    ("slots than values", "value"),        # format(): more {} slots than values
+    ("slot {", "value"),                   # format(): a bad or too-big slot index
+    ("width cannot be negative", "value"), # pad_left/pad_right/center
+    ("characters at a time", "value"),     # the padding width budget
     ("takes exactly", "arity"),
     ("takes at most", "arity"),
     ("takes one or more", "arity"),

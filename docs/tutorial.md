@@ -520,7 +520,7 @@ global
 
 ## 11. The toolbox
 
-All the tools live in one flat set of 48 builtins. Text tools:
+All the tools live in one flat set of 54 builtins. Text tools:
 
 ```jr
 say(upper("juru"))
@@ -551,6 +551,42 @@ b
 ```
 
 `ord` and `chr` are a pair: `ord("A")` is `65`, `chr(65)` is `"A"`.
+
+Formatting tools — build text without gluing `+` everywhere, and line it
+up in columns:
+
+```jr
+say(format("Name: {}, Age: {}", "Ravi", 20))
+say(format("x={0} y={1}", 10, 20))
+say(format("{{JuRu}} version {0}", "1.11"))
+say("[" + pad_left("42", 5) + "]")
+say("[" + pad_right("JuRu", 8) + "]")
+say("[" + center("JuRu", 10) + "]")
+say(split_lines("first\nsecond\nthird"))
+say(join_lines(["first", "second", "third"]))
+```
+
+```
+Name: Ravi, Age: 20
+x=10 y=20
+{JuRu} version 1.11
+[   42]
+[JuRu    ]
+[   JuRu   ]
+[first, second, third]
+first
+second
+third
+```
+
+`format` fills `{}` slots left to right, or `{0}`/`{1}` by index (repeat
+them freely) — `{{` and `}}` are literal braces, and no code ever runs
+from the text. The three padding tools measure DISPLAY width — wide
+characters such as `は` count as 2 columns, combining accents as 0 — and
+they never cut text off: text that is already wide enough comes back
+unchanged. `split_lines` and `join_lines` are partners: one turns
+multiline text into a list of lines, the other joins that list back
+into text.
 
 Math tools:
 
@@ -786,7 +822,7 @@ An error outside any `try` is still the normal, loud, friendly error —
 the rescue only protects its own `try`. There is no `finally` in JuRu:
 if you always need a line to run, write it after the try/rescue.
 
-And the 48 builtins can never be shadowed by accident:
+And the 54 builtins can never be shadowed by accident:
 
 ```jr
 count = 5
@@ -806,7 +842,7 @@ Every template is a small, complete program — copy one and make it yours:
 | `calculator` | `python3 juru.py --new calc calculator` | `while` + `split` + input |
 | `quiz` | `python3 juru.py --new myquiz quiz` | lists + `ask` + scoring |
 | `guessing_game` | `python3 juru.py --new game guessing_game` | `random` + hints |
-| `word_stats` | `python3 juru.py --new stats word_stats` | `split` + `count` + `sorted` |
+| `word_stats` | `python3 juru.py --new stats word_stats` | `split` + `count` + `sorted` + `format` + `pad_right` |
 
 ## 15. Talking to your program: ask()
 
@@ -878,7 +914,7 @@ bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.10 (easy like Python, secure like Rust) on linux
+JuRu 1.11 (easy like Python, secure like Rust) on linux
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> for x in [10, 20] {

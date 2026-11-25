@@ -638,10 +638,10 @@ def t_looks_incomplete_heuristic():
 
 # ------------------------------------------------------------------ 17. outside try/rescue unchanged
 def t_language_surface_pins():
-    assert VERSION == "1.10"
+    assert VERSION == "1.11"
     assert len(KEYWORDS) == 21
     assert "try" in KEYWORDS and "rescue" in KEYWORDS
-    assert len(BUILTINS) == 48
+    assert len(BUILTINS) == 54
     assert "fail" in BUILTINS
     assert ERROR_KINDS == ("name", "type", "value", "arity", "math", "index",
                            "key", "loop", "input", "file", "fail")
@@ -742,7 +742,7 @@ ALL = [
     ("REPL multi-line try + rescue prompt", t_repl_multiline_try_with_rescue_prompt),
     ("REPL uncaught error then recovery", t_repl_uncaught_error_then_recovery),
     ("looks_incomplete: try/rescue heuristic", t_looks_incomplete_heuristic),
-    ("language surface pins (21/48/1.10/kinds)", t_language_surface_pins),
+    ("language surface pins (21/54/1.11/kinds)", t_language_surface_pins),
     ("kind classifier rules", t_kind_classifier),
     ("dump forms (both rescue shapes)", t_dump_forms),
     ("old programs run unchanged", t_old_programs_unchanged),

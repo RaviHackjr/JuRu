@@ -59,8 +59,8 @@ closing brace — and read the friendly error. Errors are teachers too.
 | — | [tools.jr](guide/tools.jr) | — | the little module lesson 13 imports |
 
 That is the complete language: 21 keywords, 15 lessons, no hidden
-extras. (JuRu also has 48 builtins — ready-made tools like `len`,
-`split`, `sorted`, `fail` — and the REPL's `help()` lists them all.)
+extras. (JuRu also has 54 builtins — ready-made tools like `len`,
+`format`, `sorted`, `fail` — and the REPL's `help()` lists them all.)
 
 ---
 
@@ -361,7 +361,7 @@ checked by the test suite. Read them, run them, then bend them.
 |------|-------|
 | [test/demo.jr](test/demo.jr) | hello, text+number join, int/float math |
 | [test/patterns.jr](test/patterns.jr) | square, triangle, pyramid star patterns |
-| [test/table.jr](test/table.jr) | the 7 times table |
+| [test/table.jr](test/table.jr) | the 7 times table, aligned with `pad_left` |
 | [test/funcs_demo.jr](test/funcs_demo.jr) | factorial 1–7, fibonacci 1–10 (recursion) |
 | [test/lists_demo.jr](test/lists_demo.jr) | lists, item assignment, sum |
 | [test/game_demo.jr](test/game_demo.jr) | boss battle game (while + break) |

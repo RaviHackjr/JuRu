@@ -21,6 +21,7 @@ import builtins
 import os
 import random as _random
 import time
+import unicodedata
 
 from .lexer import JuRuGalti
 from .parser import (
@@ -214,6 +215,138 @@ def display(v):
     if isinstance(v, ModuleValue):
         return "<module {}>".format(v.name)
     return str(v)
+
+
+def _char_width(ch):
+    """The display width of ONE character (the padding policy, pinned).
+
+    A consistent approximation of terminal columns: combining marks and
+    other zero-width characters count 0, East Asian wide/fullwidth
+    characters count 2, everything else counts 1. len() keeps counting
+    CHARACTERS — padding is the only place that thinks in columns.
+    """
+    if unicodedata.category(ch) in ("Mn", "Me", "Cf"):
+        return 0
+    if unicodedata.east_asian_width(ch) in ("W", "F"):
+        return 2
+    return 1
+
+
+def _display_width(text):
+    """The display width of a piece of text, under _char_width's policy."""
+    return sum(_char_width(ch) for ch in text)
+
+
+def _count_word(n, word):
+    """1 value / 2 values — plain English counts in error messages."""
+    return "{} {}".format(n, word if n == 1 else word + "s")
+
+
+def _format_text(template, values, line, col):
+    """format()'s engine — slots only, never expressions.
+
+    The template is scanned once, left to right:
+      {}       the next value, left to right (automatic mode)
+      {0}      the value at that zero-based index (may repeat)
+      {{ / }}  a literal { or }
+    Anything else between braces ({x}, { 0 }, {-1}) is a friendly error,
+    and so is a lone brace. The two slot styles never mix. Numbered
+    slots may skip: values fill positions 0 … highest index, so
+    {0} and {2} with three values is fine — but values beyond the
+    highest referenced index are an error (a typo should not vanish).
+    Values render with the exact same rules as str() / say(). No eval,
+    no expression embedding — format() formats values, not code.
+    """
+    pieces = []      # text pieces; None marks an automatic slot, int a numbered one
+    autos = 0        # how many {} slots the text has
+    numbered = []    # every explicit {0}-style index, in text order
+
+    i = 0
+    n = len(template)
+    while i < n:
+        ch = template[i]
+        if ch == "{":
+            if i + 1 < n and template[i + 1] == "{":
+                pieces.append("{")
+                i += 2
+                continue
+            close = template.find("}", i + 1)
+            if close < 0:
+                raise JuRuGalti(line, col,
+                                "format() found a lone '{' — write '{{' for "
+                                "a literal brace, or '{}' / '{0}' for a slot")
+            inner = template[i + 1:close]
+            if inner == "":
+                autos += 1
+                pieces.append(None)             # automatic slot
+            elif inner.isdigit():
+                idx = int(inner)                # {007} is 7 — digits only
+                numbered.append(idx)
+                pieces.append(idx)              # numbered slot
+            else:
+                raise JuRuGalti(line, col,
+                                "format() slot '{{{}}}' is not a valid slot — a "
+                                "slot is '{{}}' or '{{0}}', '{{1}}', '{{2}}', …"
+                                .format(inner))
+            i = close + 1
+        elif ch == "}":
+            if i + 1 < n and template[i + 1] == "}":
+                pieces.append("}")
+                i += 2
+            else:
+                raise JuRuGalti(line, col,
+                                "format() found a lone '}' — write '}}' for "
+                                "a literal brace")
+        else:
+            pieces.append(ch)
+            i += 1
+
+    if autos and numbered:
+        raise JuRuGalti(line, col,
+                        "format() cannot mix automatic {} slots and numbered "
+                        "{0} slots — pick one style for the whole text")
+
+    if autos:
+        if len(values) < autos:
+            need = autos - len(values)
+            amount = "1 more value" if need == 1 else "{} more values".format(need)
+            raise JuRuGalti(line, col,
+                            "format() needs {} — the text has more {{}} "
+                            "slots than values".format(amount))
+        if len(values) > autos:
+            raise JuRuGalti(line, col,
+                            "format() got more values than slots — {} for {}"
+                            .format(_count_word(len(values), "value"),
+                                    _count_word(autos, "slot")))
+        queue = list(values)
+        return "".join(display(queue.pop(0)) if piece is None else piece
+                       for piece in pieces)
+
+    if numbered:
+        for idx in numbered:                    # first bad slot, in text order
+            if idx >= len(values):
+                if values:
+                    tail = "only {} given (0 to {})".format(
+                        _count_word(len(values), "value"), len(values) - 1)
+                else:
+                    tail = "no values were given"
+                raise JuRuGalti(line, col,
+                                "format() slot {{{}}} does not exist — {}"
+                                .format(idx, tail))
+        span = max(numbered) + 1                # values fill positions 0…highest
+        if len(values) > span:
+            raise JuRuGalti(line, col,
+                            "format() got more values than slots — {} for {}"
+                            .format(_count_word(len(values), "value"),
+                                    _count_word(span, "slot")))
+        return "".join(display(values[piece]) if isinstance(piece, int)
+                       else piece for piece in pieces)
+
+    if values:                                  # no slots at all — extras are a mistake
+        raise JuRuGalti(line, col,
+                        "format() got more values than slots — {} for no slots"
+                        .format(_count_word(len(values), "value")))
+    return "".join(pieces)                      # all literal at this point
 
 
 class Interpreter:
@@ -1263,6 +1396,93 @@ class Interpreter:
                             "this character cannot be shown".format(display(v)))
         return chr(v)
 
+    # ---------- Step 24: text & formatting ----------
+    MAX_PAD_WIDTH = 10000    # characters at a time — no runaway allocation
+
+    def _pad_width(self, e, env, name):
+        """The validated width for pad_left/pad_right/center."""
+        n = self.eval(e.args[1], env)
+        if isinstance(n, bool) or not isinstance(n, int):
+            raise JuRuGalti(e.line, e.col,
+                            "{}() needs a whole-number width — got: {}".format(
+                                name, display(n)))
+        if n < 0:
+            raise JuRuGalti(e.line, e.col,
+                            "{}() width cannot be negative — got: {}".format(
+                                name, display(n)))
+        if n > self.MAX_PAD_WIDTH:
+            raise JuRuGalti(e.line, e.col,
+                            "{}() width is too big — at most {} characters "
+                            "at a time".format(name, self.MAX_PAD_WIDTH))
+        return n
+
+    def _pad_text(self, e, env, name):
+        text = self.eval(e.args[0], env)
+        if not isinstance(text, str):
+            raise JuRuGalti(e.line, e.col,
+                            "{}() needs text — got: {}".format(name, display(text)))
+        return text, self._pad_width(e, env, name)
+
+    def _bi_pad_left(self, e, env):
+        text, width = self._pad_text(e, env, "pad_left")
+        gap = width - _display_width(text)
+        if gap <= 0:
+            return text                       # never truncates
+        return " " * gap + text
+
+    def _bi_pad_right(self, e, env):
+        text, width = self._pad_text(e, env, "pad_right")
+        gap = width - _display_width(text)
+        if gap <= 0:
+            return text                       # never truncates
+        return text + " " * gap
+
+    def _bi_center(self, e, env):
+        text, width = self._pad_text(e, env, "center")
+        gap = width - _display_width(text)
+        if gap <= 0:
+            return text                       # never truncates
+        left = gap // 2
+        right = gap - left                    # an odd extra space goes right (pinned)
+        return " " * left + text + " " * right
+
+    def _bi_split_lines(self, e, env):
+        text = self.eval(e.args[0], env)
+        if not isinstance(text, str):
+            raise JuRuGalti(e.line, e.col,
+                            "split_lines() needs text — got: {}".format(
+                                display(text)))
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        if text == "":
+            return []                         # an empty text has no lines (pinned)
+        lines = text.split("\n")
+        if lines[-1] == "":
+            lines.pop()                       # a trailing newline opens no new line
+        return lines
+
+    def _bi_join_lines(self, e, env):
+        lst = self.eval(e.args[0], env)
+        if not isinstance(lst, list):
+            raise JuRuGalti(e.line, e.col,
+                            "join_lines() needs a list — got: {}".format(
+                                display(lst)))
+        for i, line in enumerate(lst):
+            if not isinstance(line, str):
+                raise JuRuGalti(e.line, e.col,
+                                "join_lines() needs every line to be text — "
+                                "got: {} at position {}".format(
+                                    display(line), i + 1))
+        return "\n".join(lst)
+
+    def _bi_format(self, e, env):
+        template = self.eval(e.args[0], env)
+        if not isinstance(template, str):
+            raise JuRuGalti(e.line, e.col,
+                            "format() needs text — got: {}".format(
+                                display(template)))
+        values = [self.eval(a, env) for a in e.args[1:]]
+        return _format_text(template, values, e.line, e.col)
+
     def _bi_set_of(self, e, env):
         lst = self.eval(e.args[0], env)
         if not isinstance(lst, list):
@@ -1354,6 +1574,12 @@ class Interpreter:
             "intersect": self._bi_intersect,
             "difference": self._bi_difference,
             "fail": self._bi_fail,
+            "format": self._bi_format,
+            "pad_left": self._bi_pad_left,
+            "pad_right": self._bi_pad_right,
+            "center": self._bi_center,
+            "split_lines": self._bi_split_lines,
+            "join_lines": self._bi_join_lines,
         }
 
 

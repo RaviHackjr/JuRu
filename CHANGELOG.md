@@ -3,6 +3,49 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.11 — 2026-11-18
+
+Step 24 — **text & formatting**. Daily-use text output: format values
+into templates, pad and center for aligned CLI columns, and split/join
+multiline text — all as reserved builtins, **zero new keywords**
+(21 stay; 48 → 54 builtins).
+
+- **`format(text, values...)`** — fill slots with values, the safe way
+  to build text. `{}` takes the next value left to right; `{0}`/`{1}`
+  pick by zero-based index and may repeat (`{007}` is slot 7); `{{` and
+  `}}` are literal braces. Values render with the exact same rules as
+  `str()`/`say()` (`[1, 2]`, `{a: 1}`, `true`, `null`). Numbered slots
+  may skip — values fill positions `0` … highest index — but extra
+  values are an ERROR (a typo should not vanish), and so are missing
+  values, mixed slot styles, malformed slots (`{x}`, `{ 0}`, `{-1}`),
+  lone braces and out-of-range indices. No eval, no expression
+  interpolation — no code ever runs from the text.
+- **`pad_left(text, width)` / `pad_right(text, width)` /
+  `center(text, width)`** — spaces up to the requested DISPLAY width.
+  Display width is a consistent terminal-column policy: combining marks
+  and other zero-width characters count 0, East Asian wide/fullwidth
+  characters count 2, everything else 1 (`len()` still counts
+  characters). Never truncates: text at or above the width comes back
+  unchanged; `center` puts an odd extra space on the RIGHT. The width
+  must be a whole number, cannot be negative, and is capped at 10000
+  columns so a typo cannot allocate forever.
+- **`split_lines(text)`** — multiline text → a list of lines. Splits on
+  `\n`, `\r\n` and a lone `\r`; an empty text has NO lines (`[]`); a
+  trailing newline opens no extra empty line; blank lines are kept.
+- **`join_lines(lines)`** — a list of text lines → one text joined with
+  newlines. Every element must be text (`join_lines() needs every line
+  to be text — got: 2 at position 2`); an empty list becomes `""`; empty
+  lines are preserved. Partner of `split_lines`:
+  `join_lines(split_lines(t)) == t` whenever `t` does not end with a
+  newline.
+- **Errors stay friendly and catchable** — every new guard has a kind
+  (`value` for bad slots/widths, `type` for wrong types), works with
+  `try/rescue`, and records JuRu call stacks. `printf` works as a
+  help-alias for `format`.
+- Docs everywhere: README, `design.md`, `docs/syntax.md` section 16,
+  tutorial chapter 11, help cards for all six builtins, VS Code grammar
+  updated. `test_step24.py` adds 24 tests (784 total, 23 suites).
+
 ## 1.10 — 2026-11-18
 
 Step 23 — **errors you can catch**. JuRu's friendly errors become

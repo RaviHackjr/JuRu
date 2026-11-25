@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`21 keywords · 48 builtins · 5 templates · 15 guide lessons + 15 demos · 760 tests green · version 1.10 (see version.py) · MIT`
+`21 keywords · 54 builtins · 5 templates · 15 guide lessons + 15 demos · 784 tests green · version 1.11 (see version.py) · MIT`
 
 ---
 
@@ -54,7 +54,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.10 (easy like Python, secure like Rust) on win32
+JuRu 1.11 (easy like Python, secure like Rust) on win32
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> 1 + 2
@@ -169,7 +169,7 @@ defend with try / rescue
 `else if` is two words. Blocks are `{ }` — no indentation headaches.
 One statement per line; comments start with `#`.
 
-## Builtins (48 — all reserved names)
+## Builtins (54 — all reserved names)
 
 | Builtin | Does |
 |---------|------|
@@ -220,12 +220,20 @@ One statement per line; comments start with `#`.
 | `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `set`, `func`, `module`, `error` |
 | `help(name)` | built-in docs — `help()` lists the whole toolbox, `help("pow")` prints one card |
 | `sleep(seconds)` | pause the program (`sleep(1)` waits one second) — at most 30 s per call, 120 s per run |
+| `format(text, values...)` | fill `{}` slots left to right or `{0}`/`{1}` by index (repeats ok); `{{`/`}}` are literal braces; values render like `str()`; extra or missing values are friendly errors — no code ever runs from the text |
+| `pad_left(text, width)` | spaces on the left up to the DISPLAY width (`pad_left("42", 5)` → `"   42"`); never truncates |
+| `pad_right(text, width)` | spaces on the right up to the DISPLAY width — keeps columns aligned |
+| `center(text, width)` | center in the width; an odd extra space goes on the right; never truncates |
+| `split_lines(text)` | multiline text → list of lines (splits on `\n`, `\r\n`, `\r`; `""` → `[]`; a trailing newline opens no extra line) |
+| `join_lines(lines)` | a list of text lines → one text joined with newlines (`[]` → `""`; every element must be text) |
 
 `push`, `pop`, `insert`, `remove_at`, `clear`, `extend` and `delete` change
 the list/dict in place — `sorted`, `reverse`, `unique` and `merge` hand you
 a fresh one and leave the original alone. Every collection wave added
 **zero** new keywords; Step 23 added exactly two (`try`, `rescue`) plus one
-builtin (`fail`) — the language stays deliberately small: 21 keywords. And
+builtin (`fail`); Step 24 added the six text tools (`format`, `pad_left`,
+`pad_right`, `center`, `split_lines`, `join_lines`) — the language stays
+deliberately small: 21 keywords. And
 `help("anything")` never lies — a test suite runs every card's examples and
 checks its guard lines against the real error messages.
 
@@ -245,7 +253,7 @@ python3 juru.py --templates                # list them all
 | `calculator` | `--new calc calculator` | `while` + `split` + `int`/`float` + input |
 | `quiz` | `--new myquiz quiz` | lists + `ask` + scoring |
 | `guessing_game` | `--new game guessing_game` | `random` + hints |
-| `word_stats` | `--new stats word_stats` | `split` + `count` + `sorted` |
+| `word_stats` | `--new stats word_stats` | `split` + `count` + `sorted` + `format` + `pad_right` |
 
 `--new` never overwrites an existing file and refuses nuisance names —
 every refusal is a friendly, one-line explanation. The new tutorial
@@ -284,7 +292,7 @@ The 15 complete demo programs live in `examples/test/`:
 |------|-------|
 | [test/demo.jr](examples/test/demo.jr) | hello, text+number join, int/float math |
 | [test/patterns.jr](examples/test/patterns.jr) | square, triangle, pyramid star patterns |
-| [test/table.jr](examples/test/table.jr) | the 7 times table |
+| [test/table.jr](examples/test/table.jr) | the 7 times table, aligned with `pad_left` |
 | [test/funcs_demo.jr](examples/test/funcs_demo.jr) | factorial 1–7, fibonacci 1–10 (recursion) |
 | [test/lists_demo.jr](examples/test/lists_demo.jr) | lists, item assignment, sum |
 | [test/game_demo.jr](examples/test/game_demo.jr) | boss battle game (while + break) |
@@ -338,7 +346,7 @@ zip for your system and let its setup do the rest:
 Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.10
+juru --version              # JuRu 1.11
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -361,7 +369,7 @@ Full walkthrough with every platform detail:
 
 ## VS Code (official, ready to load)
 
-Syntax highlighting (all 21 keywords + 48 builtins), snippets, brackets,
+Syntax highlighting (all 21 keywords + 54 builtins), snippets, brackets,
 folding, and the run button — the extension lives at
 `vscode/juru-vscode/`, finds the interpreter by itself (nothing to
 configure), and its keyword list is test-enforced against the language.
@@ -370,13 +378,13 @@ Load it in two minutes:
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.10.0.vsix
+code --install-extension juru-vscode-1.11.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 760, all green
+## Tests — 784, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -397,6 +405,7 @@ python3 test_step16.py        # 13   (sleep() guards + the bare-`juru` REPL)
 python3 test_step17.py        # 10   (line + caret error display)
 python3 test_step22.py        # 71   (collections & ergonomics wave 1)
 python3 test_step23.py        # 56   (try/rescue: catchable errors, kinds, stacks)
+python3 test_step24.py        # 24   (text & formatting wave: format + padding + lines)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
@@ -426,7 +435,7 @@ JuRu/
 │                       #   juru_icon.ico (16→256 px, inside juru.exe)
 ├── examples/           # guide/ = 15 beginner lessons (all 21 keywords),
 │                       #   test/ = 15 verified demo programs
-├── test_*.py           # 22 test suites, 760 tests
+├── test_*.py           # 23 test suites, 784 tests
 └── LICENSE             # MIT
 ```
 

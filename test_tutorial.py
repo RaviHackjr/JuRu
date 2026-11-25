@@ -8,7 +8,7 @@ docs/tutorial.md is executable documentation. Rules enforced here:
   - a ```jr block with NO output block must print NOTHING
   - a ```jr block containing ask() is interactive: checker-only, and it
     must NOT be paired with an output block
-  - the tutorial must mention all 21 keywords, all 48 builtins and every
+  - the tutorial must mention all 21 keywords, all 54 builtins and every
     example file (docs stay in sync with the language)
 """
 import os
@@ -251,7 +251,7 @@ ALL = [
     ("ask() blocks are checker-only", t_ask_blocks_are_checker_only),
     ("every ```jr block falls in a verified bucket", t_no_stray_jr_blocks_unverified),
     ("all 21 keywords mentioned", t_all_keywords_mentioned),
-    ("all 48 builtins mentioned", t_all_builtins_mentioned),
+    ("all 54 builtins mentioned", t_all_builtins_mentioned),
     ("all 15 examples mentioned", t_all_examples_mentioned),
     ("all 5 templates mentioned", t_all_templates_mentioned),
     ("version banner current", t_version_mentioned),

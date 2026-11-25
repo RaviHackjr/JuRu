@@ -4,7 +4,7 @@
 text = "the cat saw the dog and the cat ran"
 words = split(text, " ")
 
-say("total words: " + len(words))
+say(format("total words: {}", len(words)))
 
 counts = {}
 for w in words {
@@ -12,7 +12,7 @@ for w in words {
 }
 
 for w in sorted(keys(counts)) {     # sorted() gives a NEW list
-    say(w + " appears " + counts[w] + " time(s)")
+    say(pad_right(w, 5) + " appears " + counts[w] + " time(s)")
 }
 
 say("'the' first sits at index " + find(words, "the"))

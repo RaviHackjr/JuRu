@@ -67,12 +67,12 @@ you carry 4 items
 """
 
 EXPECTED_WORD_STATS = """total words: 9
-and appears 1 time(s)
-cat appears 2 time(s)
-dog appears 1 time(s)
-ran appears 1 time(s)
-saw appears 1 time(s)
-the appears 3 time(s)
+and   appears 1 time(s)
+cat   appears 2 time(s)
+dog   appears 1 time(s)
+ran   appears 1 time(s)
+saw   appears 1 time(s)
+the   appears 3 time(s)
 'the' first sits at index 0
 no 'zebra' in there: true
 """
@@ -306,12 +306,12 @@ def t_language_untouched_by_batch2():
     """Templates added zero language surface; later batches added exactly
     6 builtins (float, pow, pop, type, help, sleep) and zero keywords;
     Step 22 added 17 collection builtins, still zero keywords;
-    Step 23 added try/rescue + fail:
-    21 keywords, 48 builtins."""
+    Step 23 added try/rescue + fail; Step 24 added the six text tools:
+    21 keywords, 54 builtins."""
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 21     # try/rescue (Step 23) + fail builtin
-    assert len(BUILTINS) == 48
+    assert len(BUILTINS) == 54
     for name in ("float", "pow", "pop", "type", "help", "sleep",
                  "insert", "remove_at", "unique", "set_of", "union"):
         assert name in BUILTINS

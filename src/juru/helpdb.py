@@ -28,6 +28,12 @@ GROUPS = (
         ("ends_with(text, suffix)", "does text end with suffix?"),
         ("ord(x)", "one character → its code number"),
         ("chr(x)", "a code number → its character"),
+        ("format(text, values...)", "fill {} or {0} slots — no code, ever"),
+        ("pad_left(text, width)", "spaces on the left up to the width (never truncates)"),
+        ("pad_right(text, width)", "spaces on the right up to the width"),
+        ("center(text, width)", "center in the width; an odd extra space goes right"),
+        ("split_lines(text)", "multiline text → list of lines"),
+        ("join_lines(list)", "lines → one text with newlines"),
     )),
     ("numbers", (
         ("int(x)", "text/float → whole number"),
@@ -468,6 +474,60 @@ BUILTIN_CARDS = {
               "}"],
              ["fail(message) takes exactly 1 argument",
               "fail() needs a message in quotes — got: int"]),
+    "format": ("format(text, values...)",
+               "fill {} or {0} slots with values — the safe way to build\n"
+               "text. {} takes the next value left to right; {0} picks by\n"
+               "index and may repeat. {{ and }} are literal braces. The two\n"
+               "styles never mix, and no code ever runs from the text.",
+               ['say(format("Name: {}, Age: {}", "Ravi", 20))',
+                'say(format("x={0} y={1}", 10, 20))',
+                'say(format("{{JuRu}} version {0}", "1.11"))'],
+               ["format() cannot mix automatic {} slots and numbered {0} slots",
+                "format() slot {2} does not exist — only 2 values given (0 to 1)",
+                "format() found a lone '{' — write '{{' for a literal brace"]),
+    "pad_left": ("pad_left(text, width)",
+                 "spaces on the LEFT until the text reaches the width. Width\n"
+                 "is DISPLAY width: combining marks count 0, East Asian wide\n"
+                 "characters 2. Never truncates — text at or above the width\n"
+                 "comes back unchanged.",
+                 ['say("[" + pad_left("42", 5) + "]")   # [   42]',
+                  'say("[" + pad_left("", 3) + "]")    # [   ]'],
+                 ["pad_left() needs text — got: int",
+                  "pad_left() needs a whole-number width — got: 2.5",
+                  "pad_left() width cannot be negative",
+                  "pad_left() width is too big — at most 10000 characters at a time"]),
+    "pad_right": ("pad_right(text, width)",
+                  "spaces on the RIGHT until the text reaches the width — the\n"
+                  "column-friendly partner of pad_left. Never truncates.",
+                  ['say("[" + pad_right("JuRu", 8) + "]")   # [JuRu    ]',
+                   'say(pad_right("a", 1))                  # already wide: a'],
+                  ["pad_right() needs text — got: int",
+                   "pad_right() width cannot be negative"]),
+    "center": ("center(text, width)",
+               "center the text inside the width. When the extra spaces are\n"
+               "odd, the extra one goes on the RIGHT (pinned). Never\n"
+               "truncates.",
+               ['say("[" + center("JuRu", 10) + "]")   # [   JuRu   ]',
+                'say(center("hi", 5))                  # 1 space left, 2 right'],
+               ["center() needs text — got: int",
+                "center() width cannot be negative"]),
+    "split_lines": ("split_lines(text)",
+                    "multiline text → a list of lines. Splits on \\n, \\r\\n and\n"
+                    "a lone \\r. An empty text has NO lines ([]). A trailing\n"
+                    "newline does not open an extra empty line.",
+                    ['say(split_lines("first\\nsecond\\nthird"))',
+                     'say(split_lines("a\\n\\nb"))      # blank lines stay: [a, , b]'],
+                    ["split_lines() needs text — got: int"]),
+    "join_lines": ("join_lines(lines)",
+                   "a list of text lines → one text joined with newlines — the\n"
+                   "partner of split_lines: join_lines(split_lines(text)) gives\n"
+                   "the text back whenever it does not end with a newline. An\n"
+                   "empty list becomes \"\".",
+                   ['say(join_lines(["first", "second", "third"]))',
+                    'say("[" + join_lines([]) + "]")     # [] — empty in, empty out',
+                    'say(join_lines(["a", "", "b"]))     # blank lines are kept'],
+                   ["join_lines() needs a list — got: int",
+                    "join_lines() needs every line to be text — got: 2 at position 2"]),
 }
 
 KEYWORD_CARDS = {
@@ -643,6 +703,7 @@ ALIASES = {
     "throw": "fail",
     "catch": "rescue",
     "except": "rescue",
+    "printf": "format",
 }
 
 

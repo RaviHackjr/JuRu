@@ -39,7 +39,7 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `checker.py` | semantic checks before running (Steps 3 + 5, registry in stdlib.py) | **47 pass** |
 | `interpreter.py` | runs the AST + the stdlib + modules (Steps 4–7, 12, 15–16, 22) | **93 pass** |
 | `stdlib.py` | the ONE builtin registry: names, arities, hint messages | in test_step12/22 |
-| `helpdb.py` | the `help()` knowledge base — 66 truthful cards (Step 15 + 22) | in test_step15 |
+| `helpdb.py` | the `help()` knowledge base — 75 truthful cards (Steps 15+22+23+24) | in test_step15 |
 | `errfmt.py` | error display: line + caret under the exact column (Step 17) | in test_step17 |
 | `juru.py` | `.jr` runner (`python3 juru.py file.jr`); bare → REPL (Step 16) | tested via checker suite |
 | `repl.py` | interactive REPL (Steps 5+8, banner + bare `help` in Step 16) | **10 pass** |
@@ -56,12 +56,14 @@ REPL mode: python3 repl.py  (same pipeline, one line at a time,
 | `test_step16.py` | sleep() guards + the bare-`juru` REPL | **13 pass** |
 | `test_step17.py` | line + caret error display, CLI + REPL + modules | **10 pass** |
 | `test_step22.py` | collections & ergonomics wave 1, both layers | **71 pass** |
+| `test_step23.py` | try/rescue: catchable errors, kinds, stacks | **56 pass** |
+| `test_step24.py` | text & formatting wave: format, padding, lines | **24 pass** |
 | `test_templates.py` | the 5 templates + the `--new`/`--templates` CLI | **24 pass** |
 | `test_tutorial.py` | docs/tutorial.md is executable and truthful | **11 pass** |
 | `test_packaging.py` | real wheel → venv install → `juru` command | **9 pass** |
 | `test_ultimate.py` | steps 1–23 combined, no mercy | **56 pass** |
 | `examples/` | guide: 15 lessons covering all 21 keywords · test: 15 demo `.jr` files, every output exactly verified | inside suites |
-| **Total** | | **760 tests green** |
+| **Total** | | **784 tests green** |
 
 Run everything yourself:
 ```
@@ -183,7 +185,7 @@ Builtins (reserved names): `ask(prompt)`, `len(x)`, `int(x)`, `upper(x)`,
 - **Runaway protection**: any loop over 10,000,000 steps stops itself.
 - **Recursion limit**: `RecursionError` becomes a friendly JuRu error.
 
-## The stdlib (Steps 5+6+9+12+15+16+22+23 — 48 reserved builtins)
+## The stdlib (Steps 5+6+9+12+15+16+22+23+24 — 54 reserved builtins)
 
 The registry lives in ONE table (`src/juru/stdlib.py`): the name, its
 `(min, max)` arity (max `None` = one or more) and the exact wrong-count
@@ -239,9 +241,20 @@ drift apart.
 | `type(x)` | one word: `int`, `float`, `text`, `bool`, `null`, `list`, `dict`, `set`, `func`, `module` | exactly 1 arg; never fails |
 | `help(name)` | built-in docs: no args → the whole toolbox; `"name"` → one card | at most 1 arg; non-string name refused; unknown names answer in words (never crash) |
 | `sleep(seconds)` | pause the program (games love this) | exactly 1 arg; number only; no negatives; at most 30 s per call; at most 120 s per run |
+| `format(text, values...)` | fill `{}` slots left to right, or `{0}`/`{1}` by index (repeats ok, `{007}` is 7); `{{`/`}}` are literal braces | one or more args; text first; mixing the two slot styles refused; missing, extra, malformed and out-of-range slots refused in words; values render like `str()`; no eval — no code ever runs from the text |
+| `pad_left(text, width)` | spaces on the left up to the DISPLAY width | exactly 2 args; text + whole-int width; negative refused; at most 10000 columns; never truncates |
+| `pad_right(text, width)` | spaces on the right up to the DISPLAY width | exactly 2 args; same guards as `pad_left` |
+| `center(text, width)` | centered in the width; an odd extra space goes on the RIGHT | exactly 2 args; same guards as `pad_left` |
+| `split_lines(text)` | multiline text → list of lines (`\n`, `\r\n`, a lone `\r`) | exactly 1 arg; text only; `""` → `[]`; a trailing newline opens no extra line; blank lines are kept |
+| `join_lines(lines)` | a list of lines → one text joined with newlines | exactly 1 arg; a list of text only; `[]` → `""`; `join_lines(split_lines(t)) == t` whenever `t` has no trailing newline |
 
 Step 22's seventeen tools add **zero keywords**; Step 23 adds exactly two
-(`try`, `rescue`) plus the `fail()` builtin. Sets are list-backed
+(`try`, `rescue`) plus the `fail()` builtin; Step 24 adds the six text
+tools (`format`, `pad_left`, `pad_right`, `center`, `split_lines`,
+`join_lines`) — still **zero keywords**. Padding measures DISPLAY width,
+not `len()`: combining marks count 0, East Asian wide/fullwidth
+characters count 2, everything else 1 — and no padding tool ever
+truncates. Sets are list-backed
 (first-seen order, ONE equality rule) and are born only from
 `set_of([...])` — `{ }` stays a dict; sets refuse `+` and indexing in
 words, an empty set is false, and `sorted(set)` hands back a plain list.
@@ -255,12 +268,12 @@ every impossible case **before** evaluating: Python would answer
 `(-2) ** 0.5` with a complex number — JuRu answers in words instead.
 `sleep` carries its own budget so a runaway loop cannot hide inside it,
 `fail(message)` raises a user's own catchable error (kind `"fail"`, message
-used verbatim), and `help` is a knowledge base of 69 cards that a test
+used verbatim), and `help` is a knowledge base of 75 cards that a test
 suite keeps truthful (every example runs, every guard line matches the
 real message).
 
 Two layers guard every builtin and both print the **exact same message**
-(mirror rule, test-enforced for all 48): the checker rejects a wrong arity
+(mirror rule, test-enforced for all 54): the checker rejects a wrong arity
 before a single line runs; the interpreter rejects wrong value types while
 running.
 
@@ -296,7 +309,7 @@ one into a fresh `.jr` file in the caller's directory:
 | `calculator` | `while` + `split` + `int` — guarded against bad math and bad input |
 | `quiz` | lists + `ask` + scoring — deterministic questions |
 | `guessing_game` | `random` + hints — always ends within 7 guesses |
-| `word_stats` | `split` + `count` + `sorted` — no input, deterministic output |
+| `word_stats` | `split` + `count` + `sorted` + `format` + `pad_right` — no input, deterministic output |
 
 Rules of the command:
 
@@ -327,7 +340,7 @@ documentation: the test suite parses every ` ```jr ` block and enforces that
 - a block with no output block prints **nothing** (undocumented output
   would be a lie)
 - `ask()` blocks are checker-only (interactive) and never claim output
-- the tutorial mentions all 21 keywords, all 48 builtins, every example
+- the tutorial mentions all 21 keywords, all 54 builtins, every example
   file and every template — docs cannot silently drift from the language
 
 ## Packaging (Step 13 — `pip install juru`)
@@ -406,7 +419,7 @@ setup:
 `vscode/juru-vscode/` ships everything an editor needs, ready to package:
 
 - `package.json` — declares the `juru` language (`.jr`), the grammar and the snippets
-- `syntaxes/juru.tmLanguage.json` — colors the 21 keywords, all 48 builtins,
+- `syntaxes/juru.tmLanguage.json` — colors the 21 keywords, all 54 builtins,
   comments, strings, numbers and operators
 - `snippets/juru.json` — `if`, `elseif`, `for`, `forin`, `while`, `func`,
   `say`, `ask`, `import`
@@ -468,7 +481,7 @@ juru> exit
   starts fresh; vital when input is piped and Ctrl-C is absent
 - the checker runs on every entry against the live environment (typos,
   reserved names, arity — caught before the line runs)
-- dicts, `for x in`, `in`, slices, modules and all 48 builtins work in the REPL
+- dicts, `for x in`, `in`, slices, modules and all 54 builtins work in the REPL
 - a mistake prints the friendly error with the line + caret (Step 17) and the
   session **continues**
 - leave with `exit`, `quit`, or Ctrl-D
@@ -485,7 +498,7 @@ The checker runs AFTER parsing and BEFORE running. It catches:
    and missing module members; a hopeless typo stays plain (no wrong guess),
    and the old-Hinglish hint always wins: `'bolo' was not found (the old
    'bolo' is now 'say')`.
-2. **Reserved names** — assigning to / defining any of the 48 builtins.
+2. **Reserved names** — assigning to / defining any of the 54 builtins.
 3. **Duplicate parameters** — `func f(a, a)` is rejected.
 4. **Wrong argument counts** — for builtins always; for user funcs whenever
    the definition is unambiguous (exactly one `func` with that name).
@@ -511,7 +524,7 @@ Standalone use: `python3 checker.py file.jr` → `OK — no semantic errors ✅`
 - **Dict keys guarded** — text/int only; missing keys error with the real key list.
 - **Runaway loop protection** — 10M+ iterations stops the loop.
 - **Short-circuit logic** — `false and 1/0` never divides.
-- **Reserved builtins** — the 48 builtins (`ask` … `fail`) cannot be shadowed,
+- **Reserved builtins** — the 54 builtins (`ask` … `join_lines`) cannot be shadowed,
   not even as a module name (`import "len.jr"` is refused).
 - **Modules are sandboxed** — isolated env, checked source, loop detection,
   one run per file, no leaking names.
@@ -619,7 +632,7 @@ keyword set each, covering all 21 keywords, with a full walkthrough in
 |------|-------|
 | `examples/test/demo.jr` | hello, text+number join, int/float math |
 | `examples/test/patterns.jr` | square, triangle, pyramid star patterns |
-| `examples/test/table.jr` | the 7 times table |
+| `examples/test/table.jr` | the 7 times table, aligned with `pad_left` |
 | `examples/test/funcs_demo.jr` | factorial 1–7, fibonacci 1–10 (recursion) |
 | `examples/test/lists_demo.jr` | lists, item assignment, sum |
 | `examples/test/game_demo.jr` | boss battle game (while + break) |
@@ -660,8 +673,9 @@ keyword set each, covering all 21 keywords, with a full walkthrough in
 | 21 | A beginner guide: one runnable lesson per keyword, all linked | ✅ DONE — 4 tests |
 | 22 | Collections & ergonomics wave 1: aug-assign, negative indexing, slice steps, 17 collection builtins, sets, the stdlib registry | ✅ DONE — 71 tests |
 | 23 | Errors you can catch: `try`/`rescue`, the `fail()` builtin, 11 documented error kinds, JuRu call stacks in error displays | ✅ DONE — 56 tests |
+| 24 | Text & formatting wave: `format()`, `pad_left`/`pad_right`/`center`, `split_lines`/`join_lines` — six builtins, zero new keywords | ✅ DONE — 24 tests |
 | — | Ultimate torture: steps 1–23 combined | ✅ DONE — 56 tests |
-| — | **Total: 760 tests green** | |
+| — | **Total: 784 tests green** | |
 
 After 23 the language, its distribution, its setup and its on-ramp are
 complete, the way Python's is: download, one setup step, run — and a

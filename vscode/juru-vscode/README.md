@@ -12,8 +12,8 @@ Syntax highlighting, snippets, a run button and a REPL for **JuRu** (`.jr`)
 | Feature | Details |
 |---------|---------|
 | Language | `juru`, for every `.jr` file |
-| Grammar | full `source.juru` TextMate grammar: 19 keywords, 30 builtins, comments, strings, numbers, operators |
-| Snippets | `if`, `elseif`, `for`, `forin`, `while`, `func`, `say`, `ask`, `import` |
+| Grammar | full `source.juru` TextMate grammar: 21 keywords, 54 builtins, comments, strings, numbers, operators |
+| Snippets | `if`, `elseif`, `for`, `forin`, `while`, `func`, `say`, `ask`, `import`, `try` |
 | Editing | auto-closing braces/brackets/quotes, comment toggle with `#`, bracket matching, fold by block |
 | Run | ▶ button, **Ctrl+Alt+J**, right-click (editor + file tree) → **JuRu: Run File**, command palette; runs in a real terminal so `ask()` works |
 | REPL | **JuRu: Open REPL** — a live JuRu session in the terminal |
@@ -30,7 +30,7 @@ The grammar's keyword list is **test-enforced** to match the language's
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.8.0.vsix
+code --install-extension juru-vscode-1.11.0.vsix
 ```
 
 ### Option B — run from source

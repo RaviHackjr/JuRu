@@ -316,7 +316,7 @@ And like every collection, they refuse wrong tools in words:
 `union([1], [2])` → `union() needs two sets — got: list and list
 (build one with set_of([...]))`.
 
-## 15. Builtins — the 48-tool toolbox
+## 15. Builtins — the 54-tool toolbox
 
 The classics:
 ```
@@ -442,14 +442,86 @@ Guards that talk like a human:
 - `keys([1])` → `keys() needs a dict — got: [1]`
 - `count(5, 1)` → `count() needs a list first — got: 5`
 
-All 48 are **reserved** — no variable or func can take their name, and both
+All 54 are **reserved** — no variable or func can take their name, and both
 the checker and the interpreter print the same argument-count message:
 `push(list, item) takes exactly 2 arguments`.
 
 One builtin raises errors on purpose: `fail(message)` raises your own JuRu
-error with kind `"fail"` — the nearest `try/rescue` catches it (section 16).
+error with kind `"fail"` — the nearest `try/rescue` catches it (section 17).
 
-## 16. Errors you can catch — `try` / `rescue` (Step 23, v1.10)
+## 16. Formatting & alignment — `format`, padding, lines (Step 24, v1.11)
+
+Build text without gluing `+` everywhere:
+
+```
+format("Name: {}, Age: {}", "Ravi", 20)   # Name: Ravi, Age: 20
+format("x={0} y={1}", 10, 20)             # x=10 y=20
+format("{0}-{0}-{1}", "ab", "cd")         # ab-ab-cd   ← repeats are fine
+format("{{JuRu}} version {0}", "1.11")    # {JuRu} version 1.11
+format("plain")                           # plain      ← no slots, no values
+```
+
+`{}` takes the next value left to right; `{0}`/`{1}` pick by index
+(zero-based — `{007}` is slot 7); `{{` and `}}` are literal braces.
+Values render exactly like `str()`/`say()` show them — `[1, 2]`,
+`{a: 1}`, `true`, `null`. No code ever runs from the text: there is no
+expression interpolation, no `eval` — `format()` formats values, nothing
+else. The two slot styles never mix, and the count has to match:
+
+- `format("{} {0}", 1)` → `format() cannot mix automatic {} slots and numbered {0} slots — pick one style for the whole text`
+- `format("{}")` → `format() needs 1 more value — the text has more {} slots than values`
+- `format("{2}", 1, 2)` → `format() slot {2} does not exist — only 2 values given (0 to 1)`
+- `format("{0}", 1, 2)` → `format() got more values than slots — 2 values for 1 slot` (a typo should not vanish)
+- `format("x{", 1)` → `format() found a lone '{' — write '{{' for a literal brace, or '{}' / '{0}' for a slot`
+- `format("{x}", 1)` → `format() slot '{x}' is not a valid slot — a slot is '{}' or '{0}', '{1}', '{2}', …`
+
+Numbered slots may skip — values fill positions `0` … highest index, so
+`format("{0} and {2}", "a", "b", "c")` is fine and prints `a and c`.
+
+Alignment — padding measures DISPLAY width (combining marks count 0,
+East Asian wide characters count 2), never truncates, and leaves text
+that is already wide enough untouched:
+
+```
+say("[" + pad_left("42", 5) + "]")     # [   42]
+say("[" + pad_right("JuRu", 8) + "]")  # [JuRu    ]
+say("[" + center("JuRu", 10) + "]")    # [   JuRu   ]
+say("[" + center("hi", 5) + "]")       # [ hi  ]  ← an odd extra space goes right
+say("[" + pad_left("は", 5) + "]")      # [   は]  ← wide char = 2 columns
+```
+
+- width must be a whole number (`pad_left("a", 2.5)` → `pad_left() needs a whole-number width — got: 2.5`)
+- negative widths are refused (`pad_left() width cannot be negative — got: -1`)
+- the budget is 10000 columns (`pad_right() width is too big — at most 10000 characters at a time`)
+
+Lines — multiline text in, lines out; the list back into text:
+
+```
+say(split_lines("first\nsecond\nthird"))   # [first, second, third]
+say(split_lines("a\n\nb"))                 # [a, , b]  ← blank lines are kept
+say(split_lines(""))                       # []        ← an empty text has no lines
+say(split_lines("a\n"))                    # [a]       ← a trailing newline opens no extra line
+say(join_lines(["first", "second", "third"]))   # first ⏎ second ⏎ third
+say("[" + join_lines([]) + "]")            # []        ← empty list → ""
+```
+
+`split_lines` splits on `\n`, `\r\n` and a lone `\r`; `join_lines` takes
+text only (`join_lines() needs every line to be text — got: 2 at position 2`)
+and preserves empty lines. They are partners:
+`join_lines(split_lines(t))` gives `t` back whenever `t` does not end
+with a newline. A small table the easy way:
+
+```
+rows = split_lines("name,age\nravi,20")
+for row in rows {
+    parts = split(row, ",")
+    say(pad_right(parts[0], 6) + parts[1])
+}
+# name  age
+# ravi  20
+```
+
+## 17. Errors you can catch — `try` / `rescue` (Step 23, v1.10)
 
 Programs meet failure. Instead of dying, you can catch it:
 
@@ -515,7 +587,7 @@ try {
   scope, so `e` (and rescue locals) never leak out
 - there is no `finally`/`always` in JuRu — write cleanup after the block
 
-## 17. Modules — code from another file
+## 18. Modules — code from another file
 
 ```
 # helpers.jr
@@ -545,13 +617,13 @@ The rules:
 - imports resolve next to **your file**, so `python3 juru.py src/main.jr`
   finds `src/helpers.jr`
 
-## 18. Comments
+## 19. Comments
 
 ```
 # from # to the end of the line — the machine ignores it
 ```
 
-## 19. Golden rules
+## 20. Golden rules
 
 1. One statement per line (no semicolons)
 2. Blocks are `{ }` — no indentation headaches
@@ -564,7 +636,7 @@ The rules:
 7. Names: letters, digits, `_` (unicode letters work too — Devanagari incl.)
 8. Dicts: write `d["key"] = value`, read with `d["key"]` or `d.key`
 
-## 20. Errors that talk like a human
+## 21. Errors that talk like a human
 
 Every error says exactly where and what:
 ```
@@ -608,19 +680,19 @@ work, so it never complains about a program that would run fine.
 Modules get the same treatment: their source is checked **before** they run.
 Tip: `python3 checker.py file.jr` checks a file without running it.
 
-## 21. Security by design 🛡️
+## 22. Security by design 🛡️
 
 - No `eval` — code is never built from strings
 - `null` exists but the null-pointer bug class is blocked by design
 - Every list index **bounds-checked** (no memory-safe escape hatches)
 - **Runaway protection** — a loop over 10,000,000 steps stops itself
 - Short-circuit logic — wrong order still never crashes
-- Reserved builtins — the 48-tool toolbox can never be overwritten
+- Reserved builtins — the 54-tool toolbox can never be overwritten
 - Dict keys are guarded; missing keys are errors, not `null`
 - Modules are isolated and checked; import loops are detected
 - Friendly type checks at runtime, with line/col on every error
 
-## 22. The 21 keywords + 48 builtins
+## 23. The 21 keywords + 54 builtins
 
 ```
 say  if  else  while  for  from  to  in
@@ -639,4 +711,6 @@ insert( )  remove_at( )  clear( )  extend( )  unique( )
 delete( )  items( )  merge( )
 index_of( )  starts_with( )  ends_with( )  ord( )  chr( )
 set_of( )  union( )  intersect( )  difference( )  fail( )
+format( )  pad_left( )  pad_right( )  center( )
+split_lines( )  join_lines( )
 ```
