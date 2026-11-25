@@ -7,19 +7,18 @@
 
 ---
 
-## Current state (updated 2026-11-18)
+## Current state (updated 2026-11-25)
 
-- **Version:** 1.10 — latest release **v1.10** (not draft), commit `48f2f61` on `main`.
-- **Tests:** 22 suites, **760 green** (`test_step23` 56, `test_step22` 71, `test_ultimate` 56).
-- **Keywords:** 21 (try, rescue). **Builtins:** 48 (fail; registry: `src/juru/stdlib.py`). **Templates:** 5.
-- **CI:** both workflows (`tests`, `release`) green on the v1.10 push; release
+- **Version:** 1.11 — latest release **v1.11** (not draft), commit `7d97b71` on `main`.
+- **Tests:** 23 suites, **784 green** (`test_step24` 24, `test_step23` 56, `test_step22` 71, `test_ultimate` 56).
+- **Keywords:** 21 (try, rescue). **Builtins:** 54 (format, pad_left, pad_right, center, split_lines, join_lines; registry: `src/juru/stdlib.py`). **Templates:** 5.
+- **CI:** both workflows (`tests`, `release`) green on the v1.11 push; release
   assets verified by download + actually running the shipped Linux binary
-  (caught value/rescue/fail smoke, `2 4 6` loop, `help()` overview line
-  "21 keywords + 48 builtins", 3-deep `called from` stack display, `JuRu 1.10`
-  banner) and inspecting the vsix (1.10.0; grammar has try/rescue + fail,
-  10th snippet present).
-- **Status:** Step 2 (try / rescue — errors you can catch) shipped as v1.10;
-  **awaiting "START STEP 3"** (text & formatting).
+  (`JuRu 1.11`, format/pad/split smoke, wide-char `は`, catchable format error)
+  and inspecting the vsix (1.11.0; grammar has 21 keywords + 54 builtins and
+  the six new names, 10 snippets, extension README 21/54).
+- **Status:** Step 3 (text & formatting — format/padding/lines) shipped as v1.11;
+  Step 4 (files & JSON) next.
 
 ## Completed before the roadmap (batches 1–8 — do not rebuild)
 
@@ -38,7 +37,7 @@
 | — | Audit + roadmap | ✅ DONE (2026-11-16) | 1.8 | (this commit) | 633/20 | ROADMAP.md + PROGRESS.md created; repo-tidy test updated for the two new files; NO language changes |
 | 1 | Collections & ergonomics wave 1 | ✅ DONE (2026-11-16) — v1.9 | 1.9 | `6b83535` | 704/21 | Aug-assign (`+= -= *= /= %=` on names, list items, dict values; old value read before RHS, RHS once), negative indexing (reads/writes/remove_at; legal range in the error), slice steps (Python rule; zero step refused), **17 new builtins** (insert, remove_at, clear, extend, unique, delete, items, merge, index_of, starts_with, ends_with, ord, chr, set_of, union, intersect, difference), sets (list-backed, first-seen order, ONE equality rule; `{}` stays a dict), min/max variadic, `\uXXXX` escapes, `src/juru/stdlib.py` = the one registry (mirror rule now structural). New suite `test_step22` (71). **Deliberate break, documented in CHANGELOG:** `items` is now reserved (starter renames its var to `bag`; printed text unchanged). **Preserved quirk:** `xs[0:1] = [9]` still means `xs[0] = [9]` (v1.8 behavior, test-pinned). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
 | 2 | try / rescue | ✅ DONE (2026-11-18) — v1.10 | 1.10 | `48f2f61` | 760/22 | **Exactly 2 new keywords** (19 → 21): `try { ... } rescue as e { ... }` and `rescue { ... }` (binding optional; rescue may sit on its own line). The caught error is a value with `e.message` (exact original friendly text), `e.line`, `e.col`, `e.kind` — kind is one of **11 fixed, documented kinds** (name, type, value, arity, math, index, key, loop, input, file, fail) via `lexer.kind_for` (ordered fragment rules, default `"type"`; an explicit kind always wins, so `fail("index 9 is out of range …")` stays kind `fail`). **New builtin `fail(message)`** (48 builtins): arity `(1,1)` + non-text guard, checker and runtime print the same friendly messages, registered in helpdb (cards, `errors` group, aliases raise/throw→fail, catch/except→rescue). Semantics: only `JuRuGalti` crosses a try boundary (host bugs + `break`/`continue`/`return` signals pass through, test-pinned); the try body runs in the SAME env (clean assignments survive) while the rescue gets its own child env (`e` and rescue locals never leak; checker conservative, flow-insensitive); nested trys pick the nearest rescue (errors raised inside an inner rescue reach the outer one); func errors reach the rescue that wraps the call; arguments evaluate in the caller; module errors keep kind + stack + `source_file`. **Call stacks:** every runtime error records its JuRu call stack at the innermost user-func boundary — tuple is outermost-first, display adds `called from name (line n)` lines innermost-first after the caret; display-only, so `str(err)` is unchanged and uncaught top-level output stays byte-identical (test_step17 + CLI byte-pins green); builtins never get frames; recursion records outermost→deepest call sites. Parser: friendly errors (bare rescue, missing rescue points at the try's closing `}`, `rescue as` without a name), dump forms for both shapes; checker validates rescue blocks (binding usable, reserved names refused); REPL `looks_incomplete` counts try/rescue KEYWORD tokens (text like `say("try harder")` safe). Docs: syntax.md section 16 (forms + field + kind tables + rules), tutorial 13.1 (4 executable pinned blocks), guide lesson `14_try.jr` (15 lessons), README/design/CHANGELOG synced (counts corrected to 760/22), vscode grammar 21+48 + 10th snippet, version 1.10 / package.json 1.10.0. New suite `test_step23.py` (56 tests). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
-| 3 | Text & formatting | ⬜ PENDING | | | | |
+| 3 | Text & formatting | ✅ DONE (2026-11-25) — v1.11 | 1.11 | `7d97b71` | 784/23 | Six new builtins (48 → 54, zero keywords): `format` (`{}` / `{0}` / `{{ }}`; mixed/extra/missing/malformed all friendly errors; numbered slots may skip; no eval/expression interpolation), `pad_left`/`pad_right`/`center` (display width: combining marks 0, East Asian wide 2; never truncates; odd center space goes right; whole-number width 0–10000), `split_lines` (LF/CRLF/lone CR; empty text → `[]`; trailing newline opens no extra line; blank lines kept), `join_lines` (text-only list; `[]` → `""`; partner of `split_lines`). Truthful help cards + `printf` alias; docs/README/design/tutorial/syntax/CHANGELOG/CI/VS Code synced to 1.11/784. New suite `test_step24.py` (24). Brutal probe b11 232/232. Limit: Windows/macOS validation CI-only; shipped Linux binary + vsix verified by hand. |
 | 4 | Files & JSON | ⬜ PENDING | | | | |
 | 5 | Math, time & constants | ⬜ PENDING | | | | |
 | 6 | Classes & OOP | ⬜ PENDING | | | | |
@@ -77,11 +76,11 @@
 
 ## Environment notes (per session)
 
-- Repo: `/home/runner/workspace/JuRu` (git). Sandbox may reset `/tmp`
+- Repo: `/home/vipfilecreator/vipfilecreator/Lab/JuRu` (git). Sandbox may reset `/tmp`
   — probes and check files live there, the repo persists.
-- No local pip/PyInstaller; Python 3.14.7 without pip — Windows/macOS
+- No local pip/PyInstaller; Python 3.12.3 without pip — Windows/macOS
   validation is CI-based only (release workflow), as always.
-- `pr.txt` lives OUTSIDE the repo (`/home/runner/workspace/pr.txt`) —
+- `pr.txt` lives OUTSIDE the repo (`/home/vipfilecreator/vipfilecreator/Lab/pr.txt`) —
   the repo-tidy test forbids it inside.
 - Release loop needs a tag push; doc-only commits (like this audit)
   push main only, no tag, no release.
