@@ -168,13 +168,21 @@ def t_quiz_wrong_answers():
 
 
 def t_guessing_game_always_ends():
-    """Seven honest guesses of 50: the game must end either way."""
+    """Seven guesses of 50: the game always ends by round 7, win or lose."""
     proc = cli([os.path.join("src", "juru", "templates", "guessing_game.jr")],
                input_text="50\n" * 7)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "guess 7: " in proc.stdout, proc.stdout
-    assert ("got it in " in proc.stdout) or ("out of tries — it was " in proc.stdout), proc.stdout
-    assert "higher" in proc.stdout or "lower" in proc.stdout, proc.stdout
+    lines = [ln for ln in proc.stdout.splitlines() if ln]
+    rounds = [ln for ln in lines if ln.startswith("guess ")]
+    assert 1 <= len(rounds) <= 7, proc.stdout
+    last = lines[-1]
+    assert ("got it in " in last) or ("out of tries — it was " in last), proc.stdout
+    if "got it in " in last:
+        # 50 can only win on the very first guess; a later win is impossible.
+        assert len(rounds) == 1 and "got it in 1 tries!" in last, proc.stdout
+    else:
+        assert len(rounds) == 7 and "guess 7: " in proc.stdout, proc.stdout
+        assert "higher" in proc.stdout or "lower" in proc.stdout, proc.stdout
 
 
 def t_guessing_game_shape_is_sound():

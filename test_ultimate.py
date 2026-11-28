@@ -1340,8 +1340,9 @@ def t_batch7_repo_tidy():
         "ROADMAP.md", "src", "vscode",
     ] + ["test_%s.py" % s for s in ("checker", "interpreter", "lexer", "mega",
          "packaging", "parser", "programs", "repl", "stdlib", "step12",
-         "step15", "step16", "step17", "step22", "step23", "step24", "step6",
-         "step7", "step8", "step9", "templates", "tutorial", "ultimate")])
+         "step15", "step16", "step17", "step22", "step23", "step24", "step25",
+         "step6", "step7", "step8", "step9", "templates", "tutorial",
+         "ultimate")])
     assert top == expected, (top, "unexpected or missing top-level files")
 
 
