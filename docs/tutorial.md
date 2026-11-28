@@ -51,7 +51,7 @@ you carry 4 items
 ```
 
 The `--new` command never overwrites a file, and refuses names that would
-be a nuisance (spaces, slashes, empty names). Chapter 14 shows every template.
+be a nuisance (spaces, slashes, empty names). Chapter 15 shows every template.
 
 ## 3. Values and variables
 
@@ -520,7 +520,7 @@ global
 
 ## 11. The toolbox
 
-All the tools live in one flat set of 54 builtins. Text tools:
+All the tools live in one flat set of 67 builtins. Text tools:
 
 ```jr
 say(upper("juru"))
@@ -701,7 +701,65 @@ true
 true
 ```
 
-## 12. Modules — code from another file
+## 12. Files & JSON — data that stays
+
+Real programs read and write files. Thirteen builtins do it, all in the
+same flat toolbox — no new keywords:
+
+`read_file`, `write_file`, `append_file`, `read_lines`, `write_lines`,
+`file_exists`, `file_size`, `delete_file`, `list_dir`, `make_dir`,
+`delete_dir`, `to_json`, `from_json`.
+
+A relative path resolves next to **your program** (the import rule),
+files are UTF-8, and every read/write/JSON text is capped at 10 MB. A
+missing file is a friendly, catchable error with kind `"file"` — never
+a host crash. These two calls are safe to try right here:
+
+```jr
+say(file_exists("docs/tutorial.md"))
+say("tutorial.md" in list_dir("docs"))
+```
+
+```
+true
+true
+```
+
+Writing is just as plain (the folder must exist; `make_dir` creates it,
+parents included):
+
+```text
+write_file("notes.txt", "first\n")
+append_file("notes.txt", "second\n")
+say(read_lines("notes.txt"))          # [first, second]
+```
+
+`read_lines` follows `split_lines`'s exact rules, and `write_lines`
+adds the final newline — so `read_lines(write_lines(xs))` gives `xs`
+back. `delete_file` never deletes a folder, and `delete_dir` only
+removes an EMPTY one: JuRu has no recursive `rm`.
+
+JSON is two calls:
+
+```jr
+data = {"name": "Ravi", "scores": [10, 20.5]}
+text = to_json(data)
+say(text)
+say(from_json(text)["scores"][1])
+```
+
+```
+{"name": "Ravi", "scores": [10, 20.5]}
+20.5
+```
+
+`to_json` and `from_json` round-trip null, booleans, finite numbers,
+text, lists and dicts with text keys. Duplicate JSON keys keep the LAST
+value, nesting stops at 64 levels, and NaN/Infinity are refused both
+ways — JSON has no such numbers. A bad file error behaves like every
+other error: `try/rescue` catches it (chapter 14).
+
+## 13. Modules — code from another file
 
 Put funcs in a `.jr` file, import it, use its names:
 
@@ -719,7 +777,7 @@ say(helpers.magic)
 A module runs exactly once, is checked before it runs, and sees nothing
 from the file that imports it.
 
-## 13. When something goes wrong
+## 14. When something goes wrong
 
 Mistakes are normal — JuRu answers like a human, with the exact line and
 column, and usually a hint:
@@ -822,7 +880,7 @@ An error outside any `try` is still the normal, loud, friendly error —
 the rescue only protects its own `try`. There is no `finally` in JuRu:
 if you always need a line to run, write it after the try/rescue.
 
-And the 54 builtins can never be shadowed by accident:
+And the 67 builtins can never be shadowed by accident:
 
 ```jr
 count = 5
@@ -832,7 +890,7 @@ count = 5
 JuRu Error (line 1, col 1): 'count' is reserved (builtin) — pick another name
 ```
 
-## 14. The templates gallery
+## 15. The templates gallery
 
 Every template is a small, complete program — copy one and make it yours:
 
@@ -844,7 +902,7 @@ Every template is a small, complete program — copy one and make it yours:
 | `guessing_game` | `python3 juru.py --new game guessing_game` | `random` + hints |
 | `word_stats` | `python3 juru.py --new stats word_stats` | `split` + `count` + `sorted` + `format` + `pad_right` |
 
-## 15. Talking to your program: ask()
+## 16. Talking to your program: ask()
 
 `ask(...)` reads one line from the user. It is the only tool that waits:
 
@@ -904,7 +962,7 @@ say exactly that — `float('abc') — 'abc' is not a number` — with the line
 and column, and the program stops there. That is the honest behaviour:
 never guess, never continue with a wrong value.
 
-## 16. The REPL — try ideas instantly
+## 17. The REPL — try ideas instantly
 
 Run `python3 repl.py` (or just `python3 juru.py` with no arguments — the
 same REPL, exactly like typing `python`). Every entry runs against a
@@ -914,7 +972,7 @@ bare `cancel` line drops an open block:
 
 ```text
 $ python3 repl.py
-JuRu 1.11 (easy like Python, secure like Rust) on linux
+JuRu 1.12 (easy like Python, secure like Rust) on linux
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> for x in [10, 20] {
@@ -944,7 +1002,7 @@ command in your terminal (and for `pip`: JuRu needs no pip, the whole
 toolbox is already built in). Real JuRu code that uses those names —
 `juru = 5`, `juru + 3` — still runs exactly as code.
 
-## 17. Where to go next
+## 18. Where to go next
 
 Two folders full of runnable JuRu live under `examples/`, every output
 verified by the test suite.
@@ -973,7 +1031,7 @@ dicts_demo.jr    helpers.jr       import_demo.jr
 Read `docs/syntax.md` when you want the whole language on one page, and
 `design.md` when you want to know **why** it is built this way.
 
-## 18. Graduation project
+## 19. Graduation project
 
 Everything from this tutorial in one small program — a word ranker:
 

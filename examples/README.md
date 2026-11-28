@@ -59,8 +59,9 @@ closing brace — and read the friendly error. Errors are teachers too.
 | — | [tools.jr](guide/tools.jr) | — | the little module lesson 13 imports |
 
 That is the complete language: 21 keywords, 15 lessons, no hidden
-extras. (JuRu also has 54 builtins — ready-made tools like `len`,
-`format`, `sorted`, `fail` — and the REPL's `help()` lists them all.)
+extras. (JuRu also has 67 builtins — ready-made tools like `len`,
+`format`, `sorted`, `fail`, `read_file`, `to_json` — and the REPL's
+`help()` lists them all.)
 
 ---
 

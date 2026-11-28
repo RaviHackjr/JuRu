@@ -316,7 +316,7 @@ And like every collection, they refuse wrong tools in words:
 `union([1], [2])` → `union() needs two sets — got: list and list
 (build one with set_of([...]))`.
 
-## 15. Builtins — the 54-tool toolbox
+## 15. Builtins — the 67-tool toolbox
 
 The classics:
 ```
@@ -442,12 +442,39 @@ Guards that talk like a human:
 - `keys([1])` → `keys() needs a dict — got: [1]`
 - `count(5, 1)` → `count() needs a list first — got: 5`
 
-All 54 are **reserved** — no variable or func can take their name, and both
+The files & JSON wave (Step 25 — still zero new keywords):
+```
+read_file("notes.txt")          # the whole file as text (UTF-8, 10 MB cap)
+write_file("notes.txt", "hi")   # overwrite (folder must exist)
+append_file("notes.txt", "!")   # add to the END, creating it if missing
+read_lines("notes.txt")         # [hi!] — same rules as split_lines
+write_lines("todo.txt", ["a", ""])  # writes "a\n\n" (final newline added)
+file_exists("notes.txt")        # true — files AND folders
+file_size("notes.txt")          # bytes (a folder is refused)
+delete_file("notes.txt")        # one file — never a folder
+list_dir(".")                   # sorted names inside a folder
+make_dir("data/reports")        # creates parents too; existing folder = fine
+delete_dir("empty")             # EMPTY folders only — never recursive
+to_json({"a": [1, true]})       # {"a": [1, true]}
+from_json("{\"a\": 1}")         # {a: 1}
+```
+
+Their guards:
+- `read_file("missing.txt")` → `read_file() could not read 'missing.txt' — file not found (looked at: …)` (kind `"file"`)
+- `write_file("x.txt", 5)` → `write_file() needs text to write — got: 5`
+- `write_file("no/x.txt", "x")` → `… the folder does not exist`
+- `write_lines("x.txt", ["a", 2])` → `… needs every line to be text — got: 2 at position 2`
+- `delete_file("docs")` → `delete_file() refuses a folder — 'docs' is a folder; use delete_dir()`
+- `delete_dir("data")` → `delete_dir() only removes an EMPTY folder — 'data' still has things in it`
+- `to_json({1: "x"})` → `to_json() needs text keys in every dict — found 1 (JSON keys are always text)`
+- `to_json(float("nan"))` → `to_json() cannot write a number that is not finite — JSON has no NaN or Infinity`
+
+All 67 are **reserved** — no variable or func can take their name, and both
 the checker and the interpreter print the same argument-count message:
 `push(list, item) takes exactly 2 arguments`.
 
 One builtin raises errors on purpose: `fail(message)` raises your own JuRu
-error with kind `"fail"` — the nearest `try/rescue` catches it (section 17).
+error with kind `"fail"` — the nearest `try/rescue` catches it (section 18).
 
 ## 16. Formatting & alignment — `format`, padding, lines (Step 24, v1.11)
 
@@ -521,7 +548,84 @@ for row in rows {
 # ravi  20
 ```
 
-## 17. Errors you can catch — `try` / `rescue` (Step 23, v1.10)
+## 17. Files & JSON — real data, guarded (Step 25, v1.12)
+
+Thirteen builtins read and write real files and speak JSON. They are
+plain builtins — **zero new keywords** — and every mistake stays a
+friendly, catchable JuRu error.
+
+**Paths.** A relative path resolves against the folder of the running
+program, exactly like `import`. Absolute paths are used as they are.
+`~` is NOT expanded (it is a normal character), `..` is not refused
+(this is an honest tool, guarded by sizes), NUL characters are refused,
+and there are no glob patterns — `"*.txt"` is a literal name.
+
+**Files** (UTF-8 text only; 10 MB per read/write/append/JSON text):
+
+| Builtin | Hands back | Guards |
+|---------|------------|--------|
+| `read_file(path)` | the whole file as text | missing file, folder, bad UTF-8, permissions → kind `"file"` |
+| `write_file(path, text)` | `null` | overwrites; the parent folder must exist; text ≤ 10 MB |
+| `append_file(path, text)` | `null` | creates the file when missing; the RESULT ≤ 10 MB |
+| `read_lines(path)` | list of lines | exactly `split_lines`'s rules (LF/CRLF/CR, no trailing empty line) |
+| `write_lines(path, lines)` | `null` | list of ONE-line texts; adds the final newline; `[]` → empty file |
+| `file_exists(path)` | `true` / `false` | never raises for a missing path |
+| `file_size(path)` | whole number of BYTES | a folder or missing file is an error |
+| `delete_file(path)` | `null` | always refuses a folder |
+| `list_dir(path)` | sorted names | names only, never recursive; a file/missing folder is an error |
+| `make_dir(path)` | `null` | creates parents; existing folder is a no-op; a file is refused |
+| `delete_dir(path)` | `null` | EMPTY folders only — never recursive, so a typo cannot wipe a tree |
+
+```
+write_file("notes.txt", "first\n")
+append_file("notes.txt", "second\n")
+say(read_lines("notes.txt"))        # [first, second]
+say(file_size("notes.txt"))         # 13  ← bytes, not characters
+
+write_lines("todo.txt", ["milk", "", "bread"])
+say(read_lines("todo.txt"))         # [milk, , bread]
+say(write_lines("todo.txt", []) == null)   # true — [] writes an empty file
+
+make_dir("data/reports")            # parents appear too
+say(list_dir("."))                  # [data, notes.txt, todo.txt] (sorted)
+delete_dir("data/reports")
+delete_dir("data")
+```
+
+**JSON.** `to_json` writes text; `from_json` reads it back. Objects
+become dicts with text keys, arrays become lists, and numbers keep
+their `int`/`float` shape. Only `null`, booleans, finite numbers, text,
+lists and dicts **with text keys** are JSON-able: funcs, modules, sets,
+errors and integer keys are refused in words. Nesting is capped at 64
+levels, every value that contains itself is refused, and NaN/Infinity
+do not exist in JSON — both directions refuse them, as they do a JSON
+number that overflows to Infinity. An unpaired surrogate escape (half
+of a pair) is refused instead of producing text that cannot be shown.
+
+```
+data = {"name": "Ravi", "scores": [10, 20.5], "ok": true}
+text = to_json(data)
+say(text)                        # {"name": "Ravi", "scores": [10, 20.5], "ok": true}
+back = from_json(text)
+say(back["scores"][1])           # 20.5
+say(type(back["scores"]))        # list
+
+say(from_json("\"\\u0041\\u00e9\""))   # Aé — JSON escapes decode
+say(from_json("{\"a\": 1, \"a\": 2}")["a"])   # 2 — the LAST duplicate wins
+say(to_json(1.0))                # 1.0   ← Python-JSON float display
+say(to_json(0.1 + 0.2))          # 0.30000000000000004
+```
+
+A bad file error is catchable like any other:
+```
+try {
+    text = read_file("config.json")
+} rescue as e {
+    say(e.kind + ": " + e.message)     # file: read_file() could not read 'config.json' — file not found (looked at: …)
+}
+```
+
+## 18. Errors you can catch — `try` / `rescue` (Step 23, v1.10)
 
 Programs meet failure. Instead of dying, you can catch it:
 
@@ -587,7 +691,7 @@ try {
   scope, so `e` (and rescue locals) never leak out
 - there is no `finally`/`always` in JuRu — write cleanup after the block
 
-## 18. Modules — code from another file
+## 19. Modules — code from another file
 
 ```
 # helpers.jr
@@ -617,13 +721,13 @@ The rules:
 - imports resolve next to **your file**, so `python3 juru.py src/main.jr`
   finds `src/helpers.jr`
 
-## 19. Comments
+## 20. Comments
 
 ```
 # from # to the end of the line — the machine ignores it
 ```
 
-## 20. Golden rules
+## 21. Golden rules
 
 1. One statement per line (no semicolons)
 2. Blocks are `{ }` — no indentation headaches
@@ -636,7 +740,7 @@ The rules:
 7. Names: letters, digits, `_` (unicode letters work too — Devanagari incl.)
 8. Dicts: write `d["key"] = value`, read with `d["key"]` or `d.key`
 
-## 21. Errors that talk like a human
+## 22. Errors that talk like a human
 
 Every error says exactly where and what:
 ```
@@ -680,19 +784,21 @@ work, so it never complains about a program that would run fine.
 Modules get the same treatment: their source is checked **before** they run.
 Tip: `python3 checker.py file.jr` checks a file without running it.
 
-## 22. Security by design 🛡️
+## 23. Security by design 🛡️
 
 - No `eval` — code is never built from strings
 - `null` exists but the null-pointer bug class is blocked by design
 - Every list index **bounds-checked** (no memory-safe escape hatches)
 - **Runaway protection** — a loop over 10,000,000 steps stops itself
 - Short-circuit logic — wrong order still never crashes
-- Reserved builtins — the 54-tool toolbox can never be overwritten
+- Reserved builtins — the 67-tool toolbox can never be overwritten
+- File tools are capped (10 MB), never recursive, and refuse the wrong
+  kind of path (`delete_dir` only empties an EMPTY folder)
 - Dict keys are guarded; missing keys are errors, not `null`
 - Modules are isolated and checked; import loops are detected
 - Friendly type checks at runtime, with line/col on every error
 
-## 23. The 21 keywords + 54 builtins
+## 24. The 21 keywords + 67 builtins
 
 ```
 say  if  else  while  for  from  to  in
@@ -713,4 +819,7 @@ index_of( )  starts_with( )  ends_with( )  ord( )  chr( )
 set_of( )  union( )  intersect( )  difference( )  fail( )
 format( )  pad_left( )  pad_right( )  center( )
 split_lines( )  join_lines( )
+read_file( )  write_file( )  append_file( )  read_lines( )  write_lines( )
+file_exists( )  file_size( )  delete_file( )  list_dir( )
+make_dir( )  delete_dir( )  to_json( )  from_json( )
 ```

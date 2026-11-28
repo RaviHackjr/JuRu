@@ -3,6 +3,48 @@
 All notable changes to JuRu. The language surface only ever grows in
 small, deliberate waves — keywords are counted, guarded, and kept few.
 
+## 1.12 — 2026-11-28
+
+Step 25 — **files & JSON**. Real programs read and write data: thirteen
+reserved builtins, **zero new keywords** (21 stay; 54 → 67 builtins).
+
+- **`read_file(path)` / `write_file(path, text)` /
+  `append_file(path, text)`** — UTF-8 text files with a 10 MB cap on
+  every read, write and append (append checks the RESULT). Relative
+  paths resolve against the running program's folder, exactly like
+  `import`; absolute paths are used as they are. `~` is not expanded,
+  `..` is not refused, and there are no glob patterns. Missing files,
+  folders, bad UTF-8 and permission problems are friendly errors with
+  kind `"file"` — `try/rescue` catches them.
+- **`read_lines(path)` / `write_lines(path, lines)`** — the line tools
+  use `split_lines`'s exact rules (LF/CRLF/lone CR, no trailing empty
+  line, blank lines kept). `write_lines` requires a list of text lines
+  that are each ONE line, writes each with a newline, and writes an
+  empty file for `[]` — so `read_lines(write_lines(xs)) == xs`.
+- **`file_exists(path)`**, **`file_size(path)`** (bytes, files only),
+  **`delete_file(path)`** (never a folder), **`list_dir(path)`**
+  (sorted names, never recursive), **`make_dir(path)`** (creates
+  parents; an existing folder is a no-op) and **`delete_dir(path)`**
+  (EMPTY folders only — JuRu never has a recursive `rm`).
+- **`to_json(value)` / `from_json(text)`** — null, booleans, finite
+  numbers, text, lists and dicts with TEXT keys. Integer keys, funcs,
+  modules, sets and errors are refused in words; NaN/Infinity are
+  refused both ways, a JSON number that overflows to Infinity is
+  refused, and an unpaired surrogate escape is refused instead of
+  producing text that cannot be shown; nesting stops at 64 levels; a
+  value that contains itself is refused. JSON text is capped at 10 MB.
+  `from_json` decodes unicode escapes (surrogate pairs included), keeps
+  Python's int/float shape, and a duplicate JSON key keeps the LAST
+  value. Floats keep Python's shortest-repr display (`1.0`,
+  `0.30000000000000004`).
+- Truthful `help()` cards and a new **files + json** group; docs
+  (README, `design.md`, `docs/syntax.md` section 17,
+  `docs/tutorial.md` chapter 12, `examples/README.md`,
+  `docs/vscode.md`), CI labels and the VS Code grammar are synced to
+  1.12/67. `test_step25.py` adds 53 tests (837 total, 24 suites),
+  including round-trips, unicode, caps, permissions, path resolution,
+  JSON edge cases and a real CLI check that paths follow the program.
+
 ## 1.11 — 2026-11-18
 
 Step 24 — **text & formatting**. Daily-use text output: format values

@@ -291,9 +291,9 @@ def t_join_lines_guards():
 
 # ------------------------------------------------------------------ registry + surface
 def t_registry_and_surface():
-    assert VERSION == "1.11"
+    assert VERSION == "1.12"
     assert len(KEYWORDS) == 21                       # zero new keywords
-    assert len(BUILTINS) == 54                       # 48 + the six text tools
+    assert len(BUILTINS) == 67                       # 48 + text wave + files/JSON
     new = ("format", "pad_left", "pad_right", "center", "split_lines", "join_lines")
     assert set(new) <= set(BUILTINS)
     for name in new:
@@ -301,7 +301,7 @@ def t_registry_and_surface():
         assert BUILTIN_HINT[name], name
     from juru import helpdb
     assert set(helpdb.BUILTIN_CARDS) == set(BUILTINS)   # every builtin has a card
-    assert len(helpdb.BUILTIN_CARDS) == 54
+    assert len(helpdb.BUILTIN_CARDS) == 67
     assert len(helpdb.KEYWORD_CARDS) == 21
     assert helpdb.card_for("printf") == helpdb.card_for("format")
 
@@ -356,7 +356,7 @@ ALL = [
     ("split_lines: empty, blank, trailing", t_split_lines_edges),
     ("join_lines + split_lines round-trip", t_join_lines_and_interaction),
     ("join_lines guards", t_join_lines_guards),
-    ("registry: 54 builtins, cards, 21 keywords", t_registry_and_surface),
+    ("registry: 67 builtins, cards, 21 keywords", t_registry_and_surface),
     ("kind rules for the new errors", t_kind_rules_for_the_new_errors),
     ("no parser changes needed", t_no_parser_changes_needed),
     ("old text tools unchanged", t_old_text_tools_unchanged),

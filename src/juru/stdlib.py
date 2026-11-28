@@ -30,7 +30,11 @@ BUILTINS = ("ask", "len", "int", "float", "upper", "lower", "str", "push", "pop"
             "fail",
             # Step 24 — text & formatting wave
             "format", "pad_left", "pad_right", "center",
-            "split_lines", "join_lines")
+            "split_lines", "join_lines",
+            # Step 25 — files & JSON wave
+            "read_file", "write_file", "append_file", "read_lines", "write_lines",
+            "file_exists", "file_size", "delete_file", "list_dir",
+            "make_dir", "delete_dir", "to_json", "from_json")
 
 # (min_args, max_args) for every builtin — checked before a single line
 # runs. max None = "one or more" (a variadic builtin, like min/max).
@@ -89,6 +93,19 @@ BUILTIN_ARITY = {
     "center": (2, 2),
     "split_lines": (1, 1),
     "join_lines": (1, 1),
+    "read_file": (1, 1),
+    "write_file": (2, 2),
+    "append_file": (2, 2),
+    "read_lines": (1, 1),
+    "write_lines": (2, 2),
+    "file_exists": (1, 1),
+    "file_size": (1, 1),
+    "delete_file": (1, 1),
+    "list_dir": (1, 1),
+    "make_dir": (1, 1),
+    "delete_dir": (1, 1),
+    "to_json": (1, 1),
+    "from_json": (1, 1),
 }
 
 # The exact message both layers print for a wrong argument count —
@@ -149,6 +166,19 @@ BUILTIN_HINT = {
     "center": "center(text, width) takes exactly 2 arguments",
     "split_lines": "split_lines(text) takes exactly 1 argument",
     "join_lines": "join_lines(lines) takes exactly 1 argument",
+    "read_file": "read_file(path) takes exactly 1 argument",
+    "write_file": "write_file(path, text) takes exactly 2 arguments",
+    "append_file": "append_file(path, text) takes exactly 2 arguments",
+    "read_lines": "read_lines(path) takes exactly 1 argument",
+    "write_lines": "write_lines(path, lines) takes exactly 2 arguments",
+    "file_exists": "file_exists(path) takes exactly 1 argument",
+    "file_size": "file_size(path) takes exactly 1 argument",
+    "delete_file": "delete_file(path) takes exactly 1 argument",
+    "list_dir": "list_dir(path) takes exactly 1 argument",
+    "make_dir": "make_dir(path) takes exactly 1 argument",
+    "delete_dir": "delete_dir(path) takes exactly 1 argument",
+    "to_json": "to_json(value) takes exactly 1 argument",
+    "from_json": "from_json(text) takes exactly 1 argument",
 }
 
 

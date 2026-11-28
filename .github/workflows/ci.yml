@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run all 23 test suites (784 tests)
+      - name: Run all 24 test suites (837 tests)
         run: |
           python3 --version
           set -e
@@ -29,6 +29,7 @@ jobs:
                        test_step6 test_step7 test_step8 test_step9 \
                        test_step12 test_step15 test_step16 test_step17 \
                        test_step22 test_step23 test_step24 \
+                       test_step25 \
                        test_templates test_tutorial test_packaging \
                        test_ultimate; do
             echo "===== $suite ====="

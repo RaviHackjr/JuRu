@@ -627,7 +627,7 @@ def t_checker_before_runtime():
 
 # ================================================================ security audit
 def t_reserved_audit():
-    assert len(BUILTINS) == 54
+    assert len(BUILTINS) == 67
     wave1 = {"split", "join", "trim", "replace", "abs", "round", "random", "sqrt"}
     wave2 = {"sorted", "reverse", "find", "keys", "values", "count"}
     wave3 = {"float", "pow", "pop", "type"}
@@ -638,12 +638,16 @@ def t_reserved_audit():
               "difference"}
     wave24 = {"format", "pad_left", "pad_right", "center",
               "split_lines", "join_lines"}
+    wave25 = {"read_file", "write_file", "append_file", "read_lines",
+              "write_lines", "file_exists", "file_size", "delete_file",
+              "list_dir", "make_dir", "delete_dir", "to_json", "from_json"}
     assert wave1 <= set(BUILTINS)
     assert wave2 <= set(BUILTINS)
     assert wave3 <= set(BUILTINS)
     assert wave4 <= set(BUILTINS)
     assert wave22 <= set(BUILTINS)
     assert wave24 <= set(BUILTINS)      # Step 24: the text & formatting wave
+    assert wave25 <= set(BUILTINS)      # Step 25: files & JSON
     assert {"fail"} <= set(BUILTINS)    # Step 23: user-raised errors
     for name in BUILTINS:
         expect_check_galti("{} = 1".format(name),
@@ -959,11 +963,11 @@ def t_repl_new_builtins_live():
 
 # ================================================================ batch 2/3/4: version + language surface
 def t_batch4_version_bump():
-    assert VERSION == "1.11"
+    assert VERSION == "1.12"
     from juru.lexer import KEYWORDS
     from juru.checker import BUILTINS
     assert len(KEYWORDS) == 21          # Step 23 added try + rescue
-    assert len(BUILTINS) == 54          # ... + Step 22 (17) + fail (23) + text wave (24)
+    assert len(BUILTINS) == 67          # ... + text wave (24) + files/JSON (25)
 
 
 def t_templates_end_to_end():
@@ -1110,7 +1114,7 @@ def t_batch3_package_and_editor():
 # ================================================================ batch 4: help + sleep + bare REPL + caret errors
 def t_batch4_help_and_sleep_live():
     assert run("help(\"pow\")").startswith("pow(a, b)")
-    assert run("help()").startswith("JuRu toolbox — 21 keywords + 54 builtins")
+    assert run("help()").startswith("JuRu toolbox — 21 keywords + 67 builtins")
     assert run('say(type(sleep(0)))') == "null\n"
     expect_galti("say(sleep(-1))", "cannot go back in time")
     expect_galti("say(sleep(99))", "at most 30 seconds at a time")
@@ -1157,7 +1161,7 @@ def t_batch4_bare_command_is_repl():
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout.startswith("JuRu {} (".format(VERSION)), proc.stdout
-    assert "JuRu toolbox — 21 keywords + 54 builtins" in proc.stdout
+    assert "JuRu toolbox — 21 keywords + 67 builtins" in proc.stdout
 
 
 # ================================================================ batch 5: the standalone interpreter + the run button
@@ -1450,8 +1454,8 @@ ALL = [
     ("module readonly + member errors", t_module_readonly_and_errors),
     ("error gauntlet (steps 4–7 messages)", t_error_gauntlet),
     ("checker kills before runtime", t_checker_before_runtime),
-    ("reserved audit: all 54 builtins", t_reserved_audit),
-    ("mirror rule: all 54 builtins", t_mirror_rule_full),
+    ("reserved audit: all 67 builtins", t_reserved_audit),
+    ("mirror rule: all 67 builtins", t_mirror_rule_full),
     ("did-you-mean gauntlet (every surface)", t_did_you_mean_gauntlet),
     ("typo storm over 40 near-identical funcs", t_typo_top_of_recursion_hell),
     ("step 9 pipeline: top words ranked", t_top_words_pipeline),

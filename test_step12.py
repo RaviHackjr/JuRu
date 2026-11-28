@@ -213,7 +213,7 @@ def t_input_pipeline_int_and_float():
 
 def t_checker_and_interpreter_agree():
     """Every builtin in the checker has an arity and a hint (and vice versa)."""
-    assert len(BUILTINS) == 54     # 47 + fail (Step 23) + the text wave (Step 24)
+    assert len(BUILTINS) == 67     # 47 + fail (23) + text wave (24) + files/JSON (25)
     assert set(BUILTIN_ARITY) == set(BUILTINS)
     assert set(BUILTIN_HINT) == set(BUILTINS)
 

@@ -7,7 +7,7 @@
 > **JuRu** = easy (easier than Python) + secure (safe like Rust).
 > **File extension: `.jr`** — run it like `python file.py`: `python3 juru.py program.jr`
 
-`21 keywords · 54 builtins · 5 templates · 15 guide lessons + 15 demos · 784 tests green · version 1.11 (see version.py) · MIT`
+`21 keywords · 67 builtins · 5 templates · 15 guide lessons + 15 demos · 837 tests green · version 1.12 (see version.py) · MIT`
 
 ---
 
@@ -54,7 +54,7 @@ python3 juru.py mygame.jr
 REPL session:
 
 ```
-JuRu 1.11 (easy like Python, secure like Rust) on win32
+JuRu 1.12 (easy like Python, secure like Rust) on win32
 Type "help", "exit" or "cancel" for more information.
 type help() to see the whole toolbox
 juru> 1 + 2
@@ -169,7 +169,7 @@ defend with try / rescue
 `else if` is two words. Blocks are `{ }` — no indentation headaches.
 One statement per line; comments start with `#`.
 
-## Builtins (54 — all reserved names)
+## Builtins (67 — all reserved names)
 
 | Builtin | Does |
 |---------|------|
@@ -226,13 +226,27 @@ One statement per line; comments start with `#`.
 | `center(text, width)` | center in the width; an odd extra space goes on the right; never truncates |
 | `split_lines(text)` | multiline text → list of lines (splits on `\n`, `\r\n`, `\r`; `""` → `[]`; a trailing newline opens no extra line) |
 | `join_lines(lines)` | a list of text lines → one text joined with newlines (`[]` → `""`; every element must be text) |
+| `read_file(path)` | read one UTF-8 text file (10 MB cap; relative to the program's folder) |
+| `write_file(path, text)` | write text to a file, replacing what was there (10 MB cap) |
+| `append_file(path, text)` | add text to the END of a file, creating it when missing |
+| `read_lines(path)` | a text file → list of lines (same rules as `split_lines`) |
+| `write_lines(path, lines)` | list of text lines → a file, each line followed by a newline |
+| `file_exists(path)` | `true` when the path exists — a file OR a folder |
+| `file_size(path)` | a file's size in bytes (a folder is refused) |
+| `delete_file(path)` | delete ONE file — always refuses a folder |
+| `list_dir(path)` | a folder → its names, sorted (`[]` when empty) |
+| `make_dir(path)` | create a folder, including missing parents |
+| `delete_dir(path)` | delete one EMPTY folder — never recursive |
+| `to_json(value)` | value → JSON text (text dict keys only; 64-level nesting cap) |
+| `from_json(text)` | JSON text → value (last duplicate key wins; 10 MB cap) |
 
 `push`, `pop`, `insert`, `remove_at`, `clear`, `extend` and `delete` change
 the list/dict in place — `sorted`, `reverse`, `unique` and `merge` hand you
 a fresh one and leave the original alone. Every collection wave added
 **zero** new keywords; Step 23 added exactly two (`try`, `rescue`) plus one
 builtin (`fail`); Step 24 added the six text tools (`format`, `pad_left`,
-`pad_right`, `center`, `split_lines`, `join_lines`) — the language stays
+`pad_right`, `center`, `split_lines`, `join_lines`); Step 25 added the
+13 files & JSON tools (`read_file` … `from_json`) — the language stays
 deliberately small: 21 keywords. And
 `help("anything")` never lies — a test suite runs every card's examples and
 checks its guard lines against the real error messages.
@@ -346,7 +360,7 @@ zip for your system and let its setup do the rest:
 Then it is just Python's flow:
 
 ```bash
-juru --version              # JuRu 1.11
+juru --version              # JuRu 1.12
 juru hello.jr               # run it
 juru                        # bare command → the REPL (exactly like `python`)
 ```
@@ -369,7 +383,7 @@ Full walkthrough with every platform detail:
 
 ## VS Code (official, ready to load)
 
-Syntax highlighting (all 21 keywords + 54 builtins), snippets, brackets,
+Syntax highlighting (all 21 keywords + 67 builtins), snippets, brackets,
 folding, and the run button — the extension lives at
 `vscode/juru-vscode/`, finds the interpreter by itself (nothing to
 configure), and its keyword list is test-enforced against the language.
@@ -378,13 +392,13 @@ Load it in two minutes:
 ```bash
 cd vscode/juru-vscode
 npx --yes @vscode/vsce package --no-dependencies
-code --install-extension juru-vscode-1.11.0.vsix
+code --install-extension juru-vscode-1.12.0.vsix
 ```
 
 Full guide: [docs/vscode.md](docs/vscode.md). (Prepare-only — the
 Marketplace upload is a later, separate step.)
 
-## Tests — 784, all green
+## Tests — 837, all green
 
 ```bash
 python3 test_lexer.py         # 55
@@ -406,6 +420,7 @@ python3 test_step17.py        # 10   (line + caret error display)
 python3 test_step22.py        # 71   (collections & ergonomics wave 1)
 python3 test_step23.py        # 56   (try/rescue: catchable errors, kinds, stacks)
 python3 test_step24.py        # 24   (text & formatting wave: format + padding + lines)
+python3 test_step25.py        # 53   (files & JSON: 13 builtins, caps, round-trips)
 python3 test_templates.py     # 24   (the 5 templates + --new/--templates CLI)
 python3 test_tutorial.py      # 11   (docs/tutorial.md cannot lie)
 python3 test_packaging.py     # 9    (real wheel → venv install → juru command)
@@ -435,7 +450,7 @@ JuRu/
 │                       #   juru_icon.ico (16→256 px, inside juru.exe)
 ├── examples/           # guide/ = 15 beginner lessons (all 21 keywords),
 │                       #   test/ = 15 verified demo programs
-├── test_*.py           # 23 test suites, 784 tests
+├── test_*.py           # 24 test suites, 837 tests
 └── LICENSE             # MIT
 ```
 

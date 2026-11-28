@@ -73,6 +73,21 @@ GROUPS = (
         ("intersect(a, b)", "only what is in both sets"),
         ("difference(a, b)", "what is in a but not in b"),
     )),
+    ("files + json", (
+        ("read_file(path)", "read a UTF-8 text file (10 MB cap)"),
+        ("write_file(path, text)", "write text to a file (overwrite)"),
+        ("append_file(path, text)", "add text to the end of a file"),
+        ("read_lines(path)", "a text file → list of lines"),
+        ("write_lines(path, list)", "list of lines → a text file"),
+        ("file_exists(path)", "does this file or folder exist?"),
+        ("file_size(path)", "size in bytes"),
+        ("delete_file(path)", "delete one file (never a folder)"),
+        ("list_dir(path)", "a folder → sorted names"),
+        ("make_dir(path)", "create a folder (and parents)"),
+        ("delete_dir(path)", "delete an EMPTY folder only"),
+        ("to_json(value)", "value → JSON text"),
+        ("from_json(text)", "JSON text → value"),
+    )),
     ("errors", (
         ("fail(message)", "raise your own error — try/rescue can catch it"),
     )),
@@ -528,6 +543,123 @@ BUILTIN_CARDS = {
                     'say(join_lines(["a", "", "b"]))     # blank lines are kept'],
                    ["join_lines() needs a list — got: int",
                     "join_lines() needs every line to be text — got: 2 at position 2"]),
+    "read_file": ("read_file(path)",
+                  "read one UTF-8 text file and hand back its text. Relative\n"
+                  "paths resolve next to the running program, like imports.\n"
+                  "The file must be at most 10 MB; a missing file, a folder,\n"
+                  "bad UTF-8 or a permission problem is a friendly error with\n"
+                  "kind \"file\" — try/rescue can catch it.",
+                  ['say(read_file("notes.txt"))',
+                   'say(len(read_file("notes.txt")))   # characters, not bytes'],
+                  ["read_file() needs a file path in text — got: 5",
+                   "read_file() could not read 'missing.txt' — file not found",
+                   "read_file() could not read 'big.txt' — the file is too big"]),
+    "write_file": ("write_file(path, text)",
+                   "write text to a file, replacing anything already there.\n"
+                   "The text must be at most 10 MB. The folder must already\n"
+                   "exist (make_dir() creates it). Returns null.",
+                   ['write_file("notes.txt", "hello")   # null',
+                    'say(read_file("notes.txt"))        # hello'],
+                   ["write_file() needs text to write — got: 5",
+                    "write_file() could not write 'x.txt' — the folder does not exist"]),
+    "append_file": ("append_file(path, text)",
+                    "add text to the END of a file, creating it when missing.\n"
+                    "The resulting file must stay at most 10 MB. Returns null.",
+                    ['write_file("log.txt", "one\\n")',
+                     'append_file("log.txt", "two\\n")',
+                     'say(read_lines("log.txt"))   # [one, two]'],
+                    ["append_file() needs text to append — got: 5",
+                     "append_file() could not append to 'log.txt' — the file would become too big"]),
+    "read_lines": ("read_lines(path)",
+                   "read a UTF-8 text file as a list of lines. Same rules as\n"
+                   "split_lines(): LF, CRLF and lone CR; no trailing newlines;\n"
+                   "blank lines are kept. An empty file → []. 10 MB cap.",
+                   ['say(read_lines("notes.txt"))   # [hello, world]',
+                    'for line in read_lines("notes.txt") { say(line) }'],
+                   ["read_lines() needs a file path in text — got: 5",
+                    "read_lines() could not read 'missing.txt' — file not found"]),
+    "write_lines": ("write_lines(path, lines)",
+                    "write a list of text lines to a file, each followed by a\n"
+                    "newline — so read_lines(write_lines(xs)) gives xs back.\n"
+                    "Every item must be text and must be ONE line (no embedded\n"
+                    "newlines); [] writes an empty file. Returns null.",
+                    ['write_lines("todo.txt", ["milk", "", "bread"])',
+                     'say(read_lines("todo.txt"))   # [milk, , bread]'],
+                    ["write_lines() needs a list of lines — got: 5",
+                     "write_lines() needs every line to be text — got: 2 at position 2",
+                     "write_lines() needs each line to be ONE line — line 1 contains a newline"]),
+    "file_exists": ("file_exists(path)",
+                    "true when the path exists — a file OR a folder. It never\n"
+                    "raises for a missing path; it just says false.",
+                    ['say(file_exists("notes.txt"))',
+                     'say(file_exists("no-such-file.txt"))   # false'],
+                    ["file_exists() needs a file path in text — got: 5"]),
+    "file_size": ("file_size(path)",
+                  "the size of a file in BYTES (not characters). A folder or a\n"
+                  "missing file is a friendly kind-\"file\" error.",
+                  ['say(file_size("notes.txt"))   # 5',
+                   'say(file_size("notes.txt") > 0)'],
+                  ["file_size() needs a file — 'docs' is a folder",
+                   "file_size() could not measure 'missing.txt' — file not found"]),
+    "delete_file": ("delete_file(path)",
+                    "delete ONE file. It always refuses a folder — use\n"
+                    "delete_dir() for an empty folder. A missing file is a\n"
+                    "friendly error. Returns null.",
+                    ['delete_file("notes.txt")',
+                     'say(file_exists("notes.txt"))   # false'],
+                    ["delete_file() refuses a folder — 'docs' is a folder; use delete_dir()",
+                     "delete_file() could not delete 'missing.txt' — file not found"]),
+    "list_dir": ("list_dir(path)",
+                 "the names inside a folder, sorted — files and subfolders,\n"
+                 "just the names (not full paths). No glob patterns; \"*\" is a\n"
+                 "normal character. An empty folder → [].",
+                 ['say(list_dir("."))   # [docs, examples, juru.py, …]',
+                  'say("examples" in list_dir("."))'],
+                 ["list_dir() needs a folder — 'notes.txt' is a file",
+                  "list_dir() could not list 'missing' — folder not found"]),
+    "make_dir": ("make_dir(path)",
+                 "create a folder, including any missing parents (one function).\n"
+                 "An existing folder is fine (no error); a file with the same\n"
+                 "name is refused. Returns null.",
+                 ['make_dir("data/reports")',
+                  'say(file_exists("data/reports"))   # true'],
+                 ["make_dir() could not create 'notes.txt' — a file with that name already exists"]),
+    "delete_dir": ("delete_dir(path)",
+                   "delete one EMPTY folder. It never deletes recursively: a\n"
+                   "folder with anything inside is refused, so a typo cannot\n"
+                   "wipe a tree. Returns null.",
+                   ['make_dir("empty")',
+                    'delete_dir("empty")',
+                    'say(file_exists("empty"))   # false'],
+                   ["delete_dir() only removes an EMPTY folder — 'data' still has things in it",
+                    "delete_dir() needs a folder — 'notes.txt' is a file"]),
+    "to_json": ("to_json(value)",
+                "turn a JuRu value into JSON text. Supported: null, booleans,\n"
+                "numbers, text, lists, and dicts with TEXT keys (integers are\n"
+                "refused — JSON keys are always text). func/module/set/error\n"
+                "values are refused. Nested values are capped at 64 levels,\n"
+                "and a value that contains itself is refused.",
+                ['say(to_json({"name": "Ravi", "age": 20}))',
+                 'say(to_json([1, true, null]))',
+                 'say(to_json(1.0))   # 1.0'],
+                ["to_json() needs text keys in every dict — found 1 (JSON keys are always text)",
+                 "to_json() cannot write a func — JSON holds null, booleans, numbers, text, lists and dicts",
+                 "to_json() found a value nested too deeply — the limit is 64 levels"]),
+    "from_json": ("from_json(text)",
+                  "read JSON text back into JuRu values. Objects become dicts\n"
+                  "with text keys, arrays become lists, numbers keep int/float\n"
+                  "shape, and null/true/false work. A duplicate key keeps the\n"
+                  "LAST value (the JSON parser's rule). NaN/Infinity are\n"
+                  "refused, and so is a number that overflows to Infinity; an\n"
+                  "unpaired surrogate escape is refused. Text is capped at\n"
+                  "10 MB and nesting at 64 levels.",
+                  ['data = from_json("{\\"name\\": \\"Ravi\\", \\"scores\\": [10, 20]}")',
+                   'say(data["name"])       # Ravi',
+                   'say(data["scores"][1])  # 20'],
+                  ["from_json() needs JSON text — got: 5",
+                   "from_json() could not read the text — expecting value at line 1 column 1",
+                   "from_json() cannot read NaN or Infinity — JSON numbers must be finite",
+                   "from_json() found an unpaired surrogate escape — JSON text cannot hold half of a surrogate pair"]),
 }
 
 KEYWORD_CARDS = {

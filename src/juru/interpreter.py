@@ -18,6 +18,8 @@ How to run:
 """
 
 import builtins
+import json
+import math
 import os
 import random as _random
 import time
@@ -240,6 +242,30 @@ def _display_width(text):
 def _count_word(n, word):
     """1 value / 2 values — plain English counts in error messages."""
     return "{} {}".format(n, word if n == 1 else word + "s")
+
+
+def _lines_from_text(text):
+    """split_lines()'s rule, shared with read_lines().
+
+    Splits on \\n, \\r\\n and a lone \\r. An empty text has NO lines; a
+    trailing newline opens no extra empty line; blank lines are kept.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    if text == "":
+        return []
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def _has_lone_surrogate(text):
+    """True when text holds half of a surrogate pair (utf-8 cannot show it)."""
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        return True
+    return False
 
 
 def _format_text(template, values, line, col):
@@ -1452,13 +1478,7 @@ class Interpreter:
             raise JuRuGalti(e.line, e.col,
                             "split_lines() needs text — got: {}".format(
                                 display(text)))
-        text = text.replace("\r\n", "\n").replace("\r", "\n")
-        if text == "":
-            return []                         # an empty text has no lines (pinned)
-        lines = text.split("\n")
-        if lines[-1] == "":
-            lines.pop()                       # a trailing newline opens no new line
-        return lines
+        return _lines_from_text(text)
 
     def _bi_join_lines(self, e, env):
         lst = self.eval(e.args[0], env)
@@ -1473,6 +1493,428 @@ class Interpreter:
                                 "got: {} at position {}".format(
                                     display(line), i + 1))
         return "\n".join(lst)
+
+    # ---------- Step 25: files & JSON ----------
+    MAX_FILE_BYTES = 10 * 1024 * 1024      # 10 MB per read/write/JSON text
+    MAX_JSON_DEPTH = 64                    # nested lists/dicts, one level each
+    MAX_DIR_ENTRIES = 10000                # list_dir()'s sanity cap
+
+    @staticmethod
+    def _bytes_text(n):
+        return "{} bytes".format(n)
+
+    def _file_path(self, e, env, name, arg=0):
+        """The validated (shown, absolute) path for a file builtin.
+
+        Relative paths resolve against the running program's directory,
+        exactly like imports; absolute paths are used as they are. No ~
+        expansion, no globs.
+        """
+        v = self.eval(e.args[arg], env)
+        if not isinstance(v, str):
+            raise JuRuGalti(e.line, e.col,
+                            "{}() needs a file path in text — got: {}".format(
+                                name, display(v)), kind="type")
+        if v == "":
+            raise JuRuGalti(e.line, e.col,
+                            "{}() needs a file path — it cannot be empty".format(
+                                name), kind="value")
+        if "\x00" in v:
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() needs a file path without NUL characters — a file "
+                "name cannot contain one".format(name), kind="value")
+        path = v if os.path.isabs(v) else os.path.join(self.base_dir, v)
+        return v, os.path.normpath(path)
+
+    def _read_text_file(self, e, name, shown, path):
+        """Read one UTF-8 file with the size cap and friendly failures."""
+        try:
+            if os.path.isdir(path):
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "{}() could not read '{}' — it is a folder, not a file".format(
+                        name, shown), kind="file")
+            if not os.path.isfile(path):
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "{}() could not read '{}' — file not found (looked at: {})".format(
+                        name, shown, path), kind="file")
+            size = os.path.getsize(path)
+            if size > self.MAX_FILE_BYTES:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "{}() could not read '{}' — the file is too big ({}; the "
+                    "limit is 10 MB)".format(name, shown, self._bytes_text(size)),
+                    kind="file")
+            with open(path, encoding="utf-8", newline="") as f:
+                return f.read()
+        except UnicodeDecodeError:
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() could not read '{}' — the file is not valid UTF-8 "
+                "text".format(name, shown), kind="file")
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() could not read '{}' — {}".format(
+                    name, shown, err.strerror or "the system refused"),
+                kind="file")
+
+    def _write_text_file(self, e, name, shown, path, text, append=False):
+        """Write/append one UTF-8 file with the size cap and friendly failures."""
+        data_len = len(text.encode("utf-8"))
+        try:
+            existing = os.path.getsize(path) if append and os.path.isfile(path) else 0
+        except OSError:
+            existing = 0
+        if existing + data_len > self.MAX_FILE_BYTES:
+            verb = "append to" if append else "write"
+            what = ("the file would become too big" if append
+                    else "the text is too big")
+            total = existing + data_len
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() could not {} '{}' — {} ({}; the limit is 10 MB)".format(
+                    name, verb, shown, what, self._bytes_text(total)),
+                kind="file")
+        parent = os.path.dirname(path)
+        if parent and not os.path.isdir(parent):
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() could not write '{}' — the folder does not exist".format(
+                    name, shown), kind="file")
+        if os.path.isdir(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() could not write '{}' — it is a folder, not a file".format(
+                    name, shown), kind="file")
+        try:
+            with open(path, "a" if append else "w", encoding="utf-8",
+                      newline="") as f:
+                f.write(text)
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "{}() could not write '{}' — {}".format(
+                    name, shown, err.strerror or "the system refused"),
+                kind="file")
+
+    def _bi_read_file(self, e, env):
+        shown, path = self._file_path(e, env, "read_file")
+        return self._read_text_file(e, "read_file", shown, path)
+
+    def _bi_write_file(self, e, env):
+        shown, path = self._file_path(e, env, "write_file")
+        text = self.eval(e.args[1], env)
+        if not isinstance(text, str):
+            raise JuRuGalti(e.line, e.col,
+                            "write_file() needs text to write — got: {}".format(
+                                display(text)), kind="type")
+        self._write_text_file(e, "write_file", shown, path, text)
+        return None
+
+    def _bi_append_file(self, e, env):
+        shown, path = self._file_path(e, env, "append_file")
+        text = self.eval(e.args[1], env)
+        if not isinstance(text, str):
+            raise JuRuGalti(e.line, e.col,
+                            "append_file() needs text to append — got: {}".format(
+                                display(text)), kind="type")
+        self._write_text_file(e, "append_file", shown, path, text, append=True)
+        return None
+
+    def _bi_read_lines(self, e, env):
+        shown, path = self._file_path(e, env, "read_lines")
+        return _lines_from_text(self._read_text_file(e, "read_lines", shown, path))
+
+    def _bi_write_lines(self, e, env):
+        shown, path = self._file_path(e, env, "write_lines")
+        lines = self.eval(e.args[1], env)
+        if not isinstance(lines, list):
+            raise JuRuGalti(e.line, e.col,
+                            "write_lines() needs a list of lines — got: {}".format(
+                                display(lines)), kind="type")
+        for i, line in enumerate(lines):
+            if not isinstance(line, str):
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "write_lines() needs every line to be text — got: {} at "
+                    "position {}".format(display(line), i + 1), kind="type")
+            if "\n" in line or "\r" in line:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "write_lines() needs each line to be ONE line — line {} "
+                    "contains a newline".format(i + 1), kind="value")
+        text = "\n".join(lines)
+        if lines:
+            text += "\n"          # so read_lines(write_lines(xs)) == xs
+        self._write_text_file(e, "write_lines", shown, path, text)
+        return None
+
+    def _bi_file_exists(self, e, env):
+        shown, path = self._file_path(e, env, "file_exists")
+        return os.path.exists(path)
+
+    def _bi_file_size(self, e, env):
+        shown, path = self._file_path(e, env, "file_size")
+        if os.path.isdir(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "file_size() needs a file — '{}' is a folder".format(shown),
+                kind="file")
+        if not os.path.exists(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "file_size() could not measure '{}' — file not found (looked "
+                "at: {})".format(shown, path), kind="file")
+        try:
+            return os.path.getsize(path)
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "file_size() could not measure '{}' — {}".format(
+                    shown, err.strerror or "the system refused"), kind="file")
+
+    def _bi_delete_file(self, e, env):
+        shown, path = self._file_path(e, env, "delete_file")
+        if os.path.isdir(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "delete_file() refuses a folder — '{}' is a folder; use "
+                "delete_dir()".format(shown), kind="file")
+        if not os.path.exists(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "delete_file() could not delete '{}' — file not found (looked "
+                "at: {})".format(shown, path), kind="file")
+        try:
+            os.remove(path)
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "delete_file() could not delete '{}' — {}".format(
+                    shown, err.strerror or "the system refused"), kind="file")
+        return None
+
+    def _bi_list_dir(self, e, env):
+        shown, path = self._file_path(e, env, "list_dir")
+        if not os.path.exists(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "list_dir() could not list '{}' — folder not found (looked at: "
+                "{})".format(shown, path), kind="file")
+        if not os.path.isdir(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "list_dir() needs a folder — '{}' is a file".format(shown),
+                kind="file")
+        try:
+            names = sorted(os.listdir(path))
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "list_dir() could not list '{}' — {}".format(
+                    shown, err.strerror or "the system refused"), kind="file")
+        if len(names) > self.MAX_DIR_ENTRIES:
+            raise JuRuGalti(
+                e.line, e.col,
+                "list_dir() found too many names — at most {} at a time".format(
+                    self.MAX_DIR_ENTRIES), kind="value")
+        return names
+
+    def _bi_make_dir(self, e, env):
+        shown, path = self._file_path(e, env, "make_dir")
+        if os.path.isdir(path):
+            return None                       # already there — friendly no-op
+        if os.path.exists(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "make_dir() could not create '{}' — a file with that name "
+                "already exists".format(shown), kind="file")
+        try:
+            os.makedirs(path)                 # parents too, one function
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "make_dir() could not create '{}' — {}".format(
+                    shown, err.strerror or "the system refused"), kind="file")
+        return None
+
+    def _bi_delete_dir(self, e, env):
+        shown, path = self._file_path(e, env, "delete_dir")
+        if not os.path.exists(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "delete_dir() could not delete '{}' — folder not found (looked "
+                "at: {})".format(shown, path), kind="file")
+        if not os.path.isdir(path):
+            raise JuRuGalti(
+                e.line, e.col,
+                "delete_dir() needs a folder — '{}' is a file".format(shown),
+                kind="file")
+        try:
+            if os.listdir(path):
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "delete_dir() only removes an EMPTY folder — '{}' still has "
+                    "things in it".format(shown), kind="file")
+            os.rmdir(path)
+        except JuRuGalti:
+            raise
+        except OSError as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "delete_dir() could not delete '{}' — {}".format(
+                    shown, err.strerror or "the system refused"), kind="file")
+        return None
+
+    def _json_check(self, v, e, seen, level):
+        """Validate a JuRu value for to_json (types, keys, depth, cycles)."""
+        if v is None or isinstance(v, (bool, int, str)):
+            return
+        if isinstance(v, float):
+            if not math.isfinite(v):
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "to_json() cannot write a number that is not finite — "
+                    "JSON has no NaN or Infinity", kind="value")
+            return
+        if isinstance(v, list):
+            if level > self.MAX_JSON_DEPTH:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "to_json() found a value nested too deeply — the limit is "
+                    "{} levels".format(self.MAX_JSON_DEPTH), kind="value")
+            if id(v) in seen:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "to_json() cannot write a value that contains itself",
+                    kind="value")
+            seen.add(id(v))
+            for item in v:
+                self._json_check(item, e, seen, level + 1)
+            seen.discard(id(v))
+            return
+        if isinstance(v, dict):
+            if level > self.MAX_JSON_DEPTH:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "to_json() found a value nested too deeply — the limit is "
+                    "{} levels".format(self.MAX_JSON_DEPTH), kind="value")
+            if id(v) in seen:
+                raise JuRuGalti(
+                    e.line, e.col,
+                    "to_json() cannot write a value that contains itself",
+                    kind="value")
+            seen.add(id(v))
+            for key, item in v.items():
+                if not isinstance(key, str):
+                    raise JuRuGalti(
+                        e.line, e.col,
+                        "to_json() needs text keys in every dict — found {} "
+                        "(JSON keys are always text)".format(display(key)),
+                        kind="type")
+                self._json_check(item, e, seen, level + 1)
+            seen.discard(id(v))
+            return
+        raise JuRuGalti(
+            e.line, e.col,
+            "to_json() cannot write a {} — JSON holds null, booleans, numbers, "
+            "text, lists and dicts".format(_typename(v)), kind="type")
+
+    def _bi_to_json(self, e, env):
+        v = self.eval(e.args[0], env)
+        self._json_check(v, e, set(), 1)
+        try:
+            text = json.dumps(v, ensure_ascii=False, allow_nan=False)
+        except (TypeError, ValueError) as err:
+            raise JuRuGalti(
+                e.line, e.col,
+                "to_json() could not write this value — {}".format(err),
+                kind="value")
+        if len(text.encode("utf-8")) > self.MAX_FILE_BYTES:
+            raise JuRuGalti(
+                e.line, e.col,
+                "to_json() produced too much text — the limit is 10 MB",
+                kind="value")
+        return text
+
+    @staticmethod
+    def _reject_json_constant(value):
+        raise ValueError(value)
+
+    def _bi_from_json(self, e, env):
+        text = self.eval(e.args[0], env)
+        if not isinstance(text, str):
+            raise JuRuGalti(e.line, e.col,
+                            "from_json() needs JSON text — got: {}".format(
+                                display(text)), kind="type")
+        size = len(text.encode("utf-8"))
+        if size > self.MAX_FILE_BYTES:
+            raise JuRuGalti(
+                e.line, e.col,
+                "from_json() text is too big ({}; the limit is 10 MB)".format(
+                    self._bytes_text(size)), kind="value")
+        try:
+            data = json.loads(text, parse_constant=self._reject_json_constant)
+        except json.JSONDecodeError as err:
+            msg = err.msg or "the text is not valid JSON"
+            msg = msg[0].lower() + msg[1:]
+            raise JuRuGalti(
+                e.line, e.col,
+                "from_json() could not read the text — {} at line {} "
+                "column {}".format(msg, err.lineno, err.colno), kind="value")
+        except RecursionError:
+            raise JuRuGalti(
+                e.line, e.col,
+                "from_json() found a value nested too deeply — the limit is "
+                "{} levels".format(self.MAX_JSON_DEPTH), kind="value")
+        except ValueError:
+            raise JuRuGalti(
+                e.line, e.col,
+                "from_json() cannot read NaN or Infinity — JSON numbers must "
+                "be finite", kind="value")
+        stack = [(data, 1)]
+        while stack:
+            value, level = stack.pop()
+            if isinstance(value, str):
+                if _has_lone_surrogate(value):
+                    raise JuRuGalti(
+                        e.line, e.col,
+                        "from_json() found an unpaired surrogate escape — "
+                        "JSON text cannot hold half of a surrogate pair",
+                        kind="value")
+            elif isinstance(value, float):
+                if not math.isfinite(value):
+                    raise JuRuGalti(
+                        e.line, e.col,
+                        "from_json() cannot read NaN or Infinity — JSON "
+                        "numbers must be finite", kind="value")
+            elif isinstance(value, list):
+                if level > self.MAX_JSON_DEPTH:
+                    raise JuRuGalti(
+                        e.line, e.col,
+                        "from_json() found a value nested too deeply — the "
+                        "limit is {} levels".format(self.MAX_JSON_DEPTH),
+                        kind="value")
+                stack.extend((item, level + 1) for item in value)
+            elif isinstance(value, dict):
+                if level > self.MAX_JSON_DEPTH:
+                    raise JuRuGalti(
+                        e.line, e.col,
+                        "from_json() found a value nested too deeply — the "
+                        "limit is {} levels".format(self.MAX_JSON_DEPTH),
+                        kind="value")
+                for key in value.keys():
+                    if _has_lone_surrogate(key):
+                        raise JuRuGalti(
+                            e.line, e.col,
+                            "from_json() found an unpaired surrogate escape — "
+                            "JSON text cannot hold half of a surrogate pair",
+                            kind="value")
+                stack.extend((item, level + 1) for item in value.values())
+        return data
 
     def _bi_format(self, e, env):
         template = self.eval(e.args[0], env)
@@ -1580,6 +2022,19 @@ class Interpreter:
             "center": self._bi_center,
             "split_lines": self._bi_split_lines,
             "join_lines": self._bi_join_lines,
+            "read_file": self._bi_read_file,
+            "write_file": self._bi_write_file,
+            "append_file": self._bi_append_file,
+            "read_lines": self._bi_read_lines,
+            "write_lines": self._bi_write_lines,
+            "file_exists": self._bi_file_exists,
+            "file_size": self._bi_file_size,
+            "delete_file": self._bi_delete_file,
+            "list_dir": self._bi_list_dir,
+            "make_dir": self._bi_make_dir,
+            "delete_dir": self._bi_delete_dir,
+            "to_json": self._bi_to_json,
+            "from_json": self._bi_from_json,
         }
 
 

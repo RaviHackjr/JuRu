@@ -504,7 +504,7 @@ def t_escape_hint_lists_u():
 
 # ------------------------------------------------------------------ registry / grammar / dump
 def t_registry_tables_agree():
-    assert len(BUILTINS) == 54     # 47 + fail (Step 23) + the text wave (Step 24)
+    assert len(BUILTINS) == 67     # 47 + fail (23) + text wave (24) + files/JSON (25)
     assert set(BUILTIN_ARITY) == set(BUILTINS)
     assert set(BUILTIN_HINT) == set(BUILTINS)
     for name, (lo, hi) in BUILTIN_ARITY.items():
@@ -610,9 +610,9 @@ def t_backward_compat_plain_programs():
 
 
 def t_version_and_surface():
-    assert VERSION == "1.11"
+    assert VERSION == "1.12"
     assert len(KEYWORDS) == 21          # Step 23 (v1.10) added try + rescue
-    assert len(BUILTINS) == 54          # Step 24 (v1.11) added the text wave
+    assert len(BUILTINS) == 67          # ... + text wave (24) + files/JSON (25)
 
 
 # ------------------------------------------------------------------ runner
@@ -687,7 +687,7 @@ ALL = [
     ("dump forms: aug + slice-step", t_dump_forms),
     ("dump forms: all five ops", t_dump_forms_all_five_ops),
     ("backward compat: plain programs", t_backward_compat_plain_programs),
-    ("version 1.11 + keyword count", t_version_and_surface),
+    ("version 1.12 + keyword count", t_version_and_surface),
 ]
 
 if __name__ == "__main__":
