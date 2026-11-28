@@ -7,18 +7,24 @@
 
 ---
 
-## Current state (updated 2026-11-25)
+## Current state (updated 2026-11-28)
 
-- **Version:** 1.11 — latest release **v1.11** (not draft), commit `7d97b71` on `main`.
-- **Tests:** 23 suites, **784 green** (`test_step24` 24, `test_step23` 56, `test_step22` 71, `test_ultimate` 56).
-- **Keywords:** 21 (try, rescue). **Builtins:** 54 (format, pad_left, pad_right, center, split_lines, join_lines; registry: `src/juru/stdlib.py`). **Templates:** 5.
-- **CI:** both workflows (`tests`, `release`) green on the v1.11 push; release
-  assets verified by download + actually running the shipped Linux binary
-  (`JuRu 1.11`, format/pad/split smoke, wide-char `は`, catchable format error)
-  and inspecting the vsix (1.11.0; grammar has 21 keywords + 54 builtins and
-  the six new names, 10 snippets, extension README 21/54).
-- **Status:** Step 3 (text & formatting — format/padding/lines) shipped as v1.11;
-  Step 4 (files & JSON) next.
+- **Version:** 1.12 — latest release **v1.12** (not draft), tag/commit
+  `b2fd9c0` on `main` (feature commit `1c59fb0` + test-fix commit `b2fd9c0`).
+- **Tests:** 24 suites, **837 green** (`test_step25` 53, `test_step24` 24,
+  `test_step23` 56, `test_step22` 71, `test_ultimate` 56).
+- **Keywords:** 21 (try, rescue). **Builtins:** 67 (13 new: read_file,
+  write_file, append_file, read_lines, write_lines, file_exists, file_size,
+  delete_file, list_dir, make_dir, delete_dir, to_json, from_json; registry:
+  `src/juru/stdlib.py`). **Templates:** 5.
+- **CI:** both workflows (`tests`, `release`) green on the final v1.12 push
+  (tests run `46092377477`, release run `46092404563`; Python 3.12 + 3.14).
+  Release assets verified by download + actually running the shipped Linux
+  binary (`JuRu 1.12`; JSON/file lines smoke, unicode `は`, REPL round-trip)
+  and inspecting the vsix (1.12.0; grammar has 21 keywords + 67 builtins and
+  all thirteen new names, 10 snippets, extension README 21/67).
+- **Status:** Step 4 (files & JSON) shipped as v1.12; Step 5 (math, time &
+  constants) next.
 
 ## Completed before the roadmap (batches 1–8 — do not rebuild)
 
@@ -38,7 +44,7 @@
 | 1 | Collections & ergonomics wave 1 | ✅ DONE (2026-11-16) — v1.9 | 1.9 | `6b83535` | 704/21 | Aug-assign (`+= -= *= /= %=` on names, list items, dict values; old value read before RHS, RHS once), negative indexing (reads/writes/remove_at; legal range in the error), slice steps (Python rule; zero step refused), **17 new builtins** (insert, remove_at, clear, extend, unique, delete, items, merge, index_of, starts_with, ends_with, ord, chr, set_of, union, intersect, difference), sets (list-backed, first-seen order, ONE equality rule; `{}` stays a dict), min/max variadic, `\uXXXX` escapes, `src/juru/stdlib.py` = the one registry (mirror rule now structural). New suite `test_step22` (71). **Deliberate break, documented in CHANGELOG:** `items` is now reserved (starter renames its var to `bag`; printed text unchanged). **Preserved quirk:** `xs[0:1] = [9]` still means `xs[0] = [9]` (v1.8 behavior, test-pinned). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
 | 2 | try / rescue | ✅ DONE (2026-11-18) — v1.10 | 1.10 | `48f2f61` | 760/22 | **Exactly 2 new keywords** (19 → 21): `try { ... } rescue as e { ... }` and `rescue { ... }` (binding optional; rescue may sit on its own line). The caught error is a value with `e.message` (exact original friendly text), `e.line`, `e.col`, `e.kind` — kind is one of **11 fixed, documented kinds** (name, type, value, arity, math, index, key, loop, input, file, fail) via `lexer.kind_for` (ordered fragment rules, default `"type"`; an explicit kind always wins, so `fail("index 9 is out of range …")` stays kind `fail`). **New builtin `fail(message)`** (48 builtins): arity `(1,1)` + non-text guard, checker and runtime print the same friendly messages, registered in helpdb (cards, `errors` group, aliases raise/throw→fail, catch/except→rescue). Semantics: only `JuRuGalti` crosses a try boundary (host bugs + `break`/`continue`/`return` signals pass through, test-pinned); the try body runs in the SAME env (clean assignments survive) while the rescue gets its own child env (`e` and rescue locals never leak; checker conservative, flow-insensitive); nested trys pick the nearest rescue (errors raised inside an inner rescue reach the outer one); func errors reach the rescue that wraps the call; arguments evaluate in the caller; module errors keep kind + stack + `source_file`. **Call stacks:** every runtime error records its JuRu call stack at the innermost user-func boundary — tuple is outermost-first, display adds `called from name (line n)` lines innermost-first after the caret; display-only, so `str(err)` is unchanged and uncaught top-level output stays byte-identical (test_step17 + CLI byte-pins green); builtins never get frames; recursion records outermost→deepest call sites. Parser: friendly errors (bare rescue, missing rescue points at the try's closing `}`, `rescue as` without a name), dump forms for both shapes; checker validates rescue blocks (binding usable, reserved names refused); REPL `looks_incomplete` counts try/rescue KEYWORD tokens (text like `say("try harder")` safe). Docs: syntax.md section 16 (forms + field + kind tables + rules), tutorial 13.1 (4 executable pinned blocks), guide lesson `14_try.jr` (15 lessons), README/design/CHANGELOG synced (counts corrected to 760/22), vscode grammar 21+48 + 10th snippet, version 1.10 / package.json 1.10.0. New suite `test_step23.py` (56 tests). Limitation: Windows/macOS validation is CI-only (no local pip/PyInstaller); shipped Linux binary + vsix verified by hand. |
 | 3 | Text & formatting | ✅ DONE (2026-11-25) — v1.11 | 1.11 | `7d97b71` | 784/23 | Six new builtins (48 → 54, zero keywords): `format` (`{}` / `{0}` / `{{ }}`; mixed/extra/missing/malformed all friendly errors; numbered slots may skip; no eval/expression interpolation), `pad_left`/`pad_right`/`center` (display width: combining marks 0, East Asian wide 2; never truncates; odd center space goes right; whole-number width 0–10000), `split_lines` (LF/CRLF/lone CR; empty text → `[]`; trailing newline opens no extra line; blank lines kept), `join_lines` (text-only list; `[]` → `""`; partner of `split_lines`). Truthful help cards + `printf` alias; docs/README/design/tutorial/syntax/CHANGELOG/CI/VS Code synced to 1.11/784. New suite `test_step24.py` (24). Brutal probe b11 232/232. Limit: Windows/macOS validation CI-only; shipped Linux binary + vsix verified by hand. |
-| 4 | Files & JSON | ⬜ PENDING | | | | |
+| 4 | Files & JSON | ✅ DONE (2026-11-28) — v1.12 | 1.12 | `b2fd9c0` (tag; feature `1c59fb0`) | 837/24 | **Thirteen new builtins (54 → 67, zero new keywords):** `read_file`/`write_file`/`append_file`, `read_lines`/`write_lines`, `file_exists`/`file_size`/`delete_file`, `list_dir`/`make_dir`/`delete_dir`, `to_json`/`from_json`. Relative paths resolve against the program's folder (like `import`); absolute paths as-is; no `~` expansion, no globs, `..` allowed, NUL refused. **Caps:** 10 MB on read/write/append-result/JSON text, 64 JSON nesting levels, 10,000 `list_dir` names. UTF-8 only; file failures are friendly errors with kind `"file"` (catchable). `write_lines` writes each line + newline (`[]` → empty file) so `read_lines(write_lines(xs)) == xs`; `delete_dir` removes EMPTY folders only. JSON: text dict keys only, NaN/Infinity and overflow-to-Infinity refused both ways, unpaired surrogate escapes refused, cycles refused, duplicate keys keep the LAST value, surrogate pairs decode. Truthful help cards + new `files + json` group; README/design/syntax §17/tutorial ch.12/examples/vscode docs/CHANGELOG/CI/VS Code grammar synced to 1.12/67. New suite `test_step25.py` (53); brutal probe b12 **615/615**. Also fixed a 1-in-100 flaky guessing-game test and taught the repo-tidy test about `test_step25.py` (the first CI run exposed both; final tag is the green commit). Limit: Windows/macOS validation CI-only; shipped Linux binary + vsix verified by hand. |
 | 5 | Math, time & constants | ⬜ PENDING | | | | |
 | 6 | Classes & OOP | ⬜ PENDING | | | | |
 | 7 | Modules 2.0 | ⬜ PENDING | | | | |
